@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ChatRecord · 会话时序实验室</title>
+  <link rel="stylesheet" href="css/style.css">
+  <style>
+    .session-bar { display:flex; align-items:center; justify-content:space-between; padding:8px 20px; background:#f8f9fb; border-bottom:1px solid #e5e7eb; flex-wrap:wrap; gap:8px; }
+    .session-left { display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
+    .session-select { padding:6px 10px; border:1px solid #d1d5db; border-radius:8px; font-size:13px; background:#fff; max-width:280px; }
+    .btn-sm { padding:5px 12px; font-size:12px; border-radius:7px; cursor:pointer; border:1px solid #d1d5db; background:#fff; color:#374151; }
+    .btn-sm:hover { background:#f3f4f6; }
+    .btn-sm.primary { background:#667eea; color:#fff; border-color:#667eea; }
+    .btn-sm.primary:hover { background:#5a6fd6; }
+    .btn-sm.danger { background:#fef2f2; color:#dc2626; border-color:#fecaca; }
+    .btn-sm.danger:hover { background:#fee2e2; }
+    .save-status { font-size:12px; color:#6b7280; }
+    .save-status.saving { color:#f59e0b; }
+    .save-status.saved { color:#10b981; }
+    .save-status.error { color:#ef4444; }
+    .session-name-display { font-size:14px; font-weight:600; color:#1f2937; margin-right:4px; }
+  </style>
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">
+      <div class="logo">CR</div>
+      <div class="brand-text">
+        <h1>ChatRecord <span>会话时序实验室</span></h1>
+        <p>把聊天记录变成可计算的数字表征 · 时序 · 频率 · 行为可视化</p>
+      </div>
+    </div>
+    <div class="actions">
+      <button class="btn ghost" onclick="location.href='/projects.html'" title="返回项目中心">← 返回</button>
+      <button id="btnOCR" class="btn">识别截图</button>
+      <button id="btnSample" class="btn ghost">加载示例数据</button>
+      <button id="btnImport" class="btn primary">导入聊天数据</button>
+    </div>
+  </header>
+
+  <!-- 会话管理栏 -->
+  <div class="session-bar">
+    <div class="session-left">
+      <span class="session-name-display">会话：</span>
+      <select id="sessionSelect" class="session-select" title="切换会话"></select>
+      <button id="btnNewSession" class="btn-sm primary" title="新建会话">+ 新建</button>
+      <button id="btnRenameSession" class="btn-sm" title="重命名当前会话">重命名</button>
+      <button id="btnDeleteSession" class="btn-sm danger" title="删除当前会话">删除</button>
+      <button id="btnShareSession" class="btn-sm" title="生成只读分享链接">分享</button>
+    </div>
+    <div class="session-right">
+      <span id="saveStatus" class="save-status">就绪</span>
+    </div>
+  </div>
+
+  <main>
+    <section class="stats" id="stats">
+      <div class="stat-card placeholder">加载数据后显示统计</div>
+    </section>
+
+    <section class="charts">
+      <div class="chart-card wide">
+        <div class="chart-head">
+          <h2>会话时序波形</h2>
+          <span class="desc">相邻消息间隔（秒）· 低谷=密集对话，尖峰=沉默期</span>
+        </div>
+        <div id="chartWave" class="chart"></div>
+      </div>
+
+      <div class="chart-card">
+        <div class="chart-head">
+          <h2>消息量分布</h2>
+          <span class="desc">24 小时时段活跃度</span>
+        </div>
+        <div id="chartHour" class="chart"></div>
+      </div>
+
+      <div class="chart-card">
+        <div class="chart-head">
+          <h2>消息平均长度</h2>
+          <span class="desc">按天 · 单条消息字符数均值</span>
+        </div>
+        <div id="chartLen" class="chart"></div>
+      </div>
+
+      <div class="chart-card wide">
+        <div class="chart-head">
+          <h2>消息量日历热力图</h2>
+          <span class="desc">按天 · 消息密度（颜色越亮消息越多）</span>
+        </div>
+        <div id="chartCal" class="chart"></div>
+      </div>
+
+      <div class="chart-card">
+        <div class="chart-head">
+          <h2>发送者消息量</h2>
+          <span class="desc">谁发得多</span>
+        </div>
+        <div id="chartSender" class="chart"></div>
+      </div>
+
+      <div class="chart-card">
+        <div class="chart-head">
+          <h2>复读指数排行</h2>
+          <span class="desc">重复文本占其消息比例 · 谁在刷屏</span>
+        </div>
+        <div id="chartRepeat" class="chart"></div>
+      </div>
+
+      <div class="chart-card wide">
+        <div class="chart-head">
+          <h2>周 × 小时活跃度</h2>
+          <span class="desc">星期与时段交叉 · 活跃模式热力图</span>
+        </div>
+        <div id="chartWH" class="chart"></div>
+      </div>
+    </section>
+
+    <footer class="foot">ChatRecord · 独立项目，技术成熟后接入博客</footer>
+  </main>
+
+  <!-- 导入弹窗 -->
+  <div class="modal-mask" id="importModal" style="display:none">
+    <div class="modal">
+      <div class="modal-head">
+        <h3>导入聊天数据</h3>
+        <button class="close" id="modalClose">×</button>
+      </div>
+      <div class="tabs">
+        <button class="tab active" data-tab="txt">文本粘贴</button>
+        <button class="tab" data-tab="json">JSON 数组</button>
+      </div>
+      <div class="modal-body">
+        <div class="pane" id="pane-txt">
+          <p class="hint">每行一条：<code>2026-08-20 12:30:00 发送者: 内容</code><br>
+          或简写（需先有完整日期行）：<code>12:30 发送者: 内容</code></p>
+          <textarea id="txtInput" rows="10" placeholder="粘贴聊天记录文本..."></textarea>
+        </div>
+        <div class="pane" id="pane-json" style="display:none">
+          <p class="hint">JSON 数组，每条：<code>{"ts":"2026-08-20 12:30:00","sender":"阿明","text":"内容"}</code></p>
+          <textarea id="jsonInput" rows="10" placeholder='[{"ts":"2026-08-20 12:30:00","sender":"阿明","text":"你好"}]'></textarea>
+        </div>
+      </div>
+      <div class="modal-foot">
+        <span id="importMsg" class="import-msg"></span>
+        <button class="btn primary" id="btnConfirmImport">导入并分析</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 识别截图弹窗 -->
+  <div class="modal-mask" id="ocrModal" style="display:none">
+    <div class="modal wide">
+      <div class="modal-head">
+        <h3>识别聊天截图</h3>
+        <button class="close" id="ocrClose">×</button>
+      </div>
+      <div class="modal-body">
+        <p class="hint">上传微信/QQ 聊天记录截图（可多选），自动提取<b>发送者、内容、时间</b>。
+          识别结果可编辑修正后再应用。<br>
+          💡 已连接本地 OCR 服务（RapidOCR）时识别更准；未启动则用内置基础识别。可运行 <code>start-ocr.bat</code> 启用增强识别。</p>
+        <div class="ocr-opts">
+          <label>对方昵称 <input id="ocrOtherName" type="text" value="对方" placeholder="对方"></label>
+          <label>截图日期 <input id="ocrBaseDate" type="date"></label>
+        </div>
+        <div class="ocr-upload">
+          <input id="ocrFiles" type="file" accept="image/*" multiple>
+          <button class="btn primary" id="btnRunOCR">开始识别</button>
+        </div>
+        <div id="ocrStatus" class="ocr-status"></div>
+        <textarea id="ocrResult" rows="8" placeholder="识别结果将显示在这里，可手动修正..."></textarea>
+      </div>
+      <div class="modal-foot">
+        <span id="ocrMsg" class="import-msg"></span>
+        <button class="btn" id="btnOCRExport">导出 JSON</button>
+        <button class="btn primary" id="btnOCRApply">应用并分析</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 分享弹窗 -->
+  <div class="modal-mask" id="shareModal" style="display:none">
+    <div class="modal">
+      <div class="modal-head">
+        <h3>分享会话</h3>
+        <button class="close" id="shareClose">×</button>
+      </div>
+      <div class="modal-body">
+        <p class="hint">生成只读分享链接，对方无需登录即可查看图表。链接长期有效，可随时取消。</p>
+        <div id="shareLinkBox" style="display:none;margin:12px 0">
+          <input type="text" id="shareLink" readonly style="width:100%;padding:8px;border:1px solid #d1d5db;border-radius:8px;font-size:13px;background:#f9fafb">
+          <div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap">
+            <button class="btn primary" id="btnCopyShare">复制链接</button>
+            <button class="btn ghost" id="btnOpenShare">在新窗口打开</button>
+            <button class="btn ghost" id="btnCancelShare" style="color:#dc2626">取消分享</button>
+          </div>
+        </div>
+        <div id="shareNoLink" style="margin:12px 0">
+          <button class="btn primary" id="btnCreateShare">生成分享链接</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="libs/echarts.min.js"></script>
+  <script src="libs/tesseract/tesseract.min.js"></script>
+  <script src="js/data.js"></script>
+  <script src="js/ocr.js"></script>
+  <script src="js/charts.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>

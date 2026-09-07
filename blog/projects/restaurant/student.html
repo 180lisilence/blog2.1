@@ -1,0 +1,354 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>学生点餐系统</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="css/style.css">
+<link rel="stylesheet" href="css/fancy.css">
+    <script src="../../assets/js/blog-storage.js"></script>
+<script src="js/common.js"></script>
+    <script>tailwind.config={darkMode:'class'}</script>
+</head>
+<body class="bg-gray-100 dark:bg-gray-900 text-gray-800 dark:text-gray-200 transition-colors duration-300">
+<div class="container-padding p-4">
+    <div class="flex justify-between items-center mb-5">
+        <h1 class="text-xl font-bold">🍽️ 学生餐厅系统</h1>
+        <div>
+            <button onclick="toggleTheme()" class="mr-3"><i class="fa fa-adjust text-xl"></i></button>
+            <button onclick="logout()" class="text-red-500">退出登录</button>
+        </div>
+    </div>
+
+    <!--首页-->
+    <div id="sub-home" class="sub-page active">
+        <div class="bg-orange-100 dark:bg-gray-700 rounded-lg p-4 mb-4">
+            <h3 class="font-bold text-lg">欢迎你，<span id="welcome-name"></span></h3>
+            <p class="text-sm mt-1">在线点餐、查询订单、食堂通知</p>
+        </div>
+        <div class="grid grid-cols-2 gap-3">
+            <div onclick="switchTab('sub-food')" class="bg-white dark:bg-gray-800 p-4 rounded-lg text-center">
+                <i class="fa fa-cutlery text-2xl text-orange-500"></i>
+                <p>浏览菜品</p>
+            </div>
+            <div onclick="switchTab('sub-cart')" class="bg-white dark:bg-gray-800 p-4 rounded-lg text-center relative">
+                <i class="fa fa-shopping-cart text-2xl text-orange-500"></i>
+                <span class="cart-badge" id="cart-badge">0</span>
+                <p>购物车</p>
+            </div>
+            <div onclick="switchTab('sub-order')" class="bg-white dark:bg-gray-800 p-4 rounded-lg text-center">
+                <i class="fa fa-list-alt text-2xl text-orange-500"></i>
+                <p>我的订单</p>
+            </div>
+            <div onclick="switchTab('sub-suggest')" class="bg-white dark:bg-gray-800 p-4 rounded-lg text-center">
+                <i class="fa fa-comment text-2xl text-orange-500"></i>
+                <p>意见建议</p>
+            </div>
+        </div>
+    </div>
+
+    <!--菜品页面-->
+    <div id="sub-food" class="sub-page">
+        <h3 class="font-bold text-lg mb-3">🥗 食堂菜品</h3>
+        <div id="food-list" class="space-y-3"></div>
+    </div>
+
+    <!--购物车-->
+    <div id="sub-cart" class="sub-page">
+        <h3 class="font-bold text-lg mb-3">🛒 购物车</h3>
+        <div id="cart-list" class="space-y-3 mb-4"></div>
+        <div class="bg-white dark:bg-gray-800 p-3 rounded">
+            <p class="mb-2">合计：<span class="text-orange-500 font-bold" id="cart-total">¥0.00</span></p>
+            <button onclick="goSettle()" class="w-full bg-orange-500 text-white py-2 rounded">去结算</button>
+        </div>
+    </div>
+
+    <!--结算页面-->
+    <div id="sub-settle" class="sub-page">
+        <h3 class="font-bold text-lg mb-3">💳 订单结算</h3>
+        <div id="settle-goods" class="bg-white dark:bg-gray-800 p-3 rounded mb-3"></div>
+        <p class="mb-3">应付金额：<span class="text-orange-500 font-bold" id="settle-money">¥0.00</span></p>
+        <p class="mb-2">选择支付方式</p>
+        <div class="space-y-2">
+            <button onclick="pay('微信支付')" class="w-full bg-green-500 text-white py-2 rounded">微信支付</button>
+            <button onclick="pay('支付宝')" class="w-full bg-blue-500 text-white py-2 rounded">支付宝</button>
+            <button onclick="pay('校园卡')" class="w-full bg-gray-500 text-white py-2 rounded">校园卡支付</button>
+        </div>
+        <button onclick="switchTab('sub-cart')" class="w-full mt-3 border py-2 rounded">返回购物车</button>
+    </div>
+
+    <!--我的订单-->
+    <div id="sub-order" class="sub-page">
+        <h3 class="font-bold text-lg mb-3">📦 我的订单</h3>
+        <div id="student-order-list" class="space-y-3"></div>
+    </div>
+
+    <!--意见建议-->
+    <div id="sub-suggest" class="sub-page">
+        <h3 class="font-bold text-lg mb-3">📝 意见建议</h3>
+        <textarea id="suggest-content" class="w-full border dark:border-gray-600 rounded p-3 h-24 bg-transparent" placeholder="输入你的建议..."></textarea>
+        <button onclick="submitSuggest()" class="w-full bg-orange-500 text-white py-2 rounded mt-3">提交建议</button>
+        <h4 class="font-bold mt-5 mb-2">我的历史建议</h4>
+        <div id="my-suggest-list" class="space-y-3"></div>
+    </div>
+
+    <!--个人中心【头像上传】-->
+    <div id="sub-profile" class="sub-page">
+        <h3 class="font-bold text-lg mb-3">👤 个人中心</h3>
+        <div class="bg-white dark:bg-gray-800 p-4 rounded space-y-4 text-center">
+            <div>
+                <img id="avatar-img" class="avatar-preview" src="">
+                <input type="file" id="avatar-input" accept="image/*" class="hidden" onchange="handleAvatarChange(this)">
+                <button onclick="document.getElementById('avatar-input').click()" class="mt-2 border px-3 py-1 rounded">上传头像</button>
+            </div>
+            <p>账号：<span id="profile-user"></span></p>
+            <p>身份：学生用户</p>
+            <p>余额：¥125.00</p>
+            <button class="w-full bg-orange-500 text-white py-2 rounded mt-2">充值</button>
+        </div>
+    </div>
+</div>
+
+<!--底部导航-->
+<div class="tab-bar bg-white dark:bg-gray-800 shadow flex">
+    <div onclick="switchTab('sub-home')" class="flex-1 text-center py-3 tab-item active text-orange-500 relative">
+        <i class="fa fa-home"></i>
+        <div class="text-xs">首页</div>
+    </div>
+    <div onclick="switchTab('sub-food')" class="flex-1 text-center py-3 tab-item">
+        <i class="fa fa-cutlery"></i>
+        <div class="text-xs">菜品</div>
+    </div>
+    <div onclick="switchTab('sub-cart')" class="flex-1 text-center py-3 tab-item relative">
+        <i class="fa fa-shopping-cart"></i>
+        <div class="text-xs">购物车</div>
+    </div>
+    <div onclick="switchTab('sub-order')" class="flex-1 text-center py-3 tab-item">
+        <i class="fa fa-list-alt"></i>
+        <div class="text-xs">订单</div>
+    </div>
+    <div onclick="switchTab('sub-profile')" class="flex-1 text-center py-3 tab-item">
+        <i class="fa fa-user"></i>
+        <div class="text-xs">我的</div>
+    </div>
+</div>
+
+<script>
+let currentUser = getCurrentUser();
+if(!currentUser) location.href="index.html";
+let activeTab = "sub-home";
+let settleCart = [];
+
+window.onload = function(){
+    document.getElementById("welcome-name").innerText = currentUser;
+    document.getElementById("profile-user").innerText = currentUser;
+    loadUserAvatar();
+    renderFood();
+    renderCart();
+    renderMyOrder();
+    renderMySuggest();
+}
+
+//加载头像
+function loadUserAvatar(){
+    const userInfo = getUserList().find(u=>u.username === currentUser);
+    if(userInfo && userInfo.avatar){
+        document.getElementById("avatar-img").src = userInfo.avatar;
+    }else{
+        document.getElementById("avatar-img").src = "";
+    }
+}
+//头像上传
+function handleAvatarChange(input){
+    uploadAvatar(input, function(base64){
+        updateUserInfo(currentUser, {avatar:base64});
+        document.getElementById("avatar-img").src = base64;
+        alert("头像上传成功！");
+    })
+}
+
+//切换页面
+function switchTab(tabId){
+    document.querySelectorAll(".sub-page").forEach(el=>el.classList.remove("active"));
+    document.getElementById(tabId).classList.add("active");
+    activeTab = tabId;
+    if(tabId === "sub-cart") renderCart();
+    if(tabId === "sub-order") renderMyOrder();
+    if(tabId === "sub-suggest") renderMySuggest();
+}
+
+//渲染菜品
+function renderFood(){
+    const foods = JSON.parse(BS.get("foods"));
+    let html = "";
+    foods.forEach(f=>{
+        html += `
+        <div class="bg-white dark:bg-gray-800 p-3 rounded flex items-center justify-between">
+            <div>
+                <p class="font-bold">${f.name}</p>
+                <p class="text-orange-500">¥${f.price}</p>
+            </div>
+            <button onclick="addCart(${f.id})" class="bg-orange-500 text-white px-3 py-1 rounded">加入购物车</button>
+        </div>`;
+    })
+    document.getElementById("food-list").innerHTML = html;
+}
+
+//购物车
+function getCartData(){
+    const allCart = JSON.parse(BS.get("carts"));
+    return allCart[currentUser] || [];
+}
+function saveCartData(list){
+    const allCart = JSON.parse(BS.get("carts"));
+    allCart[currentUser] = list;
+    BS.set("carts", JSON.stringify(allCart));
+}
+function addCart(foodId){
+    const foods = JSON.parse(BS.get("foods"));
+    const food = foods.find(f=>f.id === foodId);
+    let cart = getCartData();
+    const exist = cart.find(item=>item.id === foodId);
+    if(exist) exist.num +=1;
+    else cart.push({id:food.id,name:food.name,price:food.price,num:1});
+    saveCartData(cart);
+    renderCart();
+    alert("已加入购物车");
+}
+function renderCart(){
+    const cart = getCartData();
+    let html = "";
+    let total = 0;
+    cart.forEach(item=>{
+        total += item.price * item.num;
+        html += `
+        <div class="bg-white dark:bg-gray-800 p-3 rounded flex justify-between items-center">
+            <div>
+                <p>${item.name}</p>
+                <p>¥${item.price} × ${item.num}</p>
+            </div>
+            <div class="space-x-2">
+                <button onclick="cartMinus(${item.id})">-</button>
+                <button onclick="cartPlus(${item.id})">+</button>
+                <button onclick="cartDel(${item.id})" class="text-red-500">删除</button>
+            </div>
+        </div>`;
+    })
+    document.getElementById("cart-list").innerHTML = html || "<p>购物车为空</p>";
+    document.getElementById("cart-total").innerText = `¥${total.toFixed(2)}`;
+    document.getElementById("cart-badge").innerText = cart.length;
+}
+function cartPlus(id){
+    let cart = getCartData();
+    cart.find(i=>i.id===id).num +=1;
+    saveCartData(cart); renderCart();
+}
+function cartMinus(id){
+    let cart = getCartData();
+    let obj = cart.find(i=>i.id===id);
+    obj.num -=1;
+    if(obj.num <=0) cart = cart.filter(i=>i.id!==id);
+    saveCartData(cart); renderCart();
+}
+function cartDel(id){
+    let cart = getCartData().filter(i=>i.id!==id);
+    saveCartData(cart); renderCart();
+}
+function goSettle(){
+    settleCart = getCartData();
+    if(settleCart.length ===0){
+        alert("购物车为空");
+        return;
+    }
+    let html = "";
+    let money = 0;
+    settleCart.forEach(i=>{
+        money += i.price*i.num;
+        html += `<p>${i.name} ×${i.num}  ¥${i.price*i.num}</p>`;
+    })
+    document.getElementById("settle-goods").innerHTML = html;
+    document.getElementById("settle-money").innerText = `¥${money.toFixed(2)}`;
+    switchTab("sub-settle");
+}
+function pay(type){
+    const totalMoney = settleCart.reduce((sum,i)=>sum+i.price*i.num,0);
+    const orders = JSON.parse(BS.get("orders"));
+    const newOrder = {
+        orderId:Date.now(),
+        username:currentUser,
+        goods:[...settleCart],
+        money:totalMoney,
+        payType:type,
+        status:"待出餐",
+        createTime:new Date().toLocaleString()
+    };
+    orders.push(newOrder);
+    BS.set("orders", JSON.stringify(orders));
+    //清空购物车
+    saveCartData([]);
+    renderCart();
+    alert(`支付成功！${type}`);
+    switchTab("sub-order");
+}
+
+//我的订单
+function renderMyOrder(){
+    const allOrders = JSON.parse(BS.get("orders"));
+    const myOrder = allOrders.filter(o=>o.username === currentUser);
+    let html = "";
+    myOrder.forEach(o=>{
+        let goodsText = o.goods.map(g=>`${g.name}×${g.num}`).join(" ");
+        html += `
+        <div class="bg-white dark:bg-gray-800 p-3 rounded">
+            <p>订单号：${o.orderId}</p>
+            <p>商品：${goodsText}</p>
+            <p>金额：¥${o.money.toFixed(2)} | ${o.payType}</p>
+            <p>状态：${o.status}</p>
+            <p class="text-xs">${o.createTime}</p>
+        </div>`;
+    })
+    document.getElementById("student-order-list").innerHTML = html || "<p>暂无订单</p>";
+}
+
+//意见建议
+function submitSuggest(){
+    const content = document.getElementById("suggest-content").value.trim();
+    if(!content){
+        alert("请输入内容");
+        return;
+    }
+    const suggests = JSON.parse(BS.get("suggests"));
+    suggests.push({
+        id:Date.now(),
+        username:currentUser,
+        content,
+        time:new Date().toLocaleString()
+    });
+    BS.set("suggests", JSON.stringify(suggests));
+    document.getElementById("suggest-content").value = "";
+    renderMySuggest();
+    alert("提交成功");
+}
+function renderMySuggest(){
+    const allSuggest = JSON.parse(BS.get("suggests"));
+    const mySuggest = allSuggest.filter(s=>s.username === currentUser);
+    let html = "";
+    mySuggest.forEach(s=>{
+        html += `
+        <div class="bg-white dark:bg-gray-800 p-3 rounded">
+            <p>${s.content}</p>
+            <p class="text-xs mt-1">${s.time}</p>
+        </div>`;
+    })
+    document.getElementById("my-suggest-list").innerHTML = html || "<p>暂无建议</p>";
+}
+</script>
+<style>
+.back-to-blog{position:fixed;top:14px;left:14px;z-index:99999;background:rgba(26,26,46,.85);color:#fff;padding:7px 14px;border-radius:8px;text-decoration:none;font-size:12.5px;font-weight:600;font-family:-apple-system,'Segoe UI','Microsoft YaHei',sans-serif;backdrop-filter:blur(8px);box-shadow:0 4px 14px rgba(0,0,0,.3);transition:all .2s;display:inline-flex;align-items:center;gap:4px}
+.back-to-blog:hover{background:rgba(91,108,255,.92);transform:translateY(-1px);box-shadow:0 6px 18px rgba(91,108,255,.45)}
+</style>
+<a href="../../index.html" class="back-to-blog">← 返回博客</a>
+</body>
+</html>

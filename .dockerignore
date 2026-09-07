@@ -1,0 +1,49 @@
+# 依赖
+node_modules/
+*/node_modules/
+
+# 数据文件（运行时生成，不应打包进镜像）
+qrcode-login/data/
+qrcode-login/users.json
+qrcode-login/projects.json
+
+# 环境变量（包含敏感信息）
+.env
+.env.local
+.env.*.local
+*/.env
+
+# 备份文件
+*.zip
+*.bak
+*.tmp
+*.temp
+
+# 日志
+*.log
+npm-debug.log*
+
+# 测试覆盖率
+coverage/
+
+# Git
+.git/
+.gitignore
+
+# 文档（可选，减小镜像体积可取消注释）
+# docs/
+# tests/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# 操作系统
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# 备份目录
+_backups/

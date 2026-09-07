@@ -1,0 +1,587 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>我的山头 - Java我的世界服务器</title>
+<style>
+/* ===== 全局重置 ===== */
+* { margin: 0; padding: 0; box-sizing: border-box; }
+/* ===== 字体与基础样式（clamp自适应字号） ===== */
+body {
+  font-family: "Microsoft YaHei", "微软雅黑", sans-serif;
+  background: #0f172a;
+  color: #e2e8f0;
+  line-height: 1.6;
+  font-size: clamp(14px, 2vw, 18px);
+}
+/* ===== 顶部渐变横幅 ===== */
+.banner {
+  background: linear-gradient(135deg, #0f172a 0%, #1e3a5f 50%, #38bdf8 100%);
+  padding: clamp(30px, 6vw, 70px) 20px;
+  text-align: center;
+  border-bottom: 3px solid #38bdf8;
+}
+.banner h1 {
+  font-size: clamp(26px, 5vw, 48px);
+  color: #fff;
+  text-shadow: 0 2px 10px rgba(56,189,248,0.5);
+}
+.banner p {
+  font-size: clamp(14px, 2.5vw, 20px);
+  color: #bae6fd;
+  margin-top: 10px;
+}
+/* ===== 容器 ===== */
+.container { max-width: 1100px; margin: 0 auto; padding: 0 20px; }
+section { padding: clamp(30px, 5vw, 60px) 0; }
+section h2 {
+  font-size: clamp(22px, 4vw, 32px);
+  color: #38bdf8;
+  margin-bottom: 20px;
+  border-left: 5px solid #38bdf8;
+  padding-left: 15px;
+}
+/* ===== 状态卡片（hover上浮） ===== */
+.status-card {
+  background: #1e293b;
+  border-radius: 12px;
+  padding: clamp(20px, 4vw, 35px);
+  display: flex;
+  flex-wrap: wrap;
+  gap: 20px;
+  align-items: center;
+  justify-content: space-between;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+  transition: transform 0.3s, box-shadow 0.3s;
+}
+.status-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 8px 30px rgba(56,189,248,0.2);
+}
+.status-indicator { display: flex; align-items: center; gap: 12px; }
+.status-dot {
+  width: 16px; height: 16px; border-radius: 50%;
+  background: #ef4444;
+  animation: pulse 2s infinite;
+}
+.status-dot.online { background: #22c55e; }
+@keyframes pulse { 0%,100%{opacity:1;} 50%{opacity:0.5;} }
+.player-count {
+  font-size: clamp(18px, 3vw, 26px);
+  color: #38bdf8;
+  font-weight: bold;
+}
+/* ===== 信息卡片网格 ===== */
+.card-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 20px;
+}
+.info-card {
+  background: #1e293b;
+  border-radius: 12px;
+  padding: 25px;
+  border: 1px solid #334155;
+  transition: transform 0.3s, box-shadow 0.3s, border-color 0.3s;
+}
+.info-card:hover {
+  transform: translateY(-8px);
+  box-shadow: 0 10px 30px rgba(56,189,248,0.25);
+  border-color: #38bdf8;
+}
+.info-card h3 {
+  color: #38bdf8;
+  margin-bottom: 12px;
+  font-size: clamp(16px, 2.5vw, 20px);
+}
+.info-card p { color: #cbd5e1; word-break: break-all; }
+/* ===== 规则列表 ===== */
+.rules-list {
+  background: #1e293b;
+  border-radius: 12px;
+  padding: 25px 25px 25px 45px;
+}
+.rules-list li { margin-bottom: 12px; color: #cbd5e1; }
+/* ===== 按钮 ===== */
+.btn {
+  display: inline-block;
+  background: #38bdf8;
+  color: #0f172a;
+  padding: 10px 24px;
+  border: none;
+  border-radius: 8px;
+  font-size: clamp(14px, 2vw, 16px);
+  font-family: inherit;
+  font-weight: bold;
+  cursor: pointer;
+  transition: background 0.3s, transform 0.2s;
+}
+.btn:hover { background: #0ea5e9; transform: scale(1.05); }
+.copy-btn { padding: 4px 12px; font-size: 13px; margin-left: 8px; vertical-align: middle; }
+/* ===== 底部 ===== */
+footer {
+  background: #020617;
+  text-align: center;
+  padding: 30px 20px;
+  color: #64748b;
+  font-size: clamp(12px, 1.5vw, 14px);
+  border-top: 1px solid #1e293b;
+}
+footer p { margin-top: 6px; }
+/* ===== 公告弹窗 ===== */
+.modal-overlay {
+  display: none;
+  position: fixed; inset: 0;
+  background: rgba(0,0,0,0.7);
+  z-index: 1000;
+  justify-content: center; align-items: center;
+  padding: 20px;
+}
+.modal-overlay.active { display: flex; }
+.modal {
+  background: #1e293b;
+  border: 2px solid #38bdf8;
+  border-radius: 12px;
+  padding: 30px;
+  max-width: 500px; width: 100%;
+  position: relative;
+  animation: modalIn 0.3s ease;
+}
+@keyframes modalIn {
+  from { transform: scale(0.8); opacity: 0; }
+  to { transform: scale(1); opacity: 1; }
+}
+.modal h3 { color: #38bdf8; margin-bottom: 15px; font-size: clamp(18px, 3vw, 24px); }
+.modal p { color: #cbd5e1; white-space: pre-wrap; }
+.modal-close {
+  position: absolute; top: 8px; right: 15px;
+  background: none; border: none;
+  color: #94a3b8; font-size: 26px;
+  cursor: pointer; transition: color 0.3s;
+}
+.modal-close:hover { color: #ef4444; }
+/* ===== 悬浮管理员按钮 ===== */
+.float-admin {
+  position: fixed; bottom: 25px; right: 25px;
+  width: 55px; height: 55px;
+  background: #38bdf8; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  color: #0f172a; text-decoration: none;
+  font-size: 24px;
+  box-shadow: 0 4px 15px rgba(56,189,248,0.5);
+  transition: transform 0.3s, background 0.3s;
+  z-index: 100;
+}
+.float-admin:hover { background: #0ea5e9; transform: scale(1.1) rotate(15deg); }
+/* ===== 响应式 ===== */
+@media (max-width: 600px) {
+  .status-card { flex-direction: column; align-items: flex-start; }
+}
+</style>
+<style>
+#globalLoader{position:fixed;inset:0;z-index:99999;display:flex;flex-direction:column;align-items:center;justify-content:center;background:linear-gradient(135deg,#0f172a 0%,#1e1b4b 50%,#0f172a 100%);overflow:hidden;transition:opacity .6s ease,visibility .6s ease;font-family:-apple-system,"Segoe UI","Microsoft YaHei",sans-serif}
+#globalLoader::before{content:"";position:absolute;width:600px;height:600px;border-radius:50%;background:radial-gradient(circle,rgba(51,115,255,.15) 0%,transparent 70%);top:50%;left:50%;transform:translate(-50%,-50%);animation:pulseGlow 3s ease-in-out infinite}
+#globalLoader::after{content:"";position:absolute;inset:0;background-image:linear-gradient(rgba(255,255,255,.03) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.03) 1px,transparent 1px);background-size:40px 40px;animation:gridMove 20s linear infinite}
+@keyframes pulseGlow{0%,100%{transform:translate(-50%,-50%) scale(1);opacity:.6}50%{transform:translate(-50%,-50%) scale(1.2);opacity:1}}
+@keyframes gridMove{0%{background-position:0 0}100%{background-position:40px 40px}}
+.loader-logo{position:relative;z-index:2;display:flex;align-items:center;gap:14px;margin-bottom:40px}
+.loader-logo-icon{width:48px;height:48px;border-radius:12px;background:linear-gradient(135deg,#3373ff,#8b5cf6);display:flex;align-items:center;justify-content:center;color:#fff;font-size:24px;font-weight:bold;animation:logoFloat 2s ease-in-out infinite;box-shadow:0 8px 32px rgba(51,115,255,.4)}
+.loader-logo span{font-size:32px;font-weight:800;color:#fff;letter-spacing:2px}
+@keyframes logoFloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-8px)}}
+.loader-progress-wrap{position:relative;z-index:2;width:320px;max-width:80vw}
+.loader-progress-bar{width:100%;height:6px;background:rgba(255,255,255,.1);border-radius:99px;overflow:hidden;position:relative}
+.loader-progress-fill{height:100%;width:0%;background:linear-gradient(90deg,#3373ff,#8b5cf6,#ec4899);border-radius:99px;transition:width .3s ease;position:relative;box-shadow:0 0 20px rgba(51,115,255,.6)}
+.loader-progress-fill::after{content:"";position:absolute;inset:0;background:linear-gradient(90deg,transparent,rgba(255,255,255,.4),transparent);animation:shimmer 1.5s infinite}
+@keyframes shimmer{0%{transform:translateX(-100%)}100%{transform:translateX(100%)}}
+.loader-progress-info{display:flex;justify-content:space-between;align-items:center;margin-top:14px}
+.loader-percent{font-size:24px;font-weight:700;color:#fff;font-variant-numeric:tabular-nums}
+.loader-tip{font-size:13px;color:rgba(255,255,255,.5);margin-top:24px;text-align:center;z-index:2;position:relative;min-height:20px;transition:opacity .3s}
+.loader-hide{opacity:0!important;visibility:hidden!important;pointer-events:none}
+.loader-theme-switcher{position:absolute;bottom:40px;right:40px;z-index:10;display:flex;align-items:center;gap:10px}
+.loader-theme-btn{width:52px;height:52px;border-radius:50%;border:2px solid rgba(255,255,255,.4);background:linear-gradient(135deg,rgba(51,115,255,.3),rgba(139,92,246,.3));color:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .3s;backdrop-filter:blur(10px);font-size:20px;box-shadow:0 0 20px rgba(51,115,255,.4);animation:btnPulse 2s ease-in-out infinite}
+.loader-theme-btn:hover{background:linear-gradient(135deg,rgba(51,115,255,.5),rgba(139,92,246,.5));transform:scale(1.1);box-shadow:0 0 30px rgba(51,115,255,.6)}
+@keyframes btnPulse{0%,100%{box-shadow:0 0 20px rgba(51,115,255,.4)}50%{box-shadow:0 0 35px rgba(139,92,246,.7)}}
+.loader-theme-label{color:rgba(255,255,255,.7);font-size:13px;font-weight:500;letter-spacing:1px;animation:labelFade 2s ease-in-out infinite}
+@keyframes labelFade{0%,100%{opacity:.5}50%{opacity:1}}
+.loader-theme-colors{position:absolute;bottom:60px;right:0;display:flex;gap:8px;padding:10px;border-radius:12px;background:rgba(0,0,0,.5);backdrop-filter:blur(10px);border:1px solid rgba(255,255,255,.15);opacity:0;visibility:hidden;transform:translateY(10px);transition:all .3s}
+.loader-theme-colors.show{opacity:1;visibility:visible;transform:translateY(0)}
+.loader-theme-color{width:32px;height:32px;border-radius:50%;border:2px solid rgba(255,255,255,.3);cursor:pointer;transition:all .2s;padding:0}
+.loader-theme-color:hover{transform:scale(1.2);border-color:#fff}
+.loader-theme-color.active{border-color:#fff;box-shadow:0 0 12px rgba(255,255,255,.6)}
+.loader-sun-btn{width:44px;height:44px;border-radius:50%;border:2px solid rgba(255,200,50,.6);background:linear-gradient(135deg,#ffd700,#ff8c00);color:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .3s;font-size:18px;box-shadow:0 0 15px rgba(255,200,50,.5);animation:sunSpin 4s linear infinite}
+.loader-sun-btn:hover{transform:scale(1.15);box-shadow:0 0 25px rgba(255,200,50,.8)}
+@keyframes sunSpin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}
+.loader-sun-btn:hover{animation-play-state:paused}
+/* 浅色模式 */
+#globalLoader.light-mode{background:linear-gradient(135deg,#f0f4ff 0%,#e8e0ff 50%,#f0f4ff 100%)!important}
+#globalLoader.light-mode::before{background:radial-gradient(circle,rgba(51,115,255,.1) 0%,transparent 70%)!important}
+#globalLoader.light-mode::after{background-image:linear-gradient(rgba(0,0,0,.03) 1px,transparent 1px),linear-gradient(90deg,rgba(0,0,0,.03) 1px,transparent 1px)!important}
+#globalLoader.light-mode .loader-logo span{color:#1e293b!important}
+#globalLoader.light-mode .loader-logo-icon{box-shadow:0 8px 32px rgba(51,115,255,.3)!important}
+#globalLoader.light-mode .loader-percent{color:#1e293b!important}
+#globalLoader.light-mode .loader-tip{color:rgba(0,0,0,.5)!important}
+#globalLoader.light-mode .loader-progress-info span:first-child{color:rgba(0,0,0,.4)!important}
+#globalLoader.light-mode .loader-theme-label{color:rgba(0,0,0,.6)!important}
+#globalLoader.light-mode .loader-progress-bar{background:rgba(0,0,0,.08)!important}
+#globalLoader.light-mode .loader-theme-btn{background:linear-gradient(135deg,rgba(51,115,255,.2),rgba(139,92,246,.2))!important;color:#3b3f5c!important;border-color:rgba(0,0,0,.25)!important}
+#globalLoader.light-mode .loader-theme-colors{background:rgba(255,255,255,.92)!important;border-color:rgba(0,0,0,.12)!important}
+#globalLoader.light-mode .loader-theme-color{border-color:rgba(0,0,0,.35)!important}
+</style>
+<style>
+/* 全局主题切换小太阳（固定右上角，始终可见） */
+.global-sun-btn{position:fixed;top:16px;right:16px;z-index:999999;width:42px;height:42px;border-radius:50%;border:2px solid rgba(255,200,50,.7);background:linear-gradient(135deg,#ffd700,#ff8c00);color:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:18px;box-shadow:0 2px 12px rgba(255,165,0,.5);transition:all .3s;animation:globalSunSpin 6s linear infinite;backdrop-filter:blur(4px)}
+.global-sun-btn:hover{transform:scale(1.15) rotate(15deg);box-shadow:0 4px 20px rgba(255,165,0,.8);animation-play-state:paused}
+@keyframes globalSunSpin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}
+/* 浅色模式：清晰的浅背景 + 深文字（替代 filter 反转，保证对比度） */
+html[data-theme="light"] body{background:#eef1f6;color:#1a1f36}
+html[data-theme="light"] h1,html[data-theme="light"] h2,html[data-theme="light"] h3{color:#1a1f36}
+html[data-theme="light"] p{color:#3f4a63 !important}
+html[data-theme="light"] .banner{background:linear-gradient(135deg,#eef6ff 0%,#dbeafe 50%,#bae6fd 100%)}
+html[data-theme="light"] .banner p{color:#0c4a6e}
+html[data-theme="light"] .status-card,html[data-theme="light"] .info-card{background:#ffffff;border:1px solid rgba(0,0,0,.08)}
+html[data-theme="light"] .rules-list li{color:#3f4a63}
+html[data-theme="light"] .modal{background:#ffffff}
+html[data-theme="light"] .modal h3{color:#0284c7}
+html[data-theme="light"] .modal-close{color:#64748b}
+html[data-theme="light"] footer{background:#ffffff;color:#64748b}
+</style>
+<script src="../../assets/js/blog-storage.js"></script>
+</head>
+<body>
+
+<button class="global-sun-btn" id="globalSunBtn" title="切换深色/浅色模式">☀️</button>
+
+<div id="globalLoader">
+  <div class="loader-logo">
+    <div class="loader-logo-icon">◆</div>
+    <span>我的山头</span>
+  </div>
+  <div class="loader-progress-wrap">
+    <div class="loader-progress-bar"><div class="loader-progress-fill" id="loaderFill"></div></div>
+    <div class="loader-progress-info">
+      <span style="color:rgba(255,255,255,.4);font-size:12px;">正在加载资源</span>
+      <span class="loader-percent" id="loaderPercent">0%</span>
+    </div>
+  </div>
+  <div class="loader-tip" id="loaderTip">正在初始化引擎...</div>
+  <div class="loader-theme-switcher">
+    <button class="loader-sun-btn" id="loaderSunBtn" title="切换浅色模式">☀️</button>
+    <span class="loader-theme-label">切换主题</span>
+    <button class="loader-theme-btn" id="loaderThemeBtn" title="切换背景色">🎨</button>
+    <div class="loader-theme-colors" id="loaderThemeColors">
+      <button class="loader-theme-color active" data-theme="deepspace" style="background:linear-gradient(135deg,#0f172a,#1e1b4b)" title="深空蓝"></button>
+      <button class="loader-theme-color" data-theme="aurora" style="background:linear-gradient(135deg,#064e3b,#134e4a)" title="极光绿"></button>
+      <button class="loader-theme-color" data-theme="sunset" style="background:linear-gradient(135deg,#7c2d12,#9a3412)" title="落日橙"></button>
+      <button class="loader-theme-color" data-theme="sakura" style="background:linear-gradient(135deg,#831843,#9d174d)" title="樱花粉"></button>
+      <button class="loader-theme-color" data-theme="royal" style="background:linear-gradient(135deg,#2e1065,#4c1d95)" title="皇家紫"></button>
+      <button class="loader-theme-color" data-theme="ocean" style="background:linear-gradient(135deg,#0c4a6e,#075985)" title="海洋蓝"></button>
+    </div>
+  </div>
+</div>
+
+<!-- ① 顶部渐变横幅 -->
+<header class="banner">
+  <h1>我的山头</h1>
+  <p>Java我的世界服务器</p>
+</header>
+
+<!-- ② 服务器状态模块 -->
+<section>
+  <div class="container">
+    <div class="status-card">
+      <div class="status-indicator">
+        <span class="status-dot" id="statusDot"></span>
+        <span id="statusText">检测中...</span>
+      </div>
+      <div>在线人数：<span class="player-count" id="playerCount">- / -</span></div>
+    </div>
+  </div>
+</section>
+
+<!-- ③ 服务器介绍 -->
+<section>
+  <div class="container">
+    <h2>服务器介绍</h2>
+    <p style="color:#cbd5e1;">欢迎来到「我的山头」！这是一个以原版生存为核心的 Java 版我的世界服务器，主打纯净、稳定、长开的游戏体验。无论你是建筑党、红石党还是探险党，都能在这里找到属于自己的乐趣。我们采用高性能服务器硬件，确保低延迟、高帧率的流畅联机体验。</p>
+  </div>
+</section>
+
+<!-- ④ 游玩规则 -->
+<section>
+  <div class="container">
+    <h2>游玩规则</h2>
+    <ul class="rules-list">
+      <li>禁止使用任何外挂、作弊客户端及自动化脚本。</li>
+      <li>禁止恶意破坏他人建筑与公共设施（违规封号处理）。</li>
+      <li>禁止刷屏、辱骂、广告等扰乱服务器秩序的行为。</li>
+      <li>请勿利用游戏漏洞获利，发现漏洞请及时反馈管理员。</li>
+      <li>尊重每一位玩家，共建友好和谐的游戏环境。</li>
+    </ul>
+  </div>
+</section>
+
+<!-- ⑤ 联机信息卡片 -->
+<section>
+  <div class="container">
+    <h2>联机信息</h2>
+    <div class="card-grid">
+      <div class="info-card">
+        <h3>游戏版本</h3>
+        <p id="cfgVersion">加载中...</p>
+      </div>
+      <div class="info-card">
+        <h3>服务器IP</h3>
+        <p><span id="cfgIP">加载中...</span><button class="btn copy-btn" onclick="copyText('cfgIP')">复制</button></p>
+      </div>
+      <div class="info-card">
+        <h3>端口</h3>
+        <p id="cfgPort">加载中...</p>
+      </div>
+      <div class="info-card">
+        <h3>QQ交流群</h3>
+        <p><span id="cfgQQ">加载中...</span><button class="btn copy-btn" onclick="copyText('cfgQQ')">复制</button></p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ⑥ 底部版权 -->
+<footer>
+  <p>© 2026 我的山头 Java我的世界服务器 · 保留所有权利</p>
+  <p>本网站与 Mojang/Microsoft 无关，Minecraft 版权归 Mojang 所有</p>
+</footer>
+
+<!-- ⑦ 公告弹窗 -->
+<div class="modal-overlay" id="modalOverlay">
+  <div class="modal">
+    <button class="modal-close" onclick="closeModal()" aria-label="关闭">×</button>
+    <h3>📢 服务器公告</h3>
+    <p id="announcementText">暂无公告</p>
+  </div>
+</div>
+
+<!-- ⑧ 右下角悬浮按钮：管理员后台入口 -->
+<a href="admin-login.html" class="float-admin" title="管理员后台">⚙</a>
+
+<script>
+/* ===================================================================
+ * 配置读取（localStorage）
+ * 配置由后台 admin-index.html 写入，前台只读取展示。
+ * =================================================================== */
+
+/* 默认配置：首次访问（后台未保存过）时使用 */
+const DEFAULT_CONFIG = {
+  gameVersion: "1.21.1",
+  serverIP: "play.mymchill.com",   // 【预留】在此填写服务器外网IP/域名
+  serverPort: "25565",             // 【预留】在此填写服务器端口（默认25565）
+  qqGroup: "123456789",            // 【预留】在此填写QQ交流群号
+  announcement: "欢迎来到我的山头服务器！\n请先阅读游玩规则，遵守服务器秩序。\n祝您游戏愉快！"
+};
+
+/* 读取配置：优先 localStorage，否则使用默认值 */
+function loadConfig() {
+  try {
+    const saved = BS.get("mc_server_config");
+    if (saved) return Object.assign({}, DEFAULT_CONFIG, JSON.parse(saved));
+  } catch (e) { console.warn("配置读取失败", e); }
+  return DEFAULT_CONFIG;
+}
+
+const config = loadConfig();
+
+/* 将配置渲染到联机信息卡片 */
+document.getElementById("cfgVersion").textContent = config.gameVersion;
+document.getElementById("cfgIP").textContent = config.serverIP;
+document.getElementById("cfgPort").textContent = config.serverPort;
+document.getElementById("cfgQQ").textContent = config.qqGroup;
+document.getElementById("announcementText").textContent = config.announcement;
+
+/* ===================================================================
+ * 公告弹窗：页面加载后自动弹出
+ * =================================================================== */
+window.addEventListener("load", function () {
+  setTimeout(function () {
+    document.getElementById("modalOverlay").classList.add("active");
+  }, 500);
+});
+function closeModal() {
+  document.getElementById("modalOverlay").classList.remove("active");
+}
+/* 点击遮罩区域关闭弹窗 */
+document.getElementById("modalOverlay").addEventListener("click", function (e) {
+  if (e.target === this) closeModal();
+});
+
+/* ===================================================================
+ * 复制功能（兼容旧浏览器）
+ * =================================================================== */
+function copyText(elementId) {
+  const text = document.getElementById(elementId).textContent.trim();
+  if (navigator.clipboard) {
+    navigator.clipboard.writeText(text);
+  } else {
+    const ta = document.createElement("textarea");
+    ta.value = text;
+    document.body.appendChild(ta);
+    ta.select();
+    document.execCommand("copy");
+    document.body.removeChild(ta);
+  }
+  alert("已复制：" + text);
+}
+
+/* ===================================================================
+ * 服务器状态查询（mcsrvstat.us API，60秒自动刷新）
+ * 在线人数由接口实时返回，后台无需填写。
+ * =================================================================== */
+const SERVER_ADDR = (config.serverPort === "25565" || !config.serverPort)
+  ? config.serverIP
+  : config.serverIP + ":" + config.serverPort;
+
+function fetchStatus() {
+  const dot = document.getElementById("statusDot");
+  const text = document.getElementById("statusText");
+  const count = document.getElementById("playerCount");
+
+  fetch("https://api.mcsrvstat.us/2/" + SERVER_ADDR)
+    .then(function (r) { return r.json(); })
+    .then(function (data) {
+      if (data.online) {
+        dot.classList.add("online");
+        text.textContent = "服务器在线";
+        text.style.color = "#22c55e";
+        count.textContent = data.players.online + " / " + data.players.max;
+      } else {
+        dot.classList.remove("online");
+        text.textContent = "服务器离线";
+        text.style.color = "#ef4444";
+        count.textContent = "0 / 0";
+      }
+    })
+    .catch(function () {
+      dot.classList.remove("online");
+      text.textContent = "状态获取失败";
+      text.style.color = "#ef4444";
+      count.textContent = "0 / 0";
+    });
+}
+
+/* 首次查询 + 每 60 秒自动刷新 */
+fetchStatus();
+setInterval(fetchStatus, 60000);
+</script>
+<style>
+.back-to-blog{position:fixed;top:14px;left:14px;z-index:99999;background:rgba(26,26,46,.85);color:#fff;padding:7px 14px;border-radius:8px;text-decoration:none;font-size:12.5px;font-weight:600;font-family:-apple-system,'Segoe UI','Microsoft YaHei',sans-serif;backdrop-filter:blur(8px);box-shadow:0 4px 14px rgba(0,0,0,.3);transition:all .2s;display:inline-flex;align-items:center;gap:4px}
+.back-to-blog:hover{background:rgba(91,108,255,.92);transform:translateY(-1px);box-shadow:0 6px 18px rgba(91,108,255,.45)}
+</style>
+<a href="../../index.html" class="back-to-blog">← 返回博客</a>
+<script>
+(function(){
+  var fill=document.getElementById("loaderFill");
+  var percentEl=document.getElementById("loaderPercent");
+  var tipEl=document.getElementById("loaderTip");
+  var progress=0,timer=null;
+  var tips=["正在初始化引擎...","正在加载核心模块...","正在连接数据服务...","正在渲染界面组件...","即将完成，请稍候..."];
+  var tipIndex=0;
+  function setProgress(p){progress=Math.min(100,Math.max(0,p));if(fill)fill.style.width=progress+"%";if(percentEl)percentEl.textContent=Math.floor(progress)+"%";}
+  function nextTip(){tipIndex=(tipIndex+1)%tips.length;if(tipEl){tipEl.style.opacity="0";setTimeout(function(){tipEl.textContent=tips[tipIndex];tipEl.style.opacity="1";},300);}}
+  function simulate(){
+    if(progress>=92)return;
+    var inc=progress<30?Math.random()*8+4:progress<60?Math.random()*5+2:Math.random()*2+0.5;
+    setProgress(progress+inc);
+    if(Math.floor(progress/20)!==tipIndex&&progress<90)nextTip();
+    timer=setTimeout(simulate,200+Math.random()*300);
+  }
+  window.__loaderComplete=function(){
+    if(timer)clearTimeout(timer);
+    setProgress(100);
+    if(tipEl)tipEl.textContent="加载完成！";
+    setTimeout(function(){
+      var loader=document.getElementById("globalLoader");
+      if(loader)loader.classList.add("loader-hide");
+      setTimeout(function(){if(loader)loader.style.display="none";},600);
+    },400);
+  };
+  setTimeout(function(){if(progress<100)window.__loaderComplete();},6000);
+  simulate();
+  var themes={deepspace:"linear-gradient(135deg,#0f172a 0%,#1e1b4b 50%,#0f172a 100%)",aurora:"linear-gradient(135deg,#064e3b 0%,#134e4a 50%,#064e3b 100%)",sunset:"linear-gradient(135deg,#7c2d12 0%,#9a3412 50%,#7c2d12 100%)",sakura:"linear-gradient(135deg,#831843 0%,#9d174d 50%,#831843 100%)",royal:"linear-gradient(135deg,#2e1065 0%,#4c1d95 50%,#2e1065 100%)",ocean:"linear-gradient(135deg,#0c4a6e 0%,#075985 50%,#0c4a6e 100%)"};
+  var savedTheme=localStorage.getItem("loaderTheme")||"deepspace";
+  var loaderEl=document.getElementById("globalLoader");
+  if(loaderEl&&themes[savedTheme])loaderEl.style.background=themes[savedTheme];
+  var themeBtn=document.getElementById("loaderThemeBtn");
+  var themeColors=document.getElementById("loaderThemeColors");
+  if(themeBtn&&themeColors){
+    themeBtn.addEventListener("click",function(e){e.stopPropagation();themeColors.classList.toggle("show");});
+    document.addEventListener("click",function(){themeColors.classList.remove("show");});
+    var colorBtns=themeColors.querySelectorAll(".loader-theme-color");
+    colorBtns.forEach(function(btn){
+      if(btn.dataset.theme===savedTheme)btn.classList.add("active");else btn.classList.remove("active");
+      btn.addEventListener("click",function(e){
+        e.stopPropagation();
+        var t=btn.dataset.theme;
+        if(loaderEl&&themes[t])loaderEl.style.background=themes[t];
+        localStorage.setItem("loaderTheme",t);
+        colorBtns.forEach(function(b){b.classList.remove("active");});
+        btn.classList.add("active");
+      });
+    });
+  }
+  /* ===== 小太阳浅色模式切换 ===== */
+  var sunBtn=document.getElementById("loaderSunBtn");
+  var savedLight=localStorage.getItem("loaderLight")==="true";
+  if(savedLight&&loaderEl)loaderEl.classList.add("light-mode");
+  if(sunBtn){
+    sunBtn.addEventListener("click",function(e){
+      e.stopPropagation();
+      var isLight=loaderEl.classList.toggle("light-mode");
+      localStorage.setItem("loaderLight",isLight?"true":"false");
+    });
+  }
+  window.addEventListener("load",function(){setTimeout(function(){if(window.__loaderComplete)window.__loaderComplete();},800);});
+})();
+</script>
+<script>
+(function(){
+  var html=document.documentElement;
+  var btn=document.getElementById("globalSunBtn");
+  function setTheme(t){ html.setAttribute("data-theme", t); }
+  var saved=localStorage.getItem("globalTheme");
+  if(saved==="light"||saved==="dark"){ setTheme(saved); }
+  else { setTheme(window.matchMedia("(prefers-color-scheme: light)").matches ? "light":"dark"); }
+  if(btn)btn.addEventListener("click",function(e){
+    e.stopPropagation();
+    var cur=(html.getAttribute("data-theme")==="light")?"light":"dark";
+    var next=cur==="light"?"dark":"light";
+    setTheme(next);
+    localStorage.setItem("globalTheme", next);
+  });
+})();
+</script>
+<!-- sun-drag -->
+<style>
+.global-sun-btn{cursor:grab;touch-action:none;-webkit-user-select:none;user-select:none}
+.global-sun-btn.dragging{cursor:grabbing;transition:none!important;animation-play-state:paused!important;box-shadow:0 8px 24px rgba(255,165,0,.85)!important}
+</style>
+<script>
+(function(){
+  var btn=document.getElementById("globalSunBtn");
+  if(!btn)return;
+  btn.title="切换主题 · 按住可拖动位置";
+  var KEY="globalSunPos",x=null,y=null;
+  try{var s=localStorage.getItem(KEY);if(s){var p=JSON.parse(s);if(typeof p.x==="number"&&typeof p.y==="number"){x=p.x;y=p.y;}}}catch(e){}
+  function clamp(){var w=btn.offsetWidth||42,h=btn.offsetHeight||42;x=Math.max(0,Math.min(x,window.innerWidth-w));y=Math.max(0,Math.min(y,window.innerHeight-h));}
+  function render(noAnim){if(x===null||y===null)return;clamp();if(noAnim)btn.style.transition="none";btn.style.left=x+"px";btn.style.top=y+"px";btn.style.right="auto";btn.style.bottom="auto";if(noAnim)requestAnimationFrame(function(){btn.style.transition="";});}
+  render(true);
+  window.addEventListener("resize",function(){if(x!==null&&y!==null)render(false);});
+  var dragging=false,moved=false,sx=0,sy=0,ox=0,oy=0;
+  btn.addEventListener("pointerdown",function(e){dragging=true;moved=false;if(btn.setPointerCapture)btn.setPointerCapture(e.pointerId);btn.classList.add("dragging");sx=e.clientX;sy=e.clientY;var r=btn.getBoundingClientRect();ox=r.left;oy=r.top;x=ox;y=oy;});
+  btn.addEventListener("pointermove",function(e){if(!dragging)return;var dx=e.clientX-sx,dy=e.clientY-sy;if(Math.abs(dx)>4||Math.abs(dy)>4)moved=true;x=ox+dx;y=oy+dy;render(false);});
+  function end(){if(!dragging)return;dragging=false;btn.classList.remove("dragging");try{localStorage.setItem(KEY,JSON.stringify({x:x,y:y}));}catch(e){}}
+  btn.addEventListener("pointerup",end);
+  btn.addEventListener("pointercancel",end);
+  btn.addEventListener("click",function(e){if(moved){e.stopPropagation();e.preventDefault();moved=false;}},true);
+})();
+</script>
+</body>
+</html>

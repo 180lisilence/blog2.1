@@ -1,0 +1,799 @@
+﻿<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>登录 · 项目中心</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+      min-height: 100vh;
+      display: flex;
+      background: #fff;
+    }
+
+    /* ========== 左侧品牌区 ========== */
+    .brand-panel {
+      flex: 1.1;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      padding: 60px 56px;
+      overflow: hidden;
+      min-height: 100vh;
+    }
+    .brand-panel::before {
+      content: '';
+      position: absolute;
+      width: 500px; height: 500px;
+      border-radius: 50%;
+      background: rgba(255,255,255,.06);
+      top: -120px; right: -120px;
+    }
+    .brand-panel::after {
+      content: '';
+      position: absolute;
+      width: 360px; height: 360px;
+      border-radius: 50%;
+      background: rgba(255,255,255,.05);
+      bottom: -80px; left: -80px;
+    }
+    .brand-logo {
+      width: 64px; height: 64px;
+      border-radius: 18px;
+      background: rgba(255,255,255,.18);
+      backdrop-filter: blur(10px);
+      display: flex; align-items: center; justify-content: center;
+      color: #fff; font-size: 28px; font-weight: 700;
+      margin-bottom: 32px;
+      position: relative; z-index: 1;
+    }
+    .brand-title {
+      font-size: 36px; font-weight: 700; color: #fff;
+      line-height: 1.3; margin-bottom: 16px;
+      position: relative; z-index: 1;
+    }
+    .brand-sub {
+      font-size: 16px; color: rgba(255,255,255,.8);
+      line-height: 1.8; margin-bottom: 40px;
+      position: relative; z-index: 1;
+    }
+    .brand-features {
+      display: flex; flex-direction: column; gap: 14px;
+      position: relative; z-index: 1;
+    }
+    .feature-item {
+      display: flex; align-items: center; gap: 12px;
+      color: rgba(255,255,255,.9); font-size: 14px;
+    }
+    .feature-icon {
+      width: 32px; height: 32px; border-radius: 8px;
+      background: rgba(255,255,255,.15);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 16px;
+    }
+    .brand-footer {
+      position: absolute; bottom: 32px; left: 56px;
+      font-size: 12px; color: rgba(255,255,255,.5);
+      z-index: 1;
+    }
+
+    /* ========== 右侧登录区 ========== */
+    .login-panel {
+      flex: 1;
+      display: flex; align-items: center; justify-content: center;
+      padding: 40px;
+      background: #fff;
+      min-height: 100vh;
+    }
+    .login-box {
+      width: 100%; max-width: 400px;
+    }
+    .login-header {
+      margin-bottom: 32px;
+    }
+    .login-header h2 {
+      font-size: 26px; font-weight: 700; color: #1f2937;
+      margin-bottom: 8px;
+    }
+    .login-header p {
+      font-size: 14px; color: #9ca3af;
+    }
+
+    /* Tab 切换 */
+    .tabs {
+      display: flex; gap: 0;
+      border-bottom: 2px solid #f3f4f6;
+      margin-bottom: 28px;
+    }
+    .tab {
+      flex: 1;
+      padding: 12px 0;
+      text-align: center;
+      font-size: 15px; font-weight: 600;
+      color: #9ca3af;
+      cursor: pointer;
+      border-bottom: 2px solid transparent;
+      margin-bottom: -2px;
+      transition: all .2s;
+      background: none; border-top: none; border-left: none; border-right: none;
+    }
+    .tab.active {
+      color: #667eea;
+      border-bottom-color: #667eea;
+    }
+    .tab:hover:not(.active) {
+      color: #4b5563;
+    }
+
+    /* 表单 */
+    .form-group {
+      margin-bottom: 18px;
+    }
+    .form-group label {
+      display: block;
+      font-size: 13px; font-weight: 600; color: #374151;
+      margin-bottom: 8px;
+    }
+    .form-group input {
+      width: 100%;
+      padding: 12px 14px;
+      border: 1px solid #d1d5db;
+      border-radius: 10px;
+      font-size: 14px;
+      outline: none;
+      transition: all .2s;
+      box-sizing: border-box;
+    }
+    .form-group input:focus {
+      border-color: #667eea;
+      box-shadow: 0 0 0 3px rgba(102,126,234,.1);
+    }
+    .btn-primary {
+      width: 100%;
+      padding: 13px;
+      border: none;
+      border-radius: 10px;
+      background: linear-gradient(135deg, #667eea, #764ba2);
+      color: #fff;
+      font-size: 15px; font-weight: 600;
+      cursor: pointer;
+      transition: opacity .2s;
+      margin-top: 8px;
+    }
+    .btn-primary:hover { opacity: .9; }
+    .btn-primary:disabled { opacity: .5; cursor: not-allowed; }
+
+    .form-footer {
+      text-align: center;
+      margin-top: 20px;
+      font-size: 13px; color: #9ca3af;
+    }
+    .form-footer a {
+      color: #667eea; text-decoration: none; font-weight: 600;
+    }
+    .form-footer a:hover { text-decoration: underline; }
+
+    .error-msg {
+      color: #ef4444; font-size: 12px;
+      min-height: 18px; margin-top: 6px;
+      text-align: left;
+    }
+    .success-msg {
+      color: #10b981; font-size: 12px;
+      min-height: 18px; margin-top: 6px;
+      text-align: left;
+    }
+
+    /* 二维码区域 */
+    .qr-section {
+      text-align: center;
+    }
+    .qr-wrap {
+      width: 220px; height: 220px;
+      margin: 0 auto 20px;
+      border-radius: 16px;
+      padding: 10px;
+      background: #fff;
+      border: 1px solid #e5e7eb;
+      box-shadow: 0 4px 16px rgba(0,0,0,.06);
+      position: relative;
+    }
+    #qrImg { width: 100%; height: 100%; border-radius: 8px; display: block; }
+    .qr-mask {
+      position: absolute; inset: 10px;
+      border-radius: 8px;
+      background: rgba(255,255,255,.94);
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      gap: 8px; font-size: 13px; color: #4b5563;
+      opacity: 0; pointer-events: none;
+      transition: opacity .25s;
+    }
+    .qr-mask.show { opacity: 1; }
+    .qr-status {
+      display: flex; align-items: center; justify-content: center;
+      gap: 8px; font-size: 14px; color: #374151;
+      margin-bottom: 8px; min-height: 24px;
+    }
+    .dot { width: 8px; height: 8px; border-radius: 50%; background: #9ca3af; }
+    .dot.pending { background: #f59e0b; animation: pulse 1.2s infinite; }
+    .dot.scanned { background: #3b82f6; animation: pulse 1.2s infinite; }
+    .dot.confirmed { background: #10b981; }
+    .dot.expired, .dot.invalid { background: #ef4444; }
+    @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: .3; } }
+    .qr-countdown { font-size: 12px; color: #9ca3af; }
+
+    .qr-steps {
+      display: flex; justify-content: center; gap: 16px;
+      margin-top: 20px; font-size: 12px; color: #9ca3af;
+    }
+    .qr-step { display: flex; align-items: center; gap: 5px; }
+    .qr-step i {
+      width: 18px; height: 18px; border-radius: 50%;
+      background: #e5e7eb; color: #fff;
+      font-style: normal; font-size: 11px; line-height: 18px;
+      text-align: center;
+    }
+    .qr-step.active i { background: #667eea; }
+    .qr-step.done i { background: #10b981; }
+
+    /* 访客入口 */
+    .guest-entry {
+      margin-top: 28px;
+      padding-top: 20px;
+      border-top: 1px solid #f3f4f6;
+      text-align: center;
+    }
+    .guest-btn {
+      width: 100%;
+      padding: 11px;
+      border: 1px dashed #d1d5db;
+      border-radius: 10px;
+      background: #fff;
+      color: #9ca3af;
+      font-size: 13px;
+      cursor: pointer;
+      transition: all .2s;
+    }
+    .guest-btn:hover {
+      color: #667eea; border-color: #667eea; background: #f5f7ff;
+    }
+
+    /* 已登录提示 */
+    .logged-in-bar {
+      margin-bottom: 24px;
+      padding: 14px 16px;
+      border-radius: 12px;
+      background: #ecfdf5;
+      color: #047857;
+      font-size: 14px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+    }
+    .logged-in-bar .actions {
+      display: flex; gap: 8px;
+    }
+    .logged-in-bar button {
+      padding: 6px 14px;
+      border-radius: 8px;
+      font-size: 12px;
+      cursor: pointer;
+      border: none;
+    }
+    .btn-go { background: #10b981; color: #fff; }
+    .btn-switch { background: #fff; color: #374151; border: 1px solid #d1d5db !important; }
+
+    /* 滑块验证 */
+    .slider-captcha {
+      margin: 0 0 12px 0;
+      user-select: none;
+    }
+    .slider-track {
+      position: relative;
+      width: 100%;
+      height: 40px;
+      background: #f3f4f6;
+      border: 1px solid #e5e7eb;
+      border-radius: 8px;
+      overflow: hidden;
+    }
+    .slider-fill {
+      position: absolute;
+      left: 0;
+      top: 0;
+      height: 100%;
+      width: 0;
+      background: linear-gradient(90deg, #a5b4fc, #667eea);
+      transition: width 0.1s;
+    }
+    .slider-text {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 13px;
+      color: #9ca3af;
+      pointer-events: none;
+      z-index: 1;
+    }
+    .slider-handle {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 40px;
+      height: 100%;
+      background: #fff;
+      border: 1px solid #d1d5db;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: grab;
+      font-size: 16px;
+      color: #667eea;
+      z-index: 2;
+      transition: background 0.2s;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    }
+    .slider-handle:hover { background: #f9fafb; }
+    .slider-handle:active { cursor: grabbing; }
+    .slider-captcha.verified .slider-track { border-color: #10b981; }
+    .slider-captcha.verified .slider-fill { background: linear-gradient(90deg, #6ee7b7, #10b981); }
+    .slider-captcha.verified .slider-text { color: #fff; font-weight: 600; }
+    .slider-captcha.verified .slider-handle { color: #10b981; border-color: #10b981; }
+
+    /* 响应式 */
+    @media (max-width: 860px) {
+      .brand-panel { display: none; }
+      .login-panel { flex: 1; padding: 24px; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- 左侧品牌区 -->
+<div class="brand-panel">
+  <div class="brand-logo">M</div>
+  <h1 class="brand-title">项目中心<br>一站式项目管理平台</h1>
+  <p class="brand-sub">汇聚所有项目，一键直达。<br>支持扫码登录、账号密码登录，安全便捷。</p>
+  <div class="brand-features">
+    <div class="feature-item"><div class="feature-icon">🚀</div><span>多项目集中管理，快速切换</span></div>
+    <div class="feature-item"><div class="feature-icon">🔐</div><span>安全登录，7天免登录</span></div>
+    <div class="feature-item"><div class="feature-icon">📱</div><span>手机扫码，电脑端确认</span></div>
+    <div class="feature-item"><div class="feature-icon">➕</div><span>支持自定义项目导入</span></div>
+  </div>
+  <div class="brand-footer">© 2026 项目中心 · 保留所有权利</div>
+</div>
+
+<!-- 右侧登录区 -->
+<div class="login-panel">
+  <div class="login-box">
+    <div class="login-header">
+      <h2 id="panelTitle">欢迎登录</h2>
+      <p id="panelSub">登录后进入项目中心，管理你的所有项目</p>
+    </div>
+
+    <!-- Tab 切换 -->
+    <div class="tabs" id="tabs">
+      <button class="tab active" data-tab="password" onclick="switchTab('password')">账号登录</button>
+      <button class="tab" data-tab="qrcode" onclick="switchTab('qrcode')">扫码登录</button>
+    </div>
+
+    <!-- 账号登录表单 -->
+    <div id="passwordPane">
+      <div id="loginForm">
+        <div class="form-group">
+          <label>账号</label>
+          <input type="text" id="pwdUser" placeholder="请输入账号" autocomplete="username">
+        </div>
+        <div class="form-group">
+          <label>密码</label>
+          <input type="password" id="pwdPass" placeholder="请输入密码" autocomplete="current-password">
+        </div>
+        <!-- 滑块验证 -->
+        <div class="slider-captcha" id="sliderCaptcha">
+          <div class="slider-track">
+            <div class="slider-fill" id="sliderFill"></div>
+            <div class="slider-text" id="sliderText">按住滑块，拖动到最右边</div>
+            <div class="slider-handle" id="sliderHandle">→</div>
+          </div>
+        </div>
+        <div class="error-msg" id="pwdError"></div>
+        <button class="btn-primary" id="pwdLoginBtn" onclick="pwdLogin()">登 录</button>
+        <div class="form-footer">还没有账号？<a href="javascript:void(0)" onclick="showRegister()">立即注册</a></div>
+      </div>
+
+      <!-- 注册表单 -->
+      <div id="registerForm" style="display:none">
+        <div class="form-group">
+          <label>设置账号</label>
+          <input type="text" id="regUser" placeholder="2-20位字母、数字或中文" autocomplete="username">
+        </div>
+        <div class="form-group">
+          <label>设置密码</label>
+          <input type="password" id="regPass" placeholder="6-32位密码" autocomplete="new-password">
+        </div>
+        <div class="form-group">
+          <label>确认密码</label>
+          <input type="password" id="regPass2" placeholder="再次输入密码" autocomplete="new-password">
+        </div>
+        <div class="error-msg" id="regError"></div>
+        <button class="btn-primary" id="regBtn" onclick="doRegister()">注 册</button>
+        <div class="form-footer">已有账号？<a href="javascript:void(0)" onclick="showLogin()">返回登录</a></div>
+      </div>
+    </div>
+
+    <!-- 扫码登录 -->
+    <div id="qrcodePane" style="display:none">
+      <div class="qr-section">
+        <div class="qr-wrap">
+          <img id="qrImg" alt="二维码" />
+          <div class="qr-mask" id="qrMask">
+            <div style="font-size:36px" id="maskIcon">✅</div>
+            <div id="maskText">登录成功</div>
+          </div>
+        </div>
+        <div class="qr-status">
+          <span class="dot" id="dot"></span>
+          <span id="tip">正在加载二维码...</span>
+        </div>
+        <div class="qr-countdown" id="countdown"></div>
+        <div class="qr-steps" id="steps">
+          <div class="qr-step" id="st1"><i>1</i> 扫码</div>
+          <div class="qr-step" id="st2"><i>2</i> 手机确认</div>
+          <div class="qr-step" id="st3"><i>3</i> 进入系统</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 访客入口 -->
+    <div class="guest-entry">
+      <button class="guest-btn" onclick="guestEnter()" title="无法启动后台服务时，跳过登录直接进入博客">
+        ⚡ 无法连接服务？点此直接进入博客
+      </button>
+    </div>
+  </div>
+</div>
+
+<script>
+  let qid = null;
+  let pollTimer = null;
+  let countdownTimer = null;
+  let expireAt = 0;
+  let currentTab = 'password';
+
+  // ========== CSRF 工具 ==========
+  function getCsrfToken() {
+    const match = document.cookie.match(/(?:^|; )csrf_token=([^;]+)/);
+    return match ? decodeURIComponent(match[1]) : null;
+  }
+  // 带 CSRF token 的 fetch 封装
+  async function apiFetch(url, options = {}) {
+    const method = (options.method || "GET").toUpperCase();
+    if (method !== "GET" && method !== "HEAD") {
+      options.headers = options.headers || {};
+      options.headers["X-CSRF-Token"] = getCsrfToken();
+    }
+    return fetch(url, options);
+  }
+
+  // Tab 切换
+  function switchTab(tab) {
+    currentTab = tab;
+    document.querySelectorAll('.tab').forEach(t => t.classList.toggle('active', t.dataset.tab === tab));
+    document.getElementById('passwordPane').style.display = tab === 'password' ? 'block' : 'none';
+    document.getElementById('qrcodePane').style.display = tab === 'qrcode' ? 'block' : 'none';
+    if (tab === 'qrcode' && !qid) initQr();
+  }
+
+  // ========== 滑块验证 ==========
+  let sliderVerified = false;
+  let sliderDragging = false;
+  let sliderStartX = 0;
+  let sliderLeft = 0;
+
+  function initSlider() {
+    const track = document.getElementById('sliderCaptcha');
+    const handle = document.getElementById('sliderHandle');
+    const fill = document.getElementById('sliderFill');
+    const text = document.getElementById('sliderText');
+    if (!track || !handle) return;
+
+    // 初始状态：禁用登录按钮
+    sliderVerified = false;
+    updateLoginBtn();
+
+    const onStart = (clientX) => {
+      if (sliderVerified) return;
+      sliderDragging = true;
+      sliderStartX = clientX;
+      sliderLeft = handle.offsetLeft;
+      handle.style.transition = 'none';
+      fill.style.transition = 'none';
+    };
+
+    const onMove = (clientX) => {
+      if (!sliderDragging || sliderVerified) return;
+      const trackWidth = track.querySelector('.slider-track').offsetWidth;
+      const handleWidth = handle.offsetWidth;
+      let newLeft = sliderLeft + (clientX - sliderStartX);
+      const maxLeft = trackWidth - handleWidth;
+      if (newLeft < 0) newLeft = 0;
+      if (newLeft > maxLeft) newLeft = maxLeft;
+      handle.style.left = newLeft + 'px';
+      fill.style.width = (newLeft + handleWidth) + 'px';
+      // 到达终点，验证成功
+      if (newLeft >= maxLeft - 2) {
+        sliderVerified = true;
+        sliderDragging = false;
+        track.classList.add('verified');
+        text.textContent = '✓ 验证成功';
+        handle.style.cursor = 'default';
+        updateLoginBtn();
+      }
+    };
+
+    const onEnd = () => {
+      if (!sliderDragging || sliderVerified) return;
+      sliderDragging = false;
+      // 未到终点，回弹
+      handle.style.transition = 'left 0.3s';
+      fill.style.transition = 'width 0.3s';
+      handle.style.left = '0px';
+      fill.style.width = '0px';
+    };
+
+    // 鼠标事件
+    handle.addEventListener('mousedown', (e) => { e.preventDefault(); onStart(e.clientX); });
+    document.addEventListener('mousemove', (e) => onMove(e.clientX));
+    document.addEventListener('mouseup', onEnd);
+    // 触摸事件
+    handle.addEventListener('touchstart', (e) => { onStart(e.touches[0].clientX); }, { passive: true });
+    document.addEventListener('touchmove', (e) => onMove(e.touches[0].clientX), { passive: true });
+    document.addEventListener('touchend', onEnd);
+  }
+
+  function resetSlider() {
+    const track = document.getElementById('sliderCaptcha');
+    const handle = document.getElementById('sliderHandle');
+    const fill = document.getElementById('sliderFill');
+    const text = document.getElementById('sliderText');
+    if (!track) return;
+    sliderVerified = false;
+    sliderDragging = false;
+    track.classList.remove('verified');
+    text.textContent = '按住滑块，拖动到最右边';
+    handle.style.left = '0px';
+    fill.style.width = '0px';
+    handle.style.cursor = 'grab';
+    handle.style.transition = 'left 0.3s';
+    fill.style.transition = 'width 0.3s';
+    updateLoginBtn();
+  }
+
+  function updateLoginBtn() {
+    const btn = document.getElementById('pwdLoginBtn');
+    if (btn) {
+      btn.disabled = !sliderVerified;
+      btn.style.opacity = sliderVerified ? '1' : '0.5';
+      btn.style.cursor = sliderVerified ? 'pointer' : 'not-allowed';
+    }
+  }
+
+  // 访客模式
+  function guestEnter() {
+    try { document.cookie = "web_guest=1; path=/; max-age=604800; SameSite=Lax"; } catch (e) {}
+    location.href = "blog/index.html";
+  }
+
+  // 账号密码登录
+  async function pwdLogin() {
+    const btn = document.getElementById("pwdLoginBtn");
+    const err = document.getElementById("pwdError");
+    const u = document.getElementById("pwdUser").value.trim();
+    const p = document.getElementById("pwdPass").value;
+    err.textContent = "";
+    err.className = "error-msg";
+    if (!u || !p) { err.textContent = "请输入账号和密码"; return; }
+    if (!sliderVerified) { err.textContent = "请先完成滑块验证"; return; }
+    btn.disabled = true; btn.textContent = "登录中...";
+    try {
+      const r = await apiFetch("/api/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ username: u, password: p })
+      });
+      const d = await r.json();
+      if (d.ok) {
+        document.cookie = "web_token=" + encodeURIComponent(d.webToken) + "; path=/; max-age=604800; SameSite=Lax";
+        err.className = "success-msg";
+        err.textContent = "✅ 登录成功，正在进入系统...";
+        setTimeout(() => { location.href = "/blog/"; }, 600);
+      } else {
+        err.textContent = d.msg || "登录失败";
+        btn.disabled = false; btn.textContent = "登 录";
+      }
+    } catch (e) {
+      err.textContent = "网络错误，请检查服务是否启动";
+      btn.disabled = false; btn.textContent = "登 录";
+    }
+  }
+
+  // 注册
+  function showRegister() {
+    document.getElementById("loginForm").style.display = "none";
+    document.getElementById("registerForm").style.display = "block";
+    document.getElementById("panelTitle").innerText = "注册账号";
+    document.getElementById("panelSub").innerText = "创建新账号，开启项目管理之旅";
+    document.getElementById("regError").textContent = "";
+    document.getElementById("regUser").focus();
+  }
+  function showLogin() {
+    document.getElementById("registerForm").style.display = "none";
+    document.getElementById("loginForm").style.display = "block";
+    document.getElementById("panelTitle").innerText = "欢迎登录";
+    document.getElementById("panelSub").innerText = "登录后进入项目中心，管理你的所有项目";
+    document.getElementById("pwdError").textContent = "";
+    resetSlider();
+    document.getElementById("pwdUser").focus();
+  }
+  async function doRegister() {
+    const btn = document.getElementById("regBtn");
+    const err = document.getElementById("regError");
+    const u = document.getElementById("regUser").value.trim();
+    const p = document.getElementById("regPass").value;
+    const p2 = document.getElementById("regPass2").value;
+    err.textContent = "";
+    err.className = "error-msg";
+    if (!u) { err.textContent = "请输入账号"; return; }
+    if (u.length < 2 || u.length > 20) { err.textContent = "账号长度需为 2-20 位"; return; }
+    if (!p) { err.textContent = "请输入密码"; return; }
+    if (p.length < 6 || p.length > 32) { err.textContent = "密码长度需为 6-32 位"; return; }
+    if (p !== p2) { err.textContent = "两次输入的密码不一致"; return; }
+    btn.disabled = true; btn.textContent = "注册中...";
+    try {
+      const r = await apiFetch("/api/register", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ username: u, password: p })
+      });
+      const d = await r.json();
+      if (d.ok) {
+        err.className = "success-msg";
+        err.textContent = "✅ 注册成功！正在跳转到登录...";
+        document.getElementById("pwdUser").value = u;
+        document.getElementById("pwdPass").value = "";
+        setTimeout(() => { showLogin(); }, 1200);
+      } else {
+        err.textContent = d.msg || "注册失败";
+        btn.disabled = false; btn.textContent = "注 册";
+      }
+    } catch (e) {
+      err.textContent = "网络错误，请检查服务是否启动";
+      btn.disabled = false; btn.textContent = "注 册";
+    }
+  }
+
+  // 二维码登录
+  async function initQr() {
+    clearInterval(pollTimer);
+    clearInterval(countdownTimer);
+    hideMask();
+    setStatus("正在加载二维码...", "pending");
+    try {
+      const resp = await apiFetch("/api/qrcode/generate");
+      const data = await resp.json();
+      if (!data.qid) throw new Error("生成失败");
+      qid = data.qid;
+      expireAt = Date.now() + data.expireSeconds * 1000;
+      document.getElementById("qrImg").src = data.qrBase64;
+      document.getElementById("qrImg").style.opacity = "1";
+      resetSteps();
+      startCountdown(data.expireSeconds);
+      startPoll();
+    } catch (e) {
+      setStatus("二维码加载失败，请检查服务是否启动", "invalid");
+    }
+  }
+  function setStatus(text, cls) {
+    document.getElementById("dot").className = "dot " + cls;
+    document.getElementById("tip").innerText = text;
+  }
+  function hideMask() { document.getElementById("qrMask").classList.remove("show"); }
+  function showMask(icon, text) {
+    document.getElementById("maskIcon").innerText = icon;
+    document.getElementById("maskText").innerText = text;
+    document.getElementById("qrMask").classList.add("show");
+  }
+  function setStep(i, cls) { document.getElementById("st" + i).className = "qr-step " + cls; }
+  function resetSteps() { setStep(1, "active"); setStep(2, ""); setStep(3, ""); }
+  function startCountdown(seconds) {
+    let left = seconds;
+    document.getElementById("countdown").innerText = `二维码 ${left}s 后过期`;
+    countdownTimer = setInterval(() => {
+      left--;
+      if (left < 0) { clearInterval(countdownTimer); document.getElementById("countdown").innerText = ""; return; }
+      document.getElementById("countdown").innerText = `二维码 ${left}s 后过期`;
+    }, 1000);
+  }
+  function startPoll() {
+    clearInterval(pollTimer);
+    pollTimer = setInterval(async () => {
+      try {
+        const res = await apiFetch(`/api/qrcode/check?qid=${qid}`);
+        const ret = await res.json();
+        switch (ret.status) {
+          case "pending": setStatus("等待手机扫码", "pending"); break;
+          case "scanned":
+            setStatus("检测到已扫码，请在手机上确认登录", "scanned");
+            setStep(1, "done"); setStep(2, "active");
+            showMask("📱", "检测到已扫码，请在手机上确认登录");
+            break;
+          case "confirmed":
+            clearInterval(pollTimer); clearInterval(countdownTimer);
+            setStatus("登录成功，正在进入系统...", "confirmed");
+            setStep(1, "done"); setStep(2, "done"); setStep(3, "active");
+            showMask("✅", "登录成功");
+            document.cookie = "web_token=" + encodeURIComponent(ret.webToken) + "; path=/; max-age=604800; SameSite=Lax";
+            setTimeout(() => { location.href = "/blog/"; }, 900);
+            break;
+          case "expired":
+            clearInterval(pollTimer);
+            setStatus("二维码已过期，正在刷新...", "expired");
+            setTimeout(initQr, 1200);
+            break;
+          case "invalid":
+            clearInterval(pollTimer);
+            setStatus("会话无效，正在刷新...", "invalid");
+            setTimeout(initQr, 1200);
+            break;
+        }
+      } catch (e) {}
+    }, 1100);
+  }
+
+  // 回车快捷登录/注册
+  document.addEventListener("DOMContentLoaded", () => {
+    initSlider();
+    document.getElementById("pwdPass").addEventListener("keydown", e => { if (e.key === "Enter") pwdLogin(); });
+    document.getElementById("regPass2").addEventListener("keydown", e => { if (e.key === "Enter") doRegister(); });
+  });
+
+  // 已登录检测
+  (async () => {
+    try {
+      const r = await apiFetch("/api/me");
+      const d = await r.json();
+      if (d.ok) {
+        const box = document.querySelector(".login-box");
+        const bar = document.createElement("div");
+        bar.className = "logged-in-bar";
+        bar.innerHTML = '<span>✅ 已登录：<b>' + d.username + '</b>（7天内免登录）</span>' +
+          '<div class="actions"><button class="btn-go" onclick="location.href=\'/blog/\'">进入系统</button>' +
+          '<button class="btn-switch" id="switchAcc">退出/换号</button></div>';
+        box.insertBefore(bar, box.firstChild);
+        document.getElementById("switchAcc").onclick = async () => {
+          const cur = document.cookie.split(";").map(s => s.trim()).find(s => s.startsWith("web_token="));
+          const t = cur ? decodeURIComponent(cur.split("=").slice(1).join("=")) : "";
+          try { await apiFetch("/api/logout", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ token: t }) }); } catch (e) {}
+          document.cookie = "web_token=; path=/; max-age=0";
+          document.cookie = "web_guest=; path=/; max-age=0";
+          location.reload();
+        };
+        return;
+      }
+    } catch (e) {}
+  })();
+</script>
+</body>
+</html>

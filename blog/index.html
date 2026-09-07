@@ -1,0 +1,273 @@
+﻿<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>我的博客 · 记录与整理</title>
+<meta name="description" content="一个把个人工作台放进博客里的地方：写点文字，也把生活和工作整理成每天打开的一页。">
+<link rel="stylesheet" href="assets/css/blog.css">
+<style>
+.global-sun-btn{position:fixed;top:16px;right:16px;z-index:999999;width:42px;height:42px;border-radius:50%;border:2px solid rgba(255,200,50,.7);background:linear-gradient(135deg,#ffd700,#ff8c00);color:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:18px;box-shadow:0 2px 12px rgba(255,165,0,.5);transition:all .3s;animation:globalSunSpin 6s linear infinite}
+.global-sun-btn:hover{transform:scale(1.15) rotate(15deg);box-shadow:0 4px 20px rgba(255,165,0,.8);animation-play-state:paused}
+@keyframes globalSunSpin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}
+</style>
+</head>
+<body>
+
+<button class="global-sun-btn" id="globalSunBtn" title="切换深色/浅色模式">☀️</button>
+
+<header class="site-header">
+  <div class="nav-wrap">
+    <a href="index.html" class="brand"><span class="dot"></span>我的博客</a>
+    <nav class="nav-links">
+      <a href="index.html" class="active">首页</a>
+      <a href="index.html#posts">文章</a>
+      <a href="/projects.html">项目</a>
+      <a href="workbench/index.html">工作台</a>
+      <a href="index.html#about">关于</a>
+    </nav>
+  </div>
+</header>
+
+<section class="hero">
+  <h1>你好，欢迎来到<span class="accent">我的博客</span>。</h1>
+  <p>这里写点日常、记录和整理。除了文章，我还把「个人工作台」搬了进来——待办、开发、咨询、自媒体、健身、饮食、游戏，所有数据都存在你自己的浏览器里，不上传任何云端。</p>
+  <div class="meta">
+    <span>📝 记录生活与工作</span>
+    <span>💻 开发 · 咨询 · 自媒体</span>
+    <span>🏋️ 健身 · 饮食 · 游戏</span>
+    <span>🤖 内置 AI 对话</span>
+  </div>
+</section>
+
+<main class="container">
+
+  <!-- 工作台入口 -->
+  <div class="workbench-card">
+    <div>
+      <h3>🛠️ 我的个人工作台</h3>
+      <p>每天打开先看「今天该干什么、什么快到期、该跟进了」。所有数据本地存储，不上传云端，点开即用。</p>
+    </div>
+    <a class="go-btn" href="workbench/index.html">进入工作台 →</a>
+  </div>
+
+  <!-- 最新文章 -->
+  <h2 class="section-title" id="posts">最新文章</h2>
+  <div class="post-grid">
+    <article class="post-card">
+      <span class="tag">游戏 · AI</span>
+      <h3><a href="posts/woldvein-project.html">woldvein 项目全景复盘：从启动器到游戏 AI</a></h3>
+      <p>为《东方：平野孤鸿》做了五版工具：启动器、产品家族、审计修复、Steam 启动改道、AI Agent。三次崩溃逼出根因，一天内完成从崩溃到可玩的闭环。</p>
+      <span class="date">📅 2026-09-08</span>
+    </article>
+    <article class="post-card">
+      <span class="tag">碎碎念</span>
+      <h3><a href="posts/hello-world.html">你好，博客的第一篇</a></h3>
+      <p>为什么我会把一个工作台放进博客里——一点动机，一点取舍。</p>
+      <span class="date">📅 2026-08-26</span>
+    </article>
+    <article class="post-card">
+      <span class="tag">工具</span>
+      <h3><a href="posts/workbench-intro.html">我的个人工作台长什么样</a></h3>
+      <p>待办、开发、咨询、自媒体、健身、饮食、游戏、AI——八个模块怎么组织成每天打开的一页。</p>
+      <span class="date">📅 2026-08-26</span>
+    </article>
+    <article class="post-card">
+      <span class="tag">整理</span>
+      <h3><a href="posts/data-local-first.html">为什么所有数据都放在本地</a></h3>
+      <p>没有账号、没有云端同步的取舍，以及数据备份和导入导出的玩法。</p>
+      <span class="date">📅 2026-08-26</span>
+    </article>
+  </div>
+
+  <!-- 我的项目 -->
+  <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px">
+    <h2 class="section-title" id="projects" style="margin-bottom:0">我的项目</h2>
+    <a href="/projects.html" style="font-size:14px;color:#667eea;text-decoration:none;font-weight:500">进入项目中心（可导入新项目）→</a>
+  </div>
+  <div class="project-grid">
+
+    <article class="project-card">
+      <div class="proj-icon">🎮</div>
+      <h3><a href="projects/woldvein/index.html">woldvein 游戏 AI 项目</a></h3>
+      <p>《东方：平野孤鸿》的启动器家族与游戏 AI Agent。v2.0 启动器 → v3.0 八目录产品家族 → 崩溃危机根因排查 → v3.5/v3.6 审计修复与 Steam 启动改道 → v4.0 AI Agent（四策略建造、JSON 桥接、自愈防线）→ 第七项目存档修复。先让游戏可启动，再让游戏可控，最后让游戏可自动。</p>
+      <div class="proj-tags">
+        <span class="proj-tag">Python</span>
+        <span class="proj-tag">PySide6</span>
+        <span class="proj-tag">Lua</span>
+        <span class="proj-tag">AI Agent</span>
+        <span class="proj-tag">游戏模组</span>
+      </div>
+      <div class="proj-links">
+        <a href="projects/woldvein/index.html">🖥️ 项目详情</a>
+        <a href="projects/woldvein/review.html">📊 全景复盘</a>
+      </div>
+    </article>
+
+    <article class="project-card">
+      <div class="proj-icon">🛠️</div>
+      <h3><a href="workbench/index.html">个人工作台</a></h3>
+      <p>工作生活一体化本地管理应用。待办、开发、咨询、自媒体、健身、饮食、游戏、AI 对话整合到一个界面，数据完全本地存储。提供 PC 桌面版（Electron）和 Android 移动端（WebView 封装 APK）。</p>
+      <div class="proj-tags">
+        <span class="proj-tag">Electron</span>
+        <span class="proj-tag">Android</span>
+        <span class="proj-tag">原生 JS</span>
+        <span class="proj-tag">本地存储</span>
+      </div>
+      <div class="proj-links">
+        <a href="workbench/index.html">🖥️ 在线使用</a>
+      </div>
+    </article>
+
+    <article class="project-card">
+      <div class="proj-icon">🎯</div>
+      <h3><a href="projects/steel-frontline/index.html">钢铁前线 · 狙击</a></h3>
+      <p>二战写实 FPS 游戏。Electron + Three.js 打造的纯前端 3D 射击游戏，20+ 真实二战武器（Kar98k、M1 加兰德、MG42、MP40…），10 大战役，6 大阵营，占点 + 兵力制模式，AI 智能士兵（巡逻/交战/包抄/掩体/推进），可驾驶坦克。</p>
+      <div class="proj-tags">
+        <span class="proj-tag">Three.js</span>
+        <span class="proj-tag">Electron</span>
+        <span class="proj-tag">3D FPS</span>
+        <span class="proj-tag">AI 士兵</span>
+      </div>
+      <div class="proj-links">
+        <a href="projects/steel-frontline/index.html">📖 项目详情</a>
+      </div>
+    </article>
+
+    <article class="project-card">
+      <div class="proj-icon">☁️</div>
+      <h3><a href="projects/jizhiyun-pro/index.html">极智云 · 企业级综合门户</a></h3>
+      <p>企业级大型综合门户网站系统。前端 SPA + Node.js Express 后端 + JSON 模拟数据库，包含营销门户、资讯管理、产品展示、订单、用户、后台运营工作台等模块。前端可直接在浏览器运行。</p>
+      <div class="proj-tags">
+        <span class="proj-tag">Tailwind</span>
+        <span class="proj-tag">SPA</span>
+        <span class="proj-tag">企业门户</span>
+      </div>
+      <div class="proj-links">
+        <a href="projects/jizhiyun-pro/index.html">🖥️ 企业版</a>
+        <a href="projects/jizhiyun-demo/index.html">🖥️ 测试版</a>
+      </div>
+    </article>
+
+    <article class="project-card">
+      <div class="proj-icon">⛏️</div>
+      <h3><a href="projects/shantou/index.html">我们的山头 · 我的世界服务器</a></h3>
+      <p>我的世界（Minecraft）服务器官网。团队展示、建筑展示（主城堡、自然风光区、红石基地）、成员介绍、兴趣爱好、服务器信息与联系方式。含冒险探索和红石科技两个子页面。BE 版 1.21.0.x。</p>
+      <div class="proj-tags">
+        <span class="proj-tag">Minecraft</span>
+        <span class="proj-tag">服务器官网</span>
+        <span class="proj-tag">HTML</span>
+      </div>
+      <div class="proj-links">
+        <a href="projects/shantou/index.html">🖥️ BE版官网</a>
+        <a href="projects/shantou2/index.html">🖥️ Java版</a>
+      </div>
+    </article>
+
+    <article class="project-card">
+      <div class="proj-icon">🍽️</div>
+      <h3><a href="projects/restaurant/index.html">餐厅学生管理系统</a></h3>
+      <p>面向餐厅场景的学生管理系统，包含首页、学生管理、后厨管理、管理员后台四个页面，纯 HTML + CSS + JS 前端实现。</p>
+      <div class="proj-tags">
+        <span class="proj-tag">HTML</span>
+        <span class="proj-tag">管理系统</span>
+      </div>
+      <div class="proj-links">
+        <a href="projects/restaurant/index.html">🖥️ 在线预览</a>
+      </div>
+    </article>
+
+    <article class="project-card">
+      <div class="proj-icon">🌍</div>
+      <h3><a href="projects/earth-online/index.html">Earth Online</a></h3>
+      <p>地球轨道设计可视化项目。包含交互式地球轨道设计器（可调整轨道参数并实时 3D 可视化）和封面展示页面，配有背景音乐和图片资源。</p>
+      <div class="proj-tags">
+        <span class="proj-tag">HTML</span>
+        <span class="proj-tag">3D 可视化</span>
+        <span class="proj-tag">轨道设计</span>
+      </div>
+      <div class="proj-links">
+        <a href="projects/earth-online/index.html">🖥️ 在线预览</a>
+      </div>
+    </article>
+
+    <article class="project-card">
+      <div class="proj-icon">🌸</div>
+      <h3><a href="projects/chatrecord/index.html">ChatRecord 会话时序实验室</a></h3>
+      <p>把聊天记录变成可计算的数字表征。支持导入聊天文本/JSON/微信截图，自动生成时序波形、消息量分布、平均长度、日历热力图、发送者统计、复读指数、周×小时活跃度等可视化图表。OCR 优先本地 RapidOCR 增强识别，未启动时回退浏览器端 Tesseract.js。</p>
+      <div class="proj-tags">
+        <span class="proj-tag">数据可视化</span>
+        <span class="proj-tag">ECharts</span>
+        <span class="proj-tag">OCR</span>
+        <span class="proj-tag">纯前端</span>
+      </div>
+      <div class="proj-links">
+        <a href="projects/chatrecord/index.html">🖥️ 在线使用</a>
+      </div>
+    </article>
+
+    </div>
+
+  <!-- 关于 -->
+  <h2 class="section-title" id="about">关于我</h2>
+  <div class="about">
+    <div class="avatar">我</div>
+    <div>
+      <h4>一名爱折腾的开发者</h4>
+      <p>平时做点开发、接点咨询、写写自媒体，也练练健身、记记饮食、打打游戏。做过个人工作台（PC + Android）、二战 FPS 游戏《钢铁前线·狙击》、企业门户「极智云」、我的世界服务器「我们的山头」等项目。这个博客是把这些东西放在同一个屋檐下的地方——文章写给想看的人，工作台只给自己用。</p>
+    </div>
+  </div>
+
+</main>
+
+<footer class="site-footer">
+  <p>© 2026 我的博客 · 所有数据本地存储 · 不追踪、不收集</p>
+</footer>
+
+<script>
+(function(){
+  var html=document.documentElement;
+  var btn=document.getElementById("globalSunBtn");
+  function setTheme(t){
+    html.setAttribute("data-theme", t);
+    if(btn)btn.textContent = t==="light" ? "🌙" : "☀️";
+  }
+  var saved=localStorage.getItem("globalTheme");
+  if(saved==="light"||saved==="dark"){ setTheme(saved); }
+  else { setTheme(window.matchMedia("(prefers-color-scheme: light)").matches ? "light" : "dark"); }
+  if(btn)btn.addEventListener("click",function(e){
+    e.stopPropagation();
+    var cur=(html.getAttribute("data-theme")==="light")?"light":"dark";
+    var next=cur==="light"?"dark":"light";
+    setTheme(next);
+    localStorage.setItem("globalTheme", next);
+  });
+})();
+</script>
+<!-- sun-drag -->
+<style>
+.global-sun-btn{cursor:grab;touch-action:none;-webkit-user-select:none;user-select:none}
+.global-sun-btn.dragging{cursor:grabbing;transition:none!important;animation-play-state:paused!important;box-shadow:0 8px 24px rgba(255,165,0,.85)!important}
+</style>
+<script>
+(function(){
+  var btn=document.getElementById("globalSunBtn");
+  if(!btn)return;
+  btn.title="切换主题 · 按住可拖动位置";
+  var KEY="globalSunPos",x=null,y=null;
+  try{var s=localStorage.getItem(KEY);if(s){var p=JSON.parse(s);if(typeof p.x==="number"&&typeof p.y==="number"){x=p.x;y=p.y;}}}catch(e){}
+  function clamp(){var w=btn.offsetWidth||42,h=btn.offsetHeight||42;x=Math.max(0,Math.min(x,window.innerWidth-w));y=Math.max(0,Math.min(y,window.innerHeight-h));}
+  function render(noAnim){if(x===null||y===null)return;clamp();if(noAnim)btn.style.transition="none";btn.style.left=x+"px";btn.style.top=y+"px";btn.style.right="auto";btn.style.bottom="auto";if(noAnim)requestAnimationFrame(function(){btn.style.transition="";});}
+  render(true);
+  window.addEventListener("resize",function(){if(x!==null&&y!==null)render(false);});
+  var dragging=false,moved=false,sx=0,sy=0,ox=0,oy=0;
+  btn.addEventListener("pointerdown",function(e){dragging=true;moved=false;if(btn.setPointerCapture)btn.setPointerCapture(e.pointerId);btn.classList.add("dragging");sx=e.clientX;sy=e.clientY;var r=btn.getBoundingClientRect();ox=r.left;oy=r.top;x=ox;y=oy;});
+  btn.addEventListener("pointermove",function(e){if(!dragging)return;var dx=e.clientX-sx,dy=e.clientY-sy;if(Math.abs(dx)>4||Math.abs(dy)>4)moved=true;x=ox+dx;y=oy+dy;render(false);});
+  function end(){if(!dragging)return;dragging=false;btn.classList.remove("dragging");try{localStorage.setItem(KEY,JSON.stringify({x:x,y:y}));}catch(e){}}
+  btn.addEventListener("pointerup",end);
+  btn.addEventListener("pointercancel",end);
+  btn.addEventListener("click",function(e){if(moved){e.stopPropagation();e.preventDefault();moved=false;}},true);
+})();
+</script>
+</body>
+</html>

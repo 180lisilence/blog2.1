@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>厨房出餐页面</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="css/style.css">
+<link rel="stylesheet" href="css/fancy.css">
+    <script src="../../assets/js/blog-storage.js"></script>
+<script src="js/common.js"></script>
+    <script>tailwind.config={darkMode:'class'}</script>
+</head>
+<body class="bg-gray-100 dark:bg-gray-900 text-gray-800 dark:text-gray-200 p-4">
+<div class="flex justify-between items-center mb-5">
+    <h1 class="text-xl font-bold">🍳 厨房订单处理</h1>
+    <div>
+        <button onclick="toggleTheme()" class="mr-3"><i class="fa fa-adjust text-xl"></i></button>
+        <button onclick="location.href='admin.html'" class="border px-3 py-1 rounded">返回后台</button>
+    </div>
+</div>
+<h3 class="font-bold text-lg mb-3">待出餐订单</h3>
+<div id="kitchen-order-list" class="space-y-4"></div>
+
+<script>
+window.onload = renderKitchenOrder();
+function renderKitchenOrder(){
+    const orders = JSON.parse(BS.get("orders"));
+    const waitOrder = orders.filter(o=>o.status === "待出餐");
+    let html = "";
+    waitOrder.forEach(o=>{
+        let goodsText = o.goods.map(g=>`${g.name}×${g.num}`).join(" ");
+        html += `
+        <div class="bg-white dark:bg-gray-800 p-4 rounded border-l-4 border-orange-500">
+            <p>下单学生：${o.username}</p>
+            <p>订单：${goodsText}</p>
+            <p>支付：${o.payType}  ¥${o.money}</p>
+            <p>下单时间：${o.createTime}</p>
+            <button onclick="finishOrder(${o.orderId})" class="mt-2 bg-green-500 text-white px-3 py-1 rounded">确认出餐</button>
+        </div>`;
+    })
+    document.getElementById("kitchen-order-list").innerHTML = html || "<p>暂无待出餐订单</p>";
+}
+
+function finishOrder(orderId){
+    const orders = JSON.parse(BS.get("orders"));
+    const obj = orders.find(o=>o.orderId === orderId);
+    if(obj){
+        obj.status = "已出餐";
+        BS.set("orders", JSON.stringify(orders));
+    }
+    renderKitchenOrder();
+}
+</script>
+<style>
+.back-to-blog{position:fixed;top:14px;left:14px;z-index:99999;background:rgba(26,26,46,.85);color:#fff;padding:7px 14px;border-radius:8px;text-decoration:none;font-size:12.5px;font-weight:600;font-family:-apple-system,'Segoe UI','Microsoft YaHei',sans-serif;backdrop-filter:blur(8px);box-shadow:0 4px 14px rgba(0,0,0,.3);transition:all .2s;display:inline-flex;align-items:center;gap:4px}
+.back-to-blog:hover{background:rgba(91,108,255,.92);transform:translateY(-1px);box-shadow:0 6px 18px rgba(91,108,255,.45)}
+</style>
+<a href="../../index.html" class="back-to-blog">← 返回博客</a>
+</body>
+</html>

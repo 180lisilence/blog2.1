@@ -1,0 +1,349 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>钢铁前线 · 狙击 — 二战写实 FPS</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, 'Segoe UI', 'Microsoft YaHei', sans-serif; background: #1a1a2e; color: #e0e0f0; line-height: 1.7; }
+  .hero { background: linear-gradient(135deg, #1a1a2e 0%, #2d1b4e 50%, #1a1a2e 100%); padding: 80px 20px; text-align: center; border-bottom: 1px solid rgba(255,255,255,0.06); }
+  .hero h1 { font-size: 42px; margin-bottom: 12px; background: linear-gradient(135deg, #ff6b6b, #ffa500); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+  .hero .sub { font-size: 16px; color: #8888aa; margin-bottom: 28px; }
+  .hero .tag { display:inline-block; padding: 6px 16px; border-radius: 999px; background: rgba(255,107,107,0.12); color: #ff8a8a; font-size: 13px; font-weight: 600; margin: 0 4px; }
+  .container { max-width: 900px; margin: 0 auto; padding: 48px 20px; }
+  .section { margin-bottom: 40px; }
+  .section h2 { font-size: 22px; margin-bottom: 16px; color: #fff; border-left: 4px solid #ff6b6b; padding-left: 12px; }
+  .section p { color: #b0b0c8; margin-bottom: 12px; }
+  .features { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 16px; margin-top: 16px; }
+  .feature { background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08); border-radius: 12px; padding: 20px; }
+  .feature .icon { font-size: 28px; margin-bottom: 8px; }
+  .feature h3 { font-size: 15px; color: #fff; margin-bottom: 6px; }
+  .feature p { font-size: 13px; color: #8888aa; margin: 0; }
+  .weapons { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+  .weapon { padding: 4px 12px; border-radius: 6px; background: rgba(255,255,255,0.06); font-size: 12px; color: #c0c0d8; }
+  .notice { background: rgba(255,165,0,0.08); border: 1px solid rgba(255,165,0,0.2); border-radius: 12px; padding: 20px; margin-top: 20px; }
+  .notice h3 { color: #ffa500; font-size: 15px; margin-bottom: 8px; }
+  .notice p { color: #c0b090; font-size: 13px; margin: 0; }
+  .btns { display: flex; gap: 12px; margin-top: 24px; flex-wrap: wrap; }
+  .btn { padding: 12px 24px; border-radius: 10px; text-decoration: none; font-weight: 600; font-size: 14px; transition: all .2s; display: inline-block; }
+  .btn-primary { background: linear-gradient(135deg, #ff6b6b, #ffa500); color: #fff; }
+  .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(255,107,107,0.4); }
+  .btn-ghost { background: rgba(255,255,255,0.06); color: #a0a8c0; border: 1px solid rgba(255,255,255,0.1); }
+  .btn-ghost:hover { background: rgba(255,255,255,0.1); }
+  .back { display: inline-block; margin-bottom: 24px; color: #8888aa; text-decoration: none; font-size: 14px; }
+  .back:hover { color: #fff; }
+</style>
+<style>
+#globalLoader{position:fixed;inset:0;z-index:99999;display:flex;flex-direction:column;align-items:center;justify-content:center;background:linear-gradient(135deg,#0f172a 0%,#1e1b4b 50%,#0f172a 100%);overflow:hidden;transition:opacity .6s ease,visibility .6s ease;font-family:-apple-system,"Segoe UI","Microsoft YaHei",sans-serif}
+#globalLoader::before{content:"";position:absolute;width:600px;height:600px;border-radius:50%;background:radial-gradient(circle,rgba(51,115,255,.15) 0%,transparent 70%);top:50%;left:50%;transform:translate(-50%,-50%);animation:pulseGlow 3s ease-in-out infinite}
+#globalLoader::after{content:"";position:absolute;inset:0;background-image:linear-gradient(rgba(255,255,255,.03) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.03) 1px,transparent 1px);background-size:40px 40px;animation:gridMove 20s linear infinite}
+@keyframes pulseGlow{0%,100%{transform:translate(-50%,-50%) scale(1);opacity:.6}50%{transform:translate(-50%,-50%) scale(1.2);opacity:1}}
+@keyframes gridMove{0%{background-position:0 0}100%{background-position:40px 40px}}
+.loader-logo{position:relative;z-index:2;display:flex;align-items:center;gap:14px;margin-bottom:40px}
+.loader-logo-icon{width:48px;height:48px;border-radius:12px;background:linear-gradient(135deg,#3373ff,#8b5cf6);display:flex;align-items:center;justify-content:center;color:#fff;font-size:24px;font-weight:bold;animation:logoFloat 2s ease-in-out infinite;box-shadow:0 8px 32px rgba(51,115,255,.4)}
+.loader-logo span{font-size:32px;font-weight:800;color:#fff;letter-spacing:2px}
+@keyframes logoFloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-8px)}}
+.loader-progress-wrap{position:relative;z-index:2;width:320px;max-width:80vw}
+.loader-progress-bar{width:100%;height:6px;background:rgba(255,255,255,.1);border-radius:99px;overflow:hidden;position:relative}
+.loader-progress-fill{height:100%;width:0%;background:linear-gradient(90deg,#3373ff,#8b5cf6,#ec4899);border-radius:99px;transition:width .3s ease;position:relative;box-shadow:0 0 20px rgba(51,115,255,.6)}
+.loader-progress-fill::after{content:"";position:absolute;inset:0;background:linear-gradient(90deg,transparent,rgba(255,255,255,.4),transparent);animation:shimmer 1.5s infinite}
+@keyframes shimmer{0%{transform:translateX(-100%)}100%{transform:translateX(100%)}}
+.loader-progress-info{display:flex;justify-content:space-between;align-items:center;margin-top:14px}
+.loader-percent{font-size:24px;font-weight:700;color:#fff;font-variant-numeric:tabular-nums}
+.loader-tip{font-size:13px;color:rgba(255,255,255,.5);margin-top:24px;text-align:center;z-index:2;position:relative;min-height:20px;transition:opacity .3s}
+.loader-hide{opacity:0!important;visibility:hidden!important;pointer-events:none}
+.loader-theme-switcher{position:absolute;bottom:40px;right:40px;z-index:10;display:flex;align-items:center;gap:10px}
+.loader-theme-btn{width:52px;height:52px;border-radius:50%;border:2px solid rgba(255,255,255,.4);background:linear-gradient(135deg,rgba(51,115,255,.3),rgba(139,92,246,.3));color:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .3s;backdrop-filter:blur(10px);font-size:20px;box-shadow:0 0 20px rgba(51,115,255,.4);animation:btnPulse 2s ease-in-out infinite}
+.loader-theme-btn:hover{background:linear-gradient(135deg,rgba(51,115,255,.5),rgba(139,92,246,.5));transform:scale(1.1);box-shadow:0 0 30px rgba(51,115,255,.6)}
+@keyframes btnPulse{0%,100%{box-shadow:0 0 20px rgba(51,115,255,.4)}50%{box-shadow:0 0 35px rgba(139,92,246,.7)}}
+.loader-theme-label{color:rgba(255,255,255,.7);font-size:13px;font-weight:500;letter-spacing:1px;animation:labelFade 2s ease-in-out infinite}
+@keyframes labelFade{0%,100%{opacity:.5}50%{opacity:1}}
+.loader-theme-colors{position:absolute;bottom:60px;right:0;display:flex;gap:8px;padding:10px;border-radius:12px;background:rgba(0,0,0,.5);backdrop-filter:blur(10px);border:1px solid rgba(255,255,255,.15);opacity:0;visibility:hidden;transform:translateY(10px);transition:all .3s}
+.loader-theme-colors.show{opacity:1;visibility:visible;transform:translateY(0)}
+.loader-theme-color{width:32px;height:32px;border-radius:50%;border:2px solid rgba(255,255,255,.3);cursor:pointer;transition:all .2s;padding:0}
+.loader-theme-color:hover{transform:scale(1.2);border-color:#fff}
+.loader-theme-color.active{border-color:#fff;box-shadow:0 0 12px rgba(255,255,255,.6)}
+.loader-sun-btn{width:44px;height:44px;border-radius:50%;border:2px solid rgba(255,200,50,.6);background:linear-gradient(135deg,#ffd700,#ff8c00);color:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .3s;font-size:18px;box-shadow:0 0 15px rgba(255,200,50,.5);animation:sunSpin 4s linear infinite}
+.loader-sun-btn:hover{transform:scale(1.15);box-shadow:0 0 25px rgba(255,200,50,.8)}
+@keyframes sunSpin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}
+.loader-sun-btn:hover{animation-play-state:paused}
+/* 浅色模式 */
+#globalLoader.light-mode{background:linear-gradient(135deg,#f0f4ff 0%,#e8e0ff 50%,#f0f4ff 100%)!important}
+#globalLoader.light-mode::before{background:radial-gradient(circle,rgba(51,115,255,.1) 0%,transparent 70%)!important}
+#globalLoader.light-mode::after{background-image:linear-gradient(rgba(0,0,0,.03) 1px,transparent 1px),linear-gradient(90deg,rgba(0,0,0,.03) 1px,transparent 1px)!important}
+#globalLoader.light-mode .loader-logo span{color:#1e293b!important}
+#globalLoader.light-mode .loader-logo-icon{box-shadow:0 8px 32px rgba(51,115,255,.3)!important}
+#globalLoader.light-mode .loader-percent{color:#1e293b!important}
+#globalLoader.light-mode .loader-tip{color:rgba(0,0,0,.5)!important}
+#globalLoader.light-mode .loader-progress-info span:first-child{color:rgba(0,0,0,.4)!important}
+#globalLoader.light-mode .loader-theme-label{color:rgba(0,0,0,.6)!important}
+#globalLoader.light-mode .loader-progress-bar{background:rgba(0,0,0,.08)!important}
+#globalLoader.light-mode .loader-theme-btn{background:linear-gradient(135deg,rgba(51,115,255,.2),rgba(139,92,246,.2))!important;color:#3b3f5c!important;border-color:rgba(0,0,0,.25)!important}
+#globalLoader.light-mode .loader-theme-colors{background:rgba(255,255,255,.92)!important;border-color:rgba(0,0,0,.12)!important}
+#globalLoader.light-mode .loader-theme-color{border-color:rgba(0,0,0,.35)!important}
+</style>
+<style>
+/* 全局主题切换小太阳（固定右上角，始终可见） */
+.global-sun-btn{position:fixed;top:16px;right:16px;z-index:999999;width:42px;height:42px;border-radius:50%;border:2px solid rgba(255,200,50,.7);background:linear-gradient(135deg,#ffd700,#ff8c00);color:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:18px;box-shadow:0 2px 12px rgba(255,165,0,.5);transition:all .3s;animation:globalSunSpin 6s linear infinite;backdrop-filter:blur(4px)}
+.global-sun-btn:hover{transform:scale(1.15) rotate(15deg);box-shadow:0 4px 20px rgba(255,165,0,.8);animation-play-state:paused}
+@keyframes globalSunSpin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}
+/* 浅色模式：清晰的浅背景 + 深文字（替代 filter 反转，保证对比度） */
+html[data-theme="light"] body{background:#eef1f6;color:#1a1f36}
+html[data-theme="light"] h1,html[data-theme="light"] h2,html[data-theme="light"] h3{color:#1a1f36}
+html[data-theme="light"] p{color:#3f4a63 !important}
+html[data-theme="light"] .hero{background:linear-gradient(135deg,#f7f8fc 0%,#efe9f7 50%,#f7f8fc 100%);border-bottom:1px solid rgba(0,0,0,.08)}
+html[data-theme="light"] .hero h1{background:none;-webkit-text-fill-color:#1a1f36}
+html[data-theme="light"] .hero .sub{color:#5a6478}
+html[data-theme="light"] .hero .tag{background:rgba(214,69,69,.1);color:#c0392b}
+html[data-theme="light"] .feature{background:rgba(0,0,0,.03);border:1px solid rgba(0,0,0,.08)}
+html[data-theme="light"] .weapon{background:rgba(0,0,0,.05);color:#4a5570}
+html[data-theme="light"] .notice{background:rgba(255,165,0,.06);border:1px solid rgba(255,165,0,.3)}
+html[data-theme="light"] .notice h3{color:#b45309}
+html[data-theme="light"] .notice p{color:#5a4a2a}
+html[data-theme="light"] .btn-ghost{background:rgba(0,0,0,.04);color:#3f4a63;border:1px solid rgba(0,0,0,.18)}
+html[data-theme="light"] .back{color:#5a6478}
+</style>
+</head>
+<body>
+
+<button class="global-sun-btn" id="globalSunBtn" title="切换深色/浅色模式">☀️</button>
+
+<div id="globalLoader">
+  <div class="loader-logo">
+    <div class="loader-logo-icon">◆</div>
+    <span>钢铁前线</span>
+  </div>
+  <div class="loader-progress-wrap">
+    <div class="loader-progress-bar"><div class="loader-progress-fill" id="loaderFill"></div></div>
+    <div class="loader-progress-info">
+      <span style="color:rgba(255,255,255,.4);font-size:12px;">正在加载资源</span>
+      <span class="loader-percent" id="loaderPercent">0%</span>
+    </div>
+  </div>
+  <div class="loader-tip" id="loaderTip">正在初始化引擎...</div>
+  <div class="loader-theme-switcher">
+    <button class="loader-sun-btn" id="loaderSunBtn" title="切换浅色模式">☀️</button>
+    <span class="loader-theme-label">切换主题</span>
+    <button class="loader-theme-btn" id="loaderThemeBtn" title="切换背景色">🎨</button>
+    <div class="loader-theme-colors" id="loaderThemeColors">
+      <button class="loader-theme-color active" data-theme="deepspace" style="background:linear-gradient(135deg,#0f172a,#1e1b4b)" title="深空蓝"></button>
+      <button class="loader-theme-color" data-theme="aurora" style="background:linear-gradient(135deg,#064e3b,#134e4a)" title="极光绿"></button>
+      <button class="loader-theme-color" data-theme="sunset" style="background:linear-gradient(135deg,#7c2d12,#9a3412)" title="落日橙"></button>
+      <button class="loader-theme-color" data-theme="sakura" style="background:linear-gradient(135deg,#831843,#9d174d)" title="樱花粉"></button>
+      <button class="loader-theme-color" data-theme="royal" style="background:linear-gradient(135deg,#2e1065,#4c1d95)" title="皇家紫"></button>
+      <button class="loader-theme-color" data-theme="ocean" style="background:linear-gradient(135deg,#0c4a6e,#075985)" title="海洋蓝"></button>
+    </div>
+  </div>
+</div>
+  <div class="hero">
+    <h1>🎯 钢铁前线 · 狙击</h1>
+    <p class="sub">STEEL FRONTLINE — 二战写实 FPS</p>
+    <div>
+      <span class="tag">Three.js</span>
+      <span class="tag">Electron</span>
+      <span class="tag">3D FPS</span>
+      <span class="tag">AI 士兵</span>
+    </div>
+  </div>
+  <div class="container">
+    <a href="../../index.html#projects" class="back">← 返回博客</a>
+
+    <div class="section">
+      <h2>游戏简介</h2>
+      <p>钢铁前线·狙击是一款基于 Electron + Three.js 打造的纯前端 3D 二战写实射击游戏。无需后端服务，所有渲染和逻辑都在本地完成。</p>
+      <p>游戏采用占点 + 兵力制（Ticket）模式，进攻方需要占领全部据点或耗尽防守方兵力才能获胜，防守方则需守住据点直到进攻方兵力耗尽。</p>
+    </div>
+
+    <div class="section">
+      <h2>核心特性</h2>
+      <div class="features">
+        <div class="feature">
+          <div class="icon">🔫</div>
+          <h3>20+ 真实二战武器</h3>
+          <p>Kar98k、M1 加兰德、MG42、MP40、莫辛纳甘、春田狙击步枪等，每种武器独立参数和音效。</p>
+        </div>
+        <div class="feature">
+          <div class="icon">🗺️</div>
+          <h3>10 大战役</h3>
+          <p>诺曼底登陆、斯大林格勒、柏林、突出部、百团大战、莫斯科、冲绳等经典战役地图。</p>
+        </div>
+        <div class="feature">
+          <div class="icon">⚔️</div>
+          <h3>6 大阵营</h3>
+          <p>美军、苏军、德军、日军、国军、八路军，各阵营有独立武器池和语音。</p>
+        </div>
+        <div class="feature">
+          <div class="icon">🤖</div>
+          <h3>AI 智能士兵</h3>
+          <p>状态机驱动的 AI：巡逻、交战、包抄、找掩体、推进，120° 视野锥，真实射击节奏。</p>
+        </div>
+        <div class="feature">
+          <div class="icon">🚗</div>
+          <h3>可驾驶坦克</h3>
+          <p>玩家可驾驶坦克，独立 AI 炮手自动瞄准射击，坦克有独立血量和移动物理。</p>
+        </div>
+        <div class="feature">
+          <div class="icon">🔊</div>
+          <h3>3D 空间音效</h3>
+          <p>Web Audio API 实现 3D 空间音效，每种武器独立 MP3 音效，支持音量调节。</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="section">
+      <h2>武器列表</h2>
+      <div class="weapons">
+        <span class="weapon">Kar98k</span>
+        <span class="weapon">M1 加兰德</span>
+        <span class="weapon">MG42</span>
+        <span class="weapon">MP40</span>
+        <span class="weapon">莫辛纳甘</span>
+        <span class="weapon">春田狙击枪</span>
+        <span class="weapon">SVT-40</span>
+        <span class="weapon">M1911</span>
+        <span class="weapon">鲁格 P08</span>
+        <span class="weapon">TT-33</span>
+        <span class="weapon">BAR</span>
+        <span class="weapon">DP-28</span>
+        <span class="weapon">FG42</span>
+        <span class="weapon">波波沙</span>
+        <span class="weapon">三八式</span>
+        <span class="weapon">MK2 手雷</span>
+        <span class="weapon">RGD-33</span>
+        <span class="weapon">M24 木柄雷</span>
+        <span class="weapon">铁拳</span>
+      </div>
+    </div>
+
+    <div class="section">
+      <h2>操作方式</h2>
+      <p><strong>WASD</strong> 移动 · <strong>Shift</strong> 冲刺 · <strong>Ctrl</strong> 切换行走/奔跑 · <strong>C</strong> 蹲下 · <strong>Z</strong> 卧倒 · <strong>Q/E</strong> 探头 · <strong>空格</strong> 跳跃</p>
+      <p><strong>鼠标左键</strong> 开火 · <strong>鼠标右键</strong> 瞄准（ADS）· <strong>R</strong> 换弹 · <strong>F</strong> 互动/上下坦克 · <strong>T</strong> 驾驶坦克 · <strong>1/2/3</strong> 切换武器 · <strong>V</strong> 小队指令 · <strong>G</strong> 手雷</p>
+    </div>
+
+    <div class="notice">
+      <h3>⚠️ 运行说明</h3>
+      <p>本游戏基于 Electron + Three.js 开发，使用 ES Modules，需要 Node.js 环境和 npm install 安装依赖（Three.js）后才能运行。音频文件（MP3）需要自行准备放入 audio/ 目录。</p>
+      <p style="margin-top:8px;">推荐从 GitHub 克隆后运行 <code>npm install</code> 再执行 <code>play.bat</code> 启动游戏。</p>
+    </div>
+
+    <div class="btns">
+      <a href="https://github.com/180lisilence/youxi1.0" target="_blank" rel="noopener" class="btn btn-primary">📂 GitHub 仓库</a>
+      <a href="../../index.html#projects" class="btn btn-ghost">← 返回博客</a>
+    </div>
+  </div>
+<style>
+.back-to-blog{position:fixed;top:14px;left:14px;z-index:99999;background:rgba(26,26,46,.85);color:#fff;padding:7px 14px;border-radius:8px;text-decoration:none;font-size:12.5px;font-weight:600;font-family:-apple-system,'Segoe UI','Microsoft YaHei',sans-serif;backdrop-filter:blur(8px);box-shadow:0 4px 14px rgba(0,0,0,.3);transition:all .2s;display:inline-flex;align-items:center;gap:4px}
+.back-to-blog:hover{background:rgba(91,108,255,.92);transform:translateY(-1px);box-shadow:0 6px 18px rgba(91,108,255,.45)}
+</style>
+<a href="../../index.html" class="back-to-blog">← 返回博客</a>
+<script>
+(function(){
+  var fill=document.getElementById("loaderFill");
+  var percentEl=document.getElementById("loaderPercent");
+  var tipEl=document.getElementById("loaderTip");
+  var progress=0,timer=null;
+  var tips=["正在初始化引擎...","正在加载核心模块...","正在连接数据服务...","正在渲染界面组件...","即将完成，请稍候..."];
+  var tipIndex=0;
+  function setProgress(p){progress=Math.min(100,Math.max(0,p));if(fill)fill.style.width=progress+"%";if(percentEl)percentEl.textContent=Math.floor(progress)+"%";}
+  function nextTip(){tipIndex=(tipIndex+1)%tips.length;if(tipEl){tipEl.style.opacity="0";setTimeout(function(){tipEl.textContent=tips[tipIndex];tipEl.style.opacity="1";},300);}}
+  function simulate(){
+    if(progress>=92)return;
+    var inc=progress<30?Math.random()*8+4:progress<60?Math.random()*5+2:Math.random()*2+0.5;
+    setProgress(progress+inc);
+    if(Math.floor(progress/20)!==tipIndex&&progress<90)nextTip();
+    timer=setTimeout(simulate,200+Math.random()*300);
+  }
+  window.__loaderComplete=function(){
+    if(timer)clearTimeout(timer);
+    setProgress(100);
+    if(tipEl)tipEl.textContent="加载完成！";
+    setTimeout(function(){
+      var loader=document.getElementById("globalLoader");
+      if(loader)loader.classList.add("loader-hide");
+      setTimeout(function(){if(loader)loader.style.display="none";},600);
+    },400);
+  };
+  setTimeout(function(){if(progress<100)window.__loaderComplete();},6000);
+  simulate();
+  var themes={deepspace:"linear-gradient(135deg,#0f172a 0%,#1e1b4b 50%,#0f172a 100%)",aurora:"linear-gradient(135deg,#064e3b 0%,#134e4a 50%,#064e3b 100%)",sunset:"linear-gradient(135deg,#7c2d12 0%,#9a3412 50%,#7c2d12 100%)",sakura:"linear-gradient(135deg,#831843 0%,#9d174d 50%,#831843 100%)",royal:"linear-gradient(135deg,#2e1065 0%,#4c1d95 50%,#2e1065 100%)",ocean:"linear-gradient(135deg,#0c4a6e 0%,#075985 50%,#0c4a6e 100%)"};
+  var savedTheme=localStorage.getItem("loaderTheme")||"deepspace";
+  var loaderEl=document.getElementById("globalLoader");
+  if(loaderEl&&themes[savedTheme])loaderEl.style.background=themes[savedTheme];
+  var themeBtn=document.getElementById("loaderThemeBtn");
+  var themeColors=document.getElementById("loaderThemeColors");
+  if(themeBtn&&themeColors){
+    themeBtn.addEventListener("click",function(e){e.stopPropagation();themeColors.classList.toggle("show");});
+    document.addEventListener("click",function(){themeColors.classList.remove("show");});
+    var colorBtns=themeColors.querySelectorAll(".loader-theme-color");
+    colorBtns.forEach(function(btn){
+      if(btn.dataset.theme===savedTheme)btn.classList.add("active");else btn.classList.remove("active");
+      btn.addEventListener("click",function(e){
+        e.stopPropagation();
+        var t=btn.dataset.theme;
+        if(loaderEl&&themes[t])loaderEl.style.background=themes[t];
+        localStorage.setItem("loaderTheme",t);
+        colorBtns.forEach(function(b){b.classList.remove("active");});
+        btn.classList.add("active");
+      });
+    });
+  }
+  /* ===== 小太阳浅色模式切换 ===== */
+  var sunBtn=document.getElementById("loaderSunBtn");
+  var savedLight=localStorage.getItem("loaderLight")==="true";
+  if(savedLight&&loaderEl)loaderEl.classList.add("light-mode");
+  if(sunBtn){
+    sunBtn.addEventListener("click",function(e){
+      e.stopPropagation();
+      var isLight=loaderEl.classList.toggle("light-mode");
+      localStorage.setItem("loaderLight",isLight?"true":"false");
+    });
+  }
+  window.addEventListener("load",function(){setTimeout(function(){if(window.__loaderComplete)window.__loaderComplete();},800);});
+})();
+</script>
+<script>
+(function(){
+  var html=document.documentElement;
+  var btn=document.getElementById("globalSunBtn");
+  function setTheme(t){ html.setAttribute("data-theme", t); }
+  var saved=localStorage.getItem("globalTheme");
+  if(saved==="light"||saved==="dark"){ setTheme(saved); }
+  else { setTheme(window.matchMedia("(prefers-color-scheme: light)").matches ? "light":"dark"); }
+  if(btn)btn.addEventListener("click",function(e){
+    e.stopPropagation();
+    var cur=(html.getAttribute("data-theme")==="light")?"light":"dark";
+    var next=cur==="light"?"dark":"light";
+    setTheme(next);
+    localStorage.setItem("globalTheme", next);
+  });
+})();
+</script>
+<!-- sun-drag -->
+<style>
+.global-sun-btn{cursor:grab;touch-action:none;-webkit-user-select:none;user-select:none}
+.global-sun-btn.dragging{cursor:grabbing;transition:none!important;animation-play-state:paused!important;box-shadow:0 8px 24px rgba(255,165,0,.85)!important}
+</style>
+<script>
+(function(){
+  var btn=document.getElementById("globalSunBtn");
+  if(!btn)return;
+  btn.title="切换主题 · 按住可拖动位置";
+  var KEY="globalSunPos",x=null,y=null;
+  try{var s=localStorage.getItem(KEY);if(s){var p=JSON.parse(s);if(typeof p.x==="number"&&typeof p.y==="number"){x=p.x;y=p.y;}}}catch(e){}
+  function clamp(){var w=btn.offsetWidth||42,h=btn.offsetHeight||42;x=Math.max(0,Math.min(x,window.innerWidth-w));y=Math.max(0,Math.min(y,window.innerHeight-h));}
+  function render(noAnim){if(x===null||y===null)return;clamp();if(noAnim)btn.style.transition="none";btn.style.left=x+"px";btn.style.top=y+"px";btn.style.right="auto";btn.style.bottom="auto";if(noAnim)requestAnimationFrame(function(){btn.style.transition="";});}
+  render(true);
+  window.addEventListener("resize",function(){if(x!==null&&y!==null)render(false);});
+  var dragging=false,moved=false,sx=0,sy=0,ox=0,oy=0;
+  btn.addEventListener("pointerdown",function(e){dragging=true;moved=false;if(btn.setPointerCapture)btn.setPointerCapture(e.pointerId);btn.classList.add("dragging");sx=e.clientX;sy=e.clientY;var r=btn.getBoundingClientRect();ox=r.left;oy=r.top;x=ox;y=oy;});
+  btn.addEventListener("pointermove",function(e){if(!dragging)return;var dx=e.clientX-sx,dy=e.clientY-sy;if(Math.abs(dx)>4||Math.abs(dy)>4)moved=true;x=ox+dx;y=oy+dy;render(false);});
+  function end(){if(!dragging)return;dragging=false;btn.classList.remove("dragging");try{localStorage.setItem(KEY,JSON.stringify({x:x,y:y}));}catch(e){}}
+  btn.addEventListener("pointerup",end);
+  btn.addEventListener("pointercancel",end);
+  btn.addEventListener("click",function(e){if(moved){e.stopPropagation();e.preventDefault();moved=false;}},true);
+})();
+</script>
+</body>
+</html>

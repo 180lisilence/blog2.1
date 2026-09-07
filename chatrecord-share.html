@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ChatRecord · 分享</title>
+  <link rel="stylesheet" href="/share-assets/chatrecord/css/style.css">
+  <style>
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif; background: linear-gradient(135deg, #f5f7fa 0%, #eef1f7 100%); min-height: 100vh; margin: 0; }
+    .share-header { background: linear-gradient(135deg, #667eea, #764ba2); color: #fff; padding: 24px 32px; }
+    .share-header h1 { font-size: 22px; margin: 0 0 4px; }
+    .share-header p { font-size: 13px; opacity: .85; margin: 0; }
+    .share-meta { font-size: 12px; opacity: .7; margin-top: 8px; }
+    .loading, .error { text-align: center; padding: 80px 20px; color: #6b7280; font-size: 15px; }
+    .error { color: #ef4444; }
+    main { max-width: 1080px; margin: 0 auto; padding: 24px; }
+    .stats { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 14px; margin-bottom: 20px; }
+    .stat-card { background: #fff; border-radius: 12px; padding: 16px; box-shadow: 0 2px 8px rgba(0,0,0,.05); border: 1px solid #eef0f5; }
+    .stat-card .k { font-size: 12px; color: #6b7280; margin-bottom: 6px; }
+    .stat-card .v { font-size: 24px; font-weight: 700; color: #1f2937; }
+    .stat-card .s { font-size: 11px; color: #9ca3af; margin-top: 2px; }
+    .stat-card.placeholder { display: flex; align-items: center; justify-content: center; color: #9ca3af; font-size: 13px; }
+    .charts { display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; }
+    .chart-card { background: #fff; border-radius: 12px; padding: 16px; box-shadow: 0 2px 8px rgba(0,0,0,.05); border: 1px solid #eef0f5; }
+    .chart-card.wide { grid-column: 1 / -1; }
+    .chart-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+    .chart-head h2 { font-size: 15px; color: #1f2937; margin: 0; }
+    .chart-head .desc { font-size: 11px; color: #9ca3af; }
+    .chart { width: 100%; height: 280px; }
+    .chart-card.wide .chart { height: 320px; }
+    .share-footer { text-align: center; padding: 20px; font-size: 12px; color: #9ca3af; }
+    @media (max-width: 768px) { .charts { grid-template-columns: 1fr; } }
+  </style>
+</head>
+<body>
+  <header class="share-header">
+    <h1 id="shareTitle">ChatRecord · 会话分享</h1>
+    <p>把聊天记录变成可计算的数字表征 · 时序 · 频率 · 行为可视化</p>
+    <div class="share-meta" id="shareMeta"></div>
+  </header>
+
+  <div id="loading" class="loading">正在加载分享数据...</div>
+  <div id="error" class="error" style="display:none"></div>
+
+  <main id="mainContent" style="display:none">
+    <section class="stats" id="stats"></section>
+    <section class="charts">
+      <div class="chart-card wide">
+        <div class="chart-head"><h2>会话时序波形</h2><span class="desc">相邻消息间隔（秒）· 低谷=密集对话，尖峰=沉默期</span></div>
+        <div id="chartWave" class="chart"></div>
+      </div>
+      <div class="chart-card">
+        <div class="chart-head"><h2>消息量分布</h2><span class="desc">24 小时时段活跃度</span></div>
+        <div id="chartHour" class="chart"></div>
+      </div>
+      <div class="chart-card">
+        <div class="chart-head"><h2>消息平均长度</h2><span class="desc">按天 · 单条消息字符数均值</span></div>
+        <div id="chartLen" class="chart"></div>
+      </div>
+      <div class="chart-card wide">
+        <div class="chart-head"><h2>消息量日历热力图</h2><span class="desc">按天 · 消息密度</span></div>
+        <div id="chartCal" class="chart"></div>
+      </div>
+      <div class="chart-card">
+        <div class="chart-head"><h2>发送者消息量</h2><span class="desc">谁发得多</span></div>
+        <div id="chartSender" class="chart"></div>
+      </div>
+      <div class="chart-card">
+        <div class="chart-head"><h2>复读指数排行</h2><span class="desc">重复文本占比</span></div>
+        <div id="chartRepeat" class="chart"></div>
+      </div>
+      <div class="chart-card wide">
+        <div class="chart-head"><h2>周 × 小时活跃度</h2><span class="desc">星期与时段交叉</span></div>
+        <div id="chartWH" class="chart"></div>
+      </div>
+    </section>
+  </main>
+
+  <div class="share-footer">由 ChatRecord 会话时序实验室生成 · 只读分享</div>
+
+  <script src="/share-assets/chatrecord/libs/echarts.min.js"></script>
+  <script src="/share-assets/chatrecord/js/charts.js"></script>
+  <script>
+  (function () {
+    'use strict';
+    function $(id) { return document.getElementById(id); }
+
+    function computeStats(msgs) {
+      const total = msgs.length;
+      const senders = new Set(msgs.map(m => m.sender));
+      const days = new Set(msgs.map(m => {
+        const d = new Date(m.ts);
+        return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+      }));
+      const hourCount = new Array(24).fill(0);
+      msgs.forEach(m => hourCount[new Date(m.ts).getHours()]++);
+      let peakHour = 0;
+      hourCount.forEach((c, h) => { if (c > hourCount[peakHour]) peakHour = h; });
+      const avgPerDay = days.size ? Math.round(total / days.size * 10) / 10 : 0;
+      return { total, people: senders.size, days: days.size, avgPerDay, peakHour: String(peakHour).padStart(2, '0') + ':00' };
+    }
+
+    function renderStats(s) {
+      const cards = [
+        { k: '总消息数', v: s.total, s: '条消息' },
+        { k: '参与人数', v: s.people, s: '位发言者' },
+        { k: '活跃天数', v: s.days, s: '天有记录' },
+        { k: '日均消息', v: s.avgPerDay, s: '条/天' },
+        { k: '最活跃时段', v: s.peakHour, s: '消息量峰值' }
+      ];
+      $('stats').innerHTML = cards.map(c => `
+        <div class="stat-card"><div class="k">${c.k}</div><div class="v">${c.v}</div><div class="s">${c.s}</div></div>`).join('');
+    }
+
+    function renderAll(msgs) {
+      renderStats(computeStats(msgs));
+      Charts.wave('chartWave', msgs);
+      Charts.hour('chartHour', msgs);
+      Charts.lengthByDay('chartLen', msgs);
+      Charts.heatCalendar('chartCal', msgs);
+      Charts.senderBar('chartSender', msgs);
+      Charts.repeatRank('chartRepeat', msgs);
+      Charts.weekHourHeat('chartWH', msgs);
+    }
+
+    function showError(msg) {
+      $('loading').style.display = 'none';
+      $('mainContent').style.display = 'none';
+      $('error').style.display = 'block';
+      $('error').textContent = msg;
+    }
+
+    // 从 URL 获取 shareId
+    const params = new URLSearchParams(location.search);
+    const sid = params.get('sid');
+    if (!sid) { showError('无效的分享链接'); return; }
+
+    // 加载分享数据
+    fetch('/api/chatrecord/share/' + encodeURIComponent(sid))
+      .then(r => r.json())
+      .then(d => {
+        if (!d.ok) { showError(d.msg || '分享不存在或已取消'); return; }
+        if (!d.messages || !d.messages.length) { showError('该会话没有数据'); return; }
+        $('shareTitle').textContent = d.name || 'ChatRecord · 会话分享';
+        const created = d.createdAt ? new Date(d.createdAt).toLocaleString() : '';
+        $('shareMeta').textContent = '共 ' + d.messages.length + ' 条消息' + (created ? ' · 创建于 ' + created : '');
+        $('loading').style.display = 'none';
+        $('mainContent').style.display = 'block';
+        renderAll(d.messages);
+      })
+      .catch(e => showError('加载失败: ' + e.message));
+
+    window.addEventListener('resize', () => {
+      ['chartWave','chartHour','chartLen','chartCal','chartSender','chartRepeat','chartWH'].forEach(id => {
+        const el = $(id);
+        const c = el && echarts.getInstanceByDom(el);
+        if (c) c.resize();
+      });
+    });
+  })();
+  </script>
+</body>
+</html>

@@ -1,0 +1,153 @@
+/* workbench-enhance.css - 个人工作台炫酷样式增强 */
+
+/* ===== 背景增强 ===== */
+body {
+    background: linear-gradient(135deg, #0a0e1a 0%, #111827 40%, #1e1b4b 70%, #0a0e1a 100%) !important;
+    background-attachment: fixed !important;
+}
+
+/* 背景光斑 */
+.app::before {
+    content: '' !important;
+    position: fixed !important;
+    top: -20% !important; right: -10% !important;
+    width: 50% !important; height: 50% !important;
+    background: radial-gradient(circle, rgba(99,102,241,0.08) 0%, transparent 60%) !important;
+    border-radius: 50% !important;
+    animation: wbFloat1 20s ease-in-out infinite !important;
+    pointer-events: none !important;
+    z-index: 0 !important;
+}
+@keyframes wbFloat1 {
+    0%,100% { transform: translate(0,0) scale(1); }
+    50% { transform: translate(-5%, 5%) scale(1.1); }
+}
+
+/* ===== 侧边栏增强 ===== */
+.sidebar {
+    background: rgba(15, 23, 42, 0.85) !important;
+    backdrop-filter: blur(20px) saturate(180%) !important;
+    -webkit-backdrop-filter: blur(20px) saturate(180%) !important;
+    border-right: 1px solid rgba(99,102,241,0.15) !important;
+}
+
+.logo {
+    background: linear-gradient(135deg, rgba(99,102,241,0.1), rgba(139,92,246,0.05)) !important;
+    border-bottom: 1px solid rgba(99,102,241,0.15) !important;
+}
+.logo-text {
+    background: linear-gradient(135deg, #a5b4fc, #c4b5fd) !important;
+    -webkit-background-clip: text !important;
+    -webkit-text-fill-color: transparent !important;
+    background-clip: text !important;
+    font-weight: 800 !important;
+}
+
+/* 导航项悬浮 */
+.nav-item {
+    transition: all 0.25s cubic-bezier(.22,1,.36,1) !important;
+    border-radius: 10px !important;
+    margin: 2px 8px !important;
+}
+.nav-item:hover {
+    background: linear-gradient(135deg, rgba(99,102,241,0.15), rgba(139,92,246,0.1)) !important;
+    transform: translateX(4px) !important;
+    box-shadow: 0 4px 16px rgba(99,102,241,0.2) !important;
+}
+.nav-item.active {
+    background: linear-gradient(135deg, rgba(99,102,241,0.25), rgba(139,92,246,0.15)) !important;
+    box-shadow: 0 4px 20px rgba(99,102,241,0.3) !important;
+    border: 1px solid rgba(99,102,241,0.3) !important;
+}
+
+/* ===== 主内容区卡片 ===== */
+.card, [class*="card"], .panel, [class*="panel"] {
+    background: rgba(255,255,255,0.04) !important;
+    backdrop-filter: blur(16px) !important;
+    -webkit-backdrop-filter: blur(16px) !important;
+    border: 1px solid rgba(255,255,255,0.08) !important;
+    border-radius: 16px !important;
+    transition: all 0.3s cubic-bezier(.22,1,.36,1) !important;
+}
+.card:hover, [class*="card"]:hover {
+    border-color: rgba(99,102,241,0.25) !important;
+    box-shadow: 0 12px 40px rgba(99,102,241,0.15) !important;
+    transform: translateY(-2px) !important;
+}
+
+/* ===== 按钮增强 ===== */
+button, .btn, [class*="btn"] {
+    transition: all 0.25s cubic-bezier(.22,1,.36,1) !important;
+    border-radius: 10px !important;
+}
+button:hover, .btn:hover {
+    transform: translateY(-1px) !important;
+}
+
+/* 主按钮渐变 */
+.primary, [class*="primary"], .btn-primary {
+    background: linear-gradient(135deg, #6366f1, #8b5cf6) !important;
+    border: none !important;
+    box-shadow: 0 4px 16px rgba(99,102,241,0.35) !important;
+    font-weight: 700 !important;
+}
+.primary:hover, [class*="primary"]:hover {
+    box-shadow: 0 8px 28px rgba(99,102,241,0.5) !important;
+    transform: translateY(-2px) !important;
+}
+
+/* ===== 标题渐变 ===== */
+h1, h2, h3, .page-title, [class*="title"] {
+    background: linear-gradient(135deg, #ffffff, #a5b4fc) !important;
+    -webkit-background-clip: text !important;
+    -webkit-text-fill-color: transparent !important;
+    background-clip: text !important;
+}
+
+/* ===== 输入框 ===== */
+input, textarea, select {
+    background: rgba(255,255,255,0.05) !important;
+    border: 1px solid rgba(255,255,255,0.12) !important;
+    border-radius: 10px !important;
+    transition: all 0.25s !important;
+}
+input:focus, textarea:focus, select:focus {
+    border-color: #6366f1 !important;
+    box-shadow: 0 0 0 3px rgba(99,102,241,0.15) !important;
+    outline: none !important;
+}
+
+/* ===== 滚动条 ===== */
+::-webkit-scrollbar { width: 8px !important; height: 8px !important; }
+::-webkit-scrollbar-track { background: transparent !important; }
+::-webkit-scrollbar-thumb {
+    background: linear-gradient(180deg, #6366f1, #8b5cf6) !important;
+    border-radius: 8px !important;
+}
+::-webkit-scrollbar-thumb:hover {
+    background: linear-gradient(180deg, #818cf8, #a78bfa) !important;
+}
+
+/* ===== 入场动画 ===== */
+@keyframes wbFadeIn {
+    from { opacity: 0; transform: translateY(16px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+.main-content, .content, [class*="content"] {
+    animation: wbFadeIn 0.4s cubic-bezier(.22,1,.36,1) !important;
+}
+
+/* ===== 顶部栏 ===== */
+.topbar, header, [class*="topbar"], [class*="header"] {
+    background: rgba(15, 23, 42, 0.8) !important;
+    backdrop-filter: blur(20px) saturate(180%) !important;
+    -webkit-backdrop-filter: blur(20px) saturate(180%) !important;
+    border-bottom: 1px solid rgba(99,102,241,0.12) !important;
+}
+
+/* ===== 标签/徽章 ===== */
+.tag, .badge, [class*="tag"], [class*="badge"] {
+    border-radius: 999px !important;
+    font-weight: 600 !important;
+    padding: 2px 10px !important;
+}

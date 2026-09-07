@@ -1,0 +1,212 @@
+/* css/fancy.css - 餐厅管理系统炫酷样式增强 */
+
+/* ========== 全局背景 ========== */
+body {
+    background: linear-gradient(135deg, #1a1a2e 0%, #16213e 30%, #0f3460 60%, #1a1a2e 100%) !important;
+    background-attachment: fixed !important;
+    min-height: 100vh;
+    position: relative;
+    overflow-x: hidden;
+}
+
+/* 背景装饰光斑 */
+body::before {
+    content: '';
+    position: fixed;
+    top: -50%;
+    left: -50%;
+    width: 200%;
+    height: 200%;
+    background:
+        radial-gradient(circle at 20% 30%, rgba(255, 107, 53, 0.12) 0%, transparent 40%),
+        radial-gradient(circle at 80% 70%, rgba(91, 108, 255, 0.12) 0%, transparent 40%),
+        radial-gradient(circle at 50% 50%, rgba(255, 159, 67, 0.06) 0%, transparent 60%);
+    animation: bgFloat 20s ease-in-out infinite;
+    pointer-events: none;
+    z-index: 0;
+}
+@keyframes bgFloat {
+    0%, 100% { transform: translate(0, 0) rotate(0deg); }
+    33% { transform: translate(2%, -2%) rotate(1deg); }
+    66% { transform: translate(-1%, 1%) rotate(-1deg); }
+}
+
+/* 所有内容在背景之上 */
+body > * {
+    position: relative;
+    z-index: 1;
+}
+
+/* ========== 毛玻璃卡片 ========== */
+.bg-white, .dark\:bg-gray-800 {
+    background: rgba(255, 255, 255, 0.08) !important;
+    backdrop-filter: blur(16px) !important;
+    -webkit-backdrop-filter: blur(16px) !important;
+    border: 1px solid rgba(255, 255, 255, 0.12) !important;
+    border-radius: 16px !important;
+    transition: all 0.3s cubic-bezier(0.22, 1, 0.36, 1) !important;
+}
+
+/* 卡片悬浮效果 */
+.bg-white:hover, .dark\:bg-gray-800:hover {
+    transform: translateY(-3px) !important;
+    box-shadow: 0 12px 40px rgba(255, 107, 53, 0.15), 0 0 0 1px rgba(255, 107, 53, 0.2) !important;
+    border-color: rgba(255, 107, 53, 0.3) !important;
+}
+
+/* ========== 文字颜色适配深色背景 ========== */
+body, .text-gray-800, .dark\:text-gray-200 {
+    color: #e8e8f0 !important;
+}
+.text-gray-800 { color: #e8e8f0 !important; }
+.text-orange-500 { color: #ff8c42 !important; }
+.text-red-500 { color: #ff6b6b !important; }
+.text-xs { color: #8888aa !important; }
+
+/* 输入框 */
+input, select, textarea {
+    background: rgba(255, 255, 255, 0.06) !important;
+    border: 1px solid rgba(255, 255, 255, 0.15) !important;
+    color: #e8e8f0 !important;
+    border-radius: 10px !important;
+    transition: all 0.25s !important;
+}
+input::placeholder, textarea::placeholder { color: #666688 !important; }
+input:focus, select:focus, textarea:focus {
+    border-color: #ff6b35 !important;
+    box-shadow: 0 0 0 3px rgba(255, 107, 53, 0.15) !important;
+    background: rgba(255, 255, 255, 0.1) !important;
+    outline: none !important;
+}
+
+/* ========== 渐变按钮 ========== */
+.bg-orange-500 {
+    background: linear-gradient(135deg, #ff6b35 0%, #f7931e 50%, #ff6b35 100%) !important;
+    background-size: 200% 200% !important;
+    border: none !important;
+    border-radius: 12px !important;
+    font-weight: 700 !important;
+    letter-spacing: 0.5px !important;
+    box-shadow: 0 4px 16px rgba(255, 107, 53, 0.35) !important;
+    transition: all 0.3s cubic-bezier(0.22, 1, 0.36, 1) !important;
+    position: relative !important;
+    overflow: hidden !important;
+}
+.bg-orange-500:hover {
+    background-position: 100% 0 !important;
+    transform: translateY(-2px) !important;
+    box-shadow: 0 8px 28px rgba(255, 107, 53, 0.5) !important;
+}
+.bg-orange-500:active {
+    transform: translateY(0) !important;
+}
+
+.bg-green-500 {
+    background: linear-gradient(135deg, #26c281 0%, #2ecc71 100%) !important;
+    border: none !important;
+    border-radius: 12px !important;
+    font-weight: 700 !important;
+    box-shadow: 0 4px 16px rgba(38, 194, 129, 0.35) !important;
+    transition: all 0.3s !important;
+}
+.bg-green-500:hover {
+    transform: translateY(-2px) !important;
+    box-shadow: 0 8px 28px rgba(38, 194, 129, 0.5) !important;
+}
+
+/* 边框按钮 */
+.border {
+    background: rgba(255, 255, 255, 0.05) !important;
+    border: 1px solid rgba(255, 255, 255, 0.2) !important;
+    border-radius: 12px !important;
+    color: #e8e8f0 !important;
+    transition: all 0.25s !important;
+}
+.border:hover {
+    background: rgba(255, 255, 255, 0.1) !important;
+    border-color: rgba(255, 107, 53, 0.4) !important;
+    color: #ff8c42 !important;
+}
+
+/* ========== 登录页特殊样式 ========== */
+#login-box > div, #register-box > div {
+    background: rgba(255, 255, 255, 0.06) !important;
+    backdrop-filter: blur(24px) !important;
+    -webkit-backdrop-filter: blur(24px) !important;
+    border: 1px solid rgba(255, 255, 255, 0.15) !important;
+    border-radius: 24px !important;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4), 0 0 0 1px rgba(255, 107, 53, 0.1) !important;
+    animation: cardIn 0.6s cubic-bezier(0.22, 1, 0.36, 1) !important;
+}
+@keyframes cardIn {
+    from { opacity: 0; transform: translateY(30px) scale(0.96); }
+    to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+#login-box h2, #register-box h2 {
+    background: linear-gradient(135deg, #ff6b35, #ffd93d);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+/* ========== 标题渐变 ========== */
+h1, h2, h3 {
+    background: linear-gradient(135deg, #ffffff 0%, #ffd9a8 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+/* ========== 入场动画 ========== */
+.sub-page, .admin-content {
+    animation: fadeInUp 0.4s cubic-bezier(0.22, 1, 0.36, 1);
+}
+@keyframes fadeInUp {
+    from { opacity: 0; transform: translateY(16px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+/* ========== 购物车角标 ========== */
+.cart-badge {
+    position: absolute !important;
+    top: -4px !important;
+    right: -4px !important;
+    background: linear-gradient(135deg, #ff6b35, #ff4757) !important;
+    color: #fff !important;
+    font-size: 11px !important;
+    font-weight: 700 !important;
+    min-width: 20px !important;
+    height: 20px !important;
+    border-radius: 10px !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    box-shadow: 0 2px 8px rgba(255, 71, 87, 0.5) !important;
+}
+
+/* ========== 订单状态标签 ========== */
+/* 待出餐 */
+.border-l-4.border-orange-500 {
+    border-left: 4px solid !important;
+    border-image: linear-gradient(180deg, #ff6b35, #ffd93d) 1 !important;
+}
+
+/* ========== 滚动条 ========== */
+::-webkit-scrollbar { width: 8px; }
+::-webkit-scrollbar-track { background: rgba(255,255,255,0.03); }
+::-webkit-scrollbar-thumb {
+    background: linear-gradient(180deg, #ff6b35, #f7931e);
+    border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover { background: linear-gradient(180deg, #ff8c42, #ffa500); }
+
+/* ========== 图标发光 ========== */
+.fa-cutlery, .fa-shopping-cart, .fa-list-alt, .fa-comment, .fa-adjust {
+    filter: drop-shadow(0 0 6px rgba(255, 107, 53, 0.4));
+}
+
+/* ========== 页面切换过渡 ========== */
+.sub-page:not(.active), .admin-content:not(.active) {
+    display: none !important;
+}

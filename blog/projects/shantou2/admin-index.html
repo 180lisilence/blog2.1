@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>后台配置 - 我的山头</title>
+<style>
+/* ===== 全局重置 ===== */
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+  font-family: "Microsoft YaHei", "微软雅黑", sans-serif;
+  background: #0f172a;
+  color: #e2e8f0;
+  line-height: 1.6;
+  font-size: clamp(14px, 2vw, 18px);
+}
+/* ===== 顶部栏 ===== */
+.header {
+  background: linear-gradient(135deg, #0f172a 0%, #1e3a5f 100%);
+  border-bottom: 2px solid #38bdf8;
+  padding: 20px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+.header h1 {
+  color: #38bdf8;
+  font-size: clamp(18px, 3vw, 24px);
+}
+.header a {
+  color: #94a3b8;
+  text-decoration: none;
+  font-size: clamp(13px, 2vw, 15px);
+  cursor: pointer;
+  transition: color 0.3s;
+}
+.header a:hover { color: #ef4444; }
+/* ===== 容器 ===== */
+.container {
+  max-width: 800px;
+  margin: 0 auto;
+  padding: clamp(20px, 4vw, 40px) 20px;
+}
+/* ===== 提示说明 ===== */
+.note {
+  background: rgba(56,189,248,0.1);
+  border: 1px solid #38bdf8;
+  border-radius: 8px;
+  padding: 15px;
+  margin-bottom: 25px;
+  color: #bae6fd;
+  font-size: clamp(13px, 2vw, 15px);
+}
+/* ===== 表单卡片 ===== */
+.form-card {
+  background: #1e293b;
+  border-radius: 12px;
+  padding: clamp(20px, 4vw, 35px);
+  border: 1px solid #334155;
+}
+.form-group { margin-bottom: 22px; }
+.form-group label {
+  display: block;
+  color: #38bdf8;
+  margin-bottom: 8px;
+  font-weight: bold;
+  font-size: clamp(14px, 2vw, 16px);
+}
+.form-group input,
+.form-group textarea {
+  width: 100%;
+  padding: 12px 15px;
+  background: #0f172a;
+  border: 1px solid #334155;
+  border-radius: 8px;
+  color: #e2e8f0;
+  font-size: clamp(14px, 2vw, 16px);
+  font-family: inherit;
+  transition: border-color 0.3s;
+}
+.form-group input:focus,
+.form-group textarea:focus {
+  outline: none;
+  border-color: #38bdf8;
+}
+.form-group textarea {
+  min-height: 120px;
+  resize: vertical;
+}
+.form-group .hint {
+  color: #64748b;
+  font-size: clamp(12px, 1.5vw, 14px);
+  margin-top: 6px;
+}
+/* ===== 按钮组 ===== */
+.btn-group {
+  display: flex;
+  gap: 15px;
+  margin-top: 10px;
+  flex-wrap: wrap;
+}
+.btn {
+  padding: 12px 28px;
+  border: none;
+  border-radius: 8px;
+  font-size: clamp(14px, 2vw, 16px);
+  font-family: inherit;
+  font-weight: bold;
+  cursor: pointer;
+  transition: background 0.3s, transform 0.2s;
+}
+.btn-save { background: #22c55e; color: #0f172a; }
+.btn-save:hover { background: #16a34a; transform: translateY(-2px); }
+.btn-secondary { background: #334155; color: #e2e8f0; }
+.btn-secondary:hover { background: #475569; transform: translateY(-2px); }
+/* ===== 轻提示 toast ===== */
+.toast {
+  position: fixed;
+  bottom: 30px;
+  left: 50%;
+  transform: translateX(-50%) translateY(100px);
+  background: #22c55e;
+  color: #0f172a;
+  padding: 12px 30px;
+  border-radius: 8px;
+  font-weight: bold;
+  box-shadow: 0 4px 20px rgba(34,197,94,0.5);
+  transition: transform 0.4s;
+  z-index: 1000;
+}
+.toast.show { transform: translateX(-50%) translateY(0); }
+</style>
+<script src="../../assets/js/blog-storage.js"></script>
+</head>
+<body>
+
+<div class="header">
+  <h1>⚙ 后台配置中心</h1>
+  <a onclick="logout()">退出登录</a>
+</div>
+
+<div class="container">
+  <!-- 提示说明：在线人数自动拉取 -->
+  <div class="note">
+    💡 在线人数由服务器 MC 接口自动拉取，无需在此填写。
+    修改完成后请点击「保存配置」，配置保存在浏览器本地（localStorage）。
+  </div>
+
+  <!-- 配置表单 -->
+  <div class="form-card">
+    <form id="configForm">
+      <div class="form-group">
+        <label for="gameVersion">游戏版本</label>
+        <input type="text" id="gameVersion" placeholder="例如：1.20.4">
+      </div>
+
+      <div class="form-group">
+        <label for="serverIP">服务器外网IP</label>
+        <input type="text" id="serverIP" placeholder="例如：play.example.com">
+        <div class="hint">填写服务器公网IP或域名（用于状态查询与玩家连接）</div>
+      </div>
+
+      <div class="form-group">
+        <label for="serverPort">服务器端口</label>
+        <input type="text" id="serverPort" placeholder="例如：25565">
+        <div class="hint">默认端口 25565；状态查询与玩家连接均使用此端口</div>
+      </div>
+
+      <div class="form-group">
+        <label for="qqGroup">QQ交流群</label>
+        <input type="text" id="qqGroup" placeholder="例如：123456789">
+      </div>
+
+      <div class="form-group">
+        <label for="announcement">首页公告</label>
+        <textarea id="announcement" placeholder="输入首页加载时弹出的公告内容..."></textarea>
+        <div class="hint">支持换行；首页加载后会自动弹出此公告</div>
+      </div>
+
+      <div class="btn-group">
+        <button type="submit" class="btn btn-save">💾 保存配置</button>
+        <button type="button" class="btn btn-secondary" onclick="resetConfig()">↺ 恢复默认</button>
+        <button type="button" class="btn btn-secondary" onclick="previewHome()">🏠 预览首页</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- 保存成功提示 -->
+<div class="toast" id="toast">✓ 配置已保存</div>
+
+<script>
+/* ===================================================================
+ * 登录态校验：未登录则跳回登录页
+ * =================================================================== */
+if (sessionStorage.getItem("mc_admin_logged") !== "1") {
+  window.location.href = "admin-login.html";
+}
+
+/* ===================================================================
+ * 配置项（与 index.html 保持一致的 key 与默认值）
+ * localStorage key：mc_server_config
+ * =================================================================== */
+const CONFIG_KEY = "mc_server_config";
+const DEFAULT_CONFIG = {
+  gameVersion: "1.20.4",
+  serverIP: "play.mymchill.com",   // 【预留】默认服务器外网IP
+  serverPort: "25565",             // 【预留】默认端口
+  qqGroup: "123456789",            // 【预留】默认QQ群
+  announcement: "欢迎来到我的山头服务器！\n请先阅读游玩规则，遵守服务器秩序。\n祝您游戏愉快！"
+};
+
+/* 读取配置（合并默认值，防止字段缺失） */
+function loadConfig() {
+  try {
+    const saved = BS.get(CONFIG_KEY);
+    if (saved) return Object.assign({}, DEFAULT_CONFIG, JSON.parse(saved));
+  } catch (e) { console.warn("配置读取失败", e); }
+  return Object.assign({}, DEFAULT_CONFIG);
+}
+
+/* 将配置回填到表单 */
+function fillForm(cfg) {
+  document.getElementById("gameVersion").value = cfg.gameVersion;
+  document.getElementById("serverIP").value = cfg.serverIP;
+  document.getElementById("serverPort").value = cfg.serverPort;
+  document.getElementById("qqGroup").value = cfg.qqGroup;
+  document.getElementById("announcement").value = cfg.announcement;
+}
+
+/* 页面加载时填充表单 */
+fillForm(loadConfig());
+
+/* ===================================================================
+ * 保存配置到 localStorage
+ * =================================================================== */
+document.getElementById("configForm").addEventListener("submit", function (e) {
+  e.preventDefault();
+  const cfg = {
+    gameVersion: document.getElementById("gameVersion").value.trim(),
+    serverIP: document.getElementById("serverIP").value.trim(),
+    serverPort: document.getElementById("serverPort").value.trim() || "25565",
+    qqGroup: document.getElementById("qqGroup").value.trim(),
+    announcement: document.getElementById("announcement").value
+  };
+  BS.set(CONFIG_KEY, JSON.stringify(cfg));
+  showToast("配置已保存");
+});
+
+/* ===================================================================
+ * 恢复默认配置
+ * =================================================================== */
+function resetConfig() {
+  if (confirm("确定恢复为默认配置吗？当前修改将被覆盖。")) {
+    fillForm(DEFAULT_CONFIG);
+    showToast("已恢复默认，请点击保存生效");
+  }
+}
+
+/* 预览首页（新标签打开） */
+function previewHome() {
+  window.open("index.html", "_blank");
+}
+
+/* 退出登录 */
+function logout() {
+  sessionStorage.removeItem("mc_admin_logged");
+  window.location.href = "admin-login.html";
+}
+
+/* ===================================================================
+ * 轻提示 toast
+ * =================================================================== */
+function showToast(msg) {
+  const t = document.getElementById("toast");
+  t.textContent = "✓ " + msg;
+  t.classList.add("show");
+  setTimeout(function () { t.classList.remove("show"); }, 2000);
+}
+</script>
+<style>
+.back-to-blog{position:fixed;top:14px;left:14px;z-index:99999;background:rgba(26,26,46,.85);color:#fff;padding:7px 14px;border-radius:8px;text-decoration:none;font-size:12.5px;font-weight:600;font-family:-apple-system,'Segoe UI','Microsoft YaHei',sans-serif;backdrop-filter:blur(8px);box-shadow:0 4px 14px rgba(0,0,0,.3);transition:all .2s;display:inline-flex;align-items:center;gap:4px}
+.back-to-blog:hover{background:rgba(91,108,255,.92);transform:translateY(-1px);box-shadow:0 6px 18px rgba(91,108,255,.45)}
+</style>
+<a href="../../index.html" class="back-to-blog">← 返回博客</a>
+</body>
+</html>

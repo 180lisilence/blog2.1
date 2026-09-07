@@ -1,0 +1,1121 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>我们的山头 - 我的世界服务器</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Microsoft YaHei', Arial, sans-serif;
+            background: linear-gradient(135deg, #0a0a1a 0%, #1a1a3a 50%, #0a0a1a 100%);
+            color: #ffffff;
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        .particle-bg {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+            overflow: hidden;
+        }
+
+        .particle {
+            position: absolute;
+            width: 3px;
+            height: 3px;
+            background: #00ffff;
+            border-radius: 50%;
+            animation: float 15s infinite;
+            opacity: 0.6;
+        }
+
+        @keyframes float {
+            0%, 100% {
+                transform: translateY(100vh) rotate(0deg);
+                opacity: 0;
+            }
+            10% {
+                opacity: 0.6;
+            }
+            90% {
+                opacity: 0.6;
+            }
+            100% {
+                transform: translateY(-100vh) rotate(720deg);
+                opacity: 0;
+            }
+        }
+
+        .header {
+            text-align: center;
+            padding: 60px 20px 40px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .header::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 80%;
+            height: 2px;
+            background: linear-gradient(90deg, transparent, #00ffff, #ff00ff, #00ffff, transparent);
+            animation: glow 3s ease-in-out infinite;
+        }
+
+        @keyframes glow {
+            0%, 100% {
+                box-shadow: 0 0 20px #00ffff, 0 0 40px #00ffff;
+            }
+            50% {
+                box-shadow: 0 0 40px #ff00ff, 0 0 80px #ff00ff;
+            }
+        }
+
+        .title {
+            font-size: 4rem;
+            font-weight: bold;
+            background: linear-gradient(90deg, #00ffff, #ff00ff, #ffff00, #00ffff);
+            background-size: 300% 100%;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            animation: gradient 5s ease infinite;
+            text-shadow: 0 0 30px rgba(0, 255, 255, 0.5);
+            margin-bottom: 20px;
+            letter-spacing: 10px;
+        }
+
+        @keyframes gradient {
+            0% {
+                background-position: 0% 50%;
+            }
+            50% {
+                background-position: 100% 50%;
+            }
+            100% {
+                background-position: 0% 50%;
+            }
+        }
+
+        .subtitle {
+            font-size: 1.5rem;
+            color: #00ffff;
+            text-shadow: 0 0 10px #00ffff;
+            letter-spacing: 3px;
+            opacity: 0.9;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .section {
+            margin-bottom: 60px;
+            opacity: 0;
+            transform: translateY(50px);
+            transition: all 0.8s ease;
+        }
+
+        .section.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .section-title {
+            font-size: 2rem;
+            color: #ff00ff;
+            text-align: center;
+            margin-bottom: 30px;
+            text-shadow: 0 0 20px #ff00ff;
+            position: relative;
+            display: inline-block;
+            left: 50%;
+            transform: translateX(-50%);
+        }
+
+        .section-title::before,
+        .section-title::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            width: 60px;
+            height: 2px;
+            background: linear-gradient(90deg, transparent, #00ffff);
+        }
+
+        .section-title::before {
+            left: -80px;
+        }
+
+        .section-title::after {
+            right: -80px;
+            background: linear-gradient(90deg, #00ffff, transparent);
+        }
+
+        .team-avatars {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 30px;
+            margin-bottom: 40px;
+        }
+
+        .avatar-card {
+            background: rgba(255, 255, 255, 0.05);
+            border: 2px solid rgba(0, 255, 255, 0.3);
+            border-radius: 15px;
+            padding: 20px;
+            text-align: center;
+            transition: all 0.3s ease;
+            backdrop-filter: blur(10px);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .avatar-card::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: linear-gradient(45deg, transparent, rgba(0, 255, 255, 0.1), transparent);
+            transform: rotate(45deg);
+            transition: all 0.5s ease;
+        }
+
+        .avatar-card:hover::before {
+            left: 100%;
+        }
+
+        .avatar-card:hover {
+            border-color: #00ffff;
+            box-shadow: 0 0 30px rgba(0, 255, 255, 0.5);
+            transform: translateY(-10px);
+        }
+
+        .avatar-placeholder {
+            width: 120px;
+            height: 120px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #1a1a3a, #2a2a5a);
+            border: 3px solid #00ffff;
+            margin: 0 auto 15px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 3rem;
+            color: #00ffff;
+            box-shadow: 0 0 20px rgba(0, 255, 255, 0.3);
+            position: relative;
+            z-index: 1;
+            overflow: hidden;
+        }
+
+        .avatar-placeholder img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            border-radius: 50%;
+        }
+
+        .building-gallery {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 40px;
+            margin-top: 40px;
+        }
+
+        .building-card {
+            background: rgba(255, 255, 255, 0.05);
+            border: 2px solid rgba(0, 255, 255, 0.3);
+            border-radius: 20px;
+            overflow: hidden;
+            transition: all 0.3s ease;
+            backdrop-filter: blur(10px);
+            position: relative;
+        }
+
+        .building-card::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: linear-gradient(45deg, transparent, rgba(0, 255, 255, 0.1), transparent);
+            transform: rotate(45deg);
+            transition: all 0.5s ease;
+        }
+
+        .building-card:hover::before {
+            left: 100%;
+        }
+
+        .building-card:hover {
+            border-color: #00ffff;
+            box-shadow: 0 0 40px rgba(0, 255, 255, 0.5);
+            transform: translateY(-15px) scale(1.02);
+        }
+
+        .building-image {
+            width: 100%;
+            height: 250px;
+            background: linear-gradient(135deg, #1a1a3a, #2a2a5a);
+            border-bottom: 2px solid rgba(0, 255, 255, 0.3);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 4rem;
+            color: #00ffff;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .building-image img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            transition: transform 0.5s ease;
+        }
+
+        .building-card:hover .building-image img {
+            transform: scale(1.1);
+        }
+
+        .building-info {
+            padding: 25px;
+            text-align: center;
+            position: relative;
+            z-index: 1;
+        }
+
+        .building-name {
+            font-size: 1.3rem;
+            color: #ff00ff;
+            margin-bottom: 12px;
+            text-shadow: 0 0 10px rgba(255, 0, 255, 0.5);
+        }
+
+        .building-desc {
+            font-size: 1rem;
+            color: #c0c0c0;
+            line-height: 1.5;
+        }
+
+        .avatar-name {
+            font-size: 1.2rem;
+            color: #ffffff;
+            margin-bottom: 5px;
+            position: relative;
+            z-index: 1;
+        }
+
+        .avatar-role {
+            font-size: 0.9rem;
+            color: #00ffff;
+            position: relative;
+            z-index: 1;
+        }
+
+        .info-card {
+            background: rgba(255, 255, 255, 0.05);
+            border: 2px solid rgba(255, 0, 255, 0.3);
+            border-radius: 20px;
+            padding: 40px;
+            backdrop-filter: blur(10px);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .info-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: linear-gradient(90deg, #00ffff, #ff00ff, #ffff00);
+            animation: borderGlow 3s ease-in-out infinite;
+        }
+
+        @keyframes borderGlow {
+            0%, 100% {
+                opacity: 1;
+            }
+            50% {
+                opacity: 0.5;
+            }
+        }
+
+        .info-card:hover {
+            border-color: #ff00ff;
+            box-shadow: 0 0 40px rgba(255, 0, 255, 0.3);
+        }
+
+        .info-content {
+            font-size: 1.1rem;
+            line-height: 1.8;
+            color: #e0e0e0;
+        }
+
+        .members-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 30px;
+        }
+
+        .member-card {
+            background: rgba(255, 255, 255, 0.05);
+            border: 2px solid rgba(0, 255, 255, 0.2);
+            border-radius: 15px;
+            padding: 25px;
+            backdrop-filter: blur(10px);
+            transition: all 0.3s ease;
+        }
+
+        .member-card:hover {
+            border-color: #00ffff;
+            box-shadow: 0 0 30px rgba(0, 255, 255, 0.4);
+            transform: scale(1.02);
+        }
+
+        .member-name {
+            font-size: 1.3rem;
+            color: #ffff00;
+            margin-bottom: 15px;
+            text-shadow: 0 0 10px rgba(255, 255, 0, 0.5);
+        }
+
+        .member-info {
+            color: #c0c0c0;
+            line-height: 1.6;
+        }
+
+        .hobbies-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+        }
+
+        .hobby-card {
+            background: rgba(255, 255, 255, 0.05);
+            border: 2px solid rgba(255, 255, 0, 0.3);
+            border-radius: 15px;
+            padding: 30px;
+            text-align: center;
+            backdrop-filter: blur(10px);
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+
+        .hobby-card:hover {
+            border-color: #ffff00;
+            box-shadow: 0 0 30px rgba(255, 255, 0, 0.5);
+            transform: translateY(-5px);
+        }
+
+        .hobby-icon {
+            font-size: 3rem;
+            margin-bottom: 15px;
+        }
+
+        .hobby-name {
+            font-size: 1.1rem;
+            color: #ffffff;
+        }
+
+        .contact-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 30px;
+        }
+
+        .contact-card {
+            background: rgba(255, 255, 255, 0.05);
+            border: 2px solid rgba(0, 255, 255, 0.3);
+            border-radius: 15px;
+            padding: 30px;
+            text-align: center;
+            backdrop-filter: blur(10px);
+            transition: all 0.3s ease;
+        }
+
+        .contact-card:hover {
+            border-color: #00ffff;
+            box-shadow: 0 0 30px rgba(0, 255, 255, 0.5);
+            transform: translateY(-5px);
+        }
+
+        .contact-icon {
+            font-size: 2.5rem;
+            margin-bottom: 15px;
+        }
+
+        .contact-title {
+            font-size: 1.2rem;
+            color: #ff00ff;
+            margin-bottom: 10px;
+        }
+
+        .contact-value {
+            font-size: 1rem;
+            color: #ffffff;
+            word-break: break-all;
+        }
+
+        .neon-btn {
+            display: inline-block;
+            padding: 15px 40px;
+            font-size: 1.2rem;
+            color: #00ffff;
+            background: transparent;
+            border: 2px solid #00ffff;
+            border-radius: 30px;
+            text-decoration: none;
+            text-transform: uppercase;
+            letter-spacing: 3px;
+            position: relative;
+            overflow: hidden;
+            transition: all 0.3s ease;
+            cursor: pointer;
+            margin-top: 20px;
+        }
+
+        .neon-btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(0, 255, 255, 0.4), transparent);
+            transition: all 0.5s ease;
+        }
+
+        .neon-btn:hover::before {
+            left: 100%;
+        }
+
+        .neon-btn:hover {
+            background: rgba(0, 255, 255, 0.1);
+            box-shadow: 0 0 30px rgba(0, 255, 255, 0.5);
+            transform: scale(1.05);
+        }
+
+        .footer {
+            text-align: center;
+            padding: 40px 20px;
+            background: rgba(0, 0, 0, 0.3);
+            border-top: 2px solid rgba(0, 255, 255, 0.3);
+            margin-top: 60px;
+        }
+
+        .footer-content {
+            color: #808080;
+            font-size: 0.9rem;
+            line-height: 1.8;
+        }
+
+        .footer-content a {
+            color: #00ffff;
+            text-decoration: none;
+            transition: color 0.3s ease;
+        }
+
+        .footer-content a:hover {
+            color: #ff00ff;
+        }
+
+        @media (max-width: 768px) {
+            .title {
+                font-size: 2.5rem;
+                letter-spacing: 5px;
+            }
+
+            .subtitle {
+                font-size: 1rem;
+            }
+
+            .team-avatars {
+                grid-template-columns: repeat(2, 1fr);
+            }
+
+            .section-title {
+                font-size: 1.5rem;
+            }
+
+            .section-title::before,
+            .section-title::after {
+                display: none;
+            }
+
+            .info-card {
+                padding: 20px;
+            }
+
+            .members-grid,
+            .hobbies-grid,
+            .contact-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .team-avatars {
+                grid-template-columns: 1fr;
+            }
+
+            .title {
+                font-size: 2rem;
+            }
+
+            .neon-btn {
+                padding: 12px 30px;
+                font-size: 1rem;
+            }
+        }
+
+        .scroll-indicator {
+            position: fixed;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            color: #00ffff;
+            font-size: 2rem;
+            animation: bounce 2s infinite;
+            z-index: 100;
+            cursor: pointer;
+        }
+
+        @keyframes bounce {
+            0%, 20%, 50%, 80%, 100% {
+                transform: translateX(-50%) translateY(0);
+            }
+            40% {
+                transform: translateX(-50%) translateY(-20px);
+            }
+            60% {
+                transform: translateX(-50%) translateY(-10px);
+            }
+        }
+
+        .scroll-indicator.hidden {
+            display: none;
+        }
+    </style>
+<style>
+#globalLoader{position:fixed;inset:0;z-index:99999;display:flex;flex-direction:column;align-items:center;justify-content:center;background:linear-gradient(135deg,#0f172a 0%,#1e1b4b 50%,#0f172a 100%);overflow:hidden;transition:opacity .6s ease,visibility .6s ease;font-family:-apple-system,"Segoe UI","Microsoft YaHei",sans-serif}
+#globalLoader::before{content:"";position:absolute;width:600px;height:600px;border-radius:50%;background:radial-gradient(circle,rgba(51,115,255,.15) 0%,transparent 70%);top:50%;left:50%;transform:translate(-50%,-50%);animation:pulseGlow 3s ease-in-out infinite}
+#globalLoader::after{content:"";position:absolute;inset:0;background-image:linear-gradient(rgba(255,255,255,.03) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.03) 1px,transparent 1px);background-size:40px 40px;animation:gridMove 20s linear infinite}
+@keyframes pulseGlow{0%,100%{transform:translate(-50%,-50%) scale(1);opacity:.6}50%{transform:translate(-50%,-50%) scale(1.2);opacity:1}}
+@keyframes gridMove{0%{background-position:0 0}100%{background-position:40px 40px}}
+.loader-logo{position:relative;z-index:2;display:flex;align-items:center;gap:14px;margin-bottom:40px}
+.loader-logo-icon{width:48px;height:48px;border-radius:12px;background:linear-gradient(135deg,#3373ff,#8b5cf6);display:flex;align-items:center;justify-content:center;color:#fff;font-size:24px;font-weight:bold;animation:logoFloat 2s ease-in-out infinite;box-shadow:0 8px 32px rgba(51,115,255,.4)}
+.loader-logo span{font-size:32px;font-weight:800;color:#fff;letter-spacing:2px}
+@keyframes logoFloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-8px)}}
+.loader-progress-wrap{position:relative;z-index:2;width:320px;max-width:80vw}
+.loader-progress-bar{width:100%;height:6px;background:rgba(255,255,255,.1);border-radius:99px;overflow:hidden;position:relative}
+.loader-progress-fill{height:100%;width:0%;background:linear-gradient(90deg,#3373ff,#8b5cf6,#ec4899);border-radius:99px;transition:width .3s ease;position:relative;box-shadow:0 0 20px rgba(51,115,255,.6)}
+.loader-progress-fill::after{content:"";position:absolute;inset:0;background:linear-gradient(90deg,transparent,rgba(255,255,255,.4),transparent);animation:shimmer 1.5s infinite}
+@keyframes shimmer{0%{transform:translateX(-100%)}100%{transform:translateX(100%)}}
+.loader-progress-info{display:flex;justify-content:space-between;align-items:center;margin-top:14px}
+.loader-percent{font-size:24px;font-weight:700;color:#fff;font-variant-numeric:tabular-nums}
+.loader-tip{font-size:13px;color:rgba(255,255,255,.5);margin-top:24px;text-align:center;z-index:2;position:relative;min-height:20px;transition:opacity .3s}
+.loader-hide{opacity:0!important;visibility:hidden!important;pointer-events:none}
+.loader-theme-switcher{position:absolute;bottom:40px;right:40px;z-index:10;display:flex;align-items:center;gap:10px}
+.loader-theme-btn{width:52px;height:52px;border-radius:50%;border:2px solid rgba(255,255,255,.4);background:linear-gradient(135deg,rgba(51,115,255,.3),rgba(139,92,246,.3));color:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .3s;backdrop-filter:blur(10px);font-size:20px;box-shadow:0 0 20px rgba(51,115,255,.4);animation:btnPulse 2s ease-in-out infinite}
+.loader-theme-btn:hover{background:linear-gradient(135deg,rgba(51,115,255,.5),rgba(139,92,246,.5));transform:scale(1.1);box-shadow:0 0 30px rgba(51,115,255,.6)}
+@keyframes btnPulse{0%,100%{box-shadow:0 0 20px rgba(51,115,255,.4)}50%{box-shadow:0 0 35px rgba(139,92,246,.7)}}
+.loader-theme-label{color:rgba(255,255,255,.7);font-size:13px;font-weight:500;letter-spacing:1px;animation:labelFade 2s ease-in-out infinite}
+@keyframes labelFade{0%,100%{opacity:.5}50%{opacity:1}}
+.loader-theme-colors{position:absolute;bottom:60px;right:0;display:flex;gap:8px;padding:10px;border-radius:12px;background:rgba(0,0,0,.5);backdrop-filter:blur(10px);border:1px solid rgba(255,255,255,.15);opacity:0;visibility:hidden;transform:translateY(10px);transition:all .3s}
+.loader-theme-colors.show{opacity:1;visibility:visible;transform:translateY(0)}
+.loader-theme-color{width:32px;height:32px;border-radius:50%;border:2px solid rgba(255,255,255,.3);cursor:pointer;transition:all .2s;padding:0}
+.loader-theme-color:hover{transform:scale(1.2);border-color:#fff}
+.loader-theme-color.active{border-color:#fff;box-shadow:0 0 12px rgba(255,255,255,.6)}
+.loader-sun-btn{width:44px;height:44px;border-radius:50%;border:2px solid rgba(255,200,50,.6);background:linear-gradient(135deg,#ffd700,#ff8c00);color:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .3s;font-size:18px;box-shadow:0 0 15px rgba(255,200,50,.5);animation:sunSpin 4s linear infinite}
+.loader-sun-btn:hover{transform:scale(1.15);box-shadow:0 0 25px rgba(255,200,50,.8)}
+@keyframes sunSpin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}
+.loader-sun-btn:hover{animation-play-state:paused}
+/* 浅色模式 */
+#globalLoader.light-mode{background:linear-gradient(135deg,#f0f4ff 0%,#e8e0ff 50%,#f0f4ff 100%)!important}
+#globalLoader.light-mode::before{background:radial-gradient(circle,rgba(51,115,255,.1) 0%,transparent 70%)!important}
+#globalLoader.light-mode::after{background-image:linear-gradient(rgba(0,0,0,.03) 1px,transparent 1px),linear-gradient(90deg,rgba(0,0,0,.03) 1px,transparent 1px)!important}
+#globalLoader.light-mode .loader-logo span{color:#1e293b!important}
+#globalLoader.light-mode .loader-logo-icon{box-shadow:0 8px 32px rgba(51,115,255,.3)!important}
+#globalLoader.light-mode .loader-percent{color:#1e293b!important}
+#globalLoader.light-mode .loader-tip{color:rgba(0,0,0,.5)!important}
+#globalLoader.light-mode .loader-progress-info span:first-child{color:rgba(0,0,0,.4)!important}
+#globalLoader.light-mode .loader-theme-label{color:rgba(0,0,0,.6)!important}
+#globalLoader.light-mode .loader-progress-bar{background:rgba(0,0,0,.08)!important}
+#globalLoader.light-mode .loader-theme-btn{background:linear-gradient(135deg,rgba(51,115,255,.2),rgba(139,92,246,.2))!important;color:#3b3f5c!important;border-color:rgba(0,0,0,.25)!important}
+#globalLoader.light-mode .loader-theme-colors{background:rgba(255,255,255,.92)!important;border-color:rgba(0,0,0,.12)!important}
+#globalLoader.light-mode .loader-theme-color{border-color:rgba(0,0,0,.35)!important}
+</style>
+<style>
+/* 全局主题切换小太阳（固定右上角，始终可见） */
+.global-sun-btn{position:fixed;top:16px;right:16px;z-index:999999;width:42px;height:42px;border-radius:50%;border:2px solid rgba(255,200,50,.7);background:linear-gradient(135deg,#ffd700,#ff8c00);color:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:18px;box-shadow:0 2px 12px rgba(255,165,0,.5);transition:all .3s;animation:globalSunSpin 6s linear infinite;backdrop-filter:blur(4px)}
+.global-sun-btn:hover{transform:scale(1.15) rotate(15deg);box-shadow:0 4px 20px rgba(255,165,0,.8);animation-play-state:paused}
+@keyframes globalSunSpin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}
+/* 浅色模式：清晰的浅背景 + 深文字（替代 filter 反转，保证对比度） */
+html[data-theme="light"] body{background:linear-gradient(135deg,#f4f6fb 0%,#eef1f6 50%,#f4f6fb 100%);color:#1a1f36}
+html[data-theme="light"] h1,html[data-theme="light"] h2,html[data-theme="light"] h3{color:#1a1f36}
+html[data-theme="light"] p{color:#3f4a63 !important}
+html[data-theme="light"] .title{background:none;-webkit-text-fill-color:#1a1f36;text-shadow:none}
+html[data-theme="light"] .subtitle{color:#0e7490;text-shadow:none}
+html[data-theme="light"] .section-title{color:#7c3aed;text-shadow:none}
+html[data-theme="light"] .avatar-card,html[data-theme="light"] .building-card,html[data-theme="light"] .info-card,html[data-theme="light"] .member-card,html[data-theme="light"] .hobby-card,html[data-theme="light"] .contact-card{background:#ffffff;border-color:rgba(0,0,0,.12)}
+html[data-theme="light"] .avatar-name,html[data-theme="light"] .hobby-name,html[data-theme="light"] .contact-value{color:#1a1f36}
+html[data-theme="light"] .avatar-role{color:#0e7490}
+html[data-theme="light"] .building-name,html[data-theme="light"] .contact-title{color:#7c3aed;text-shadow:none}
+html[data-theme="light"] .building-desc,html[data-theme="light"] .member-info{color:#4a5570}
+html[data-theme="light"] .info-content{color:#3f4a63}
+html[data-theme="light"] .member-name{color:#a16207;text-shadow:none}
+html[data-theme="light"] .neon-btn{color:#0e7490;border-color:#0e7490}
+html[data-theme="light"] .footer{background:rgba(0,0,0,.04);border-top:2px solid rgba(0,0,0,.1)}
+html[data-theme="light"] .footer-content{color:#5a6478}
+html[data-theme="light"] .footer-content a{color:#0e7490}
+html[data-theme="light"] .scroll-indicator{color:#0e7490}
+</style>
+</head>
+<body>
+
+<button class="global-sun-btn" id="globalSunBtn" title="切换深色/浅色模式">☀️</button>
+
+<div id="globalLoader">
+  <div class="loader-logo">
+    <div class="loader-logo-icon">◆</div>
+    <span>我们的山头</span>
+  </div>
+  <div class="loader-progress-wrap">
+    <div class="loader-progress-bar"><div class="loader-progress-fill" id="loaderFill"></div></div>
+    <div class="loader-progress-info">
+      <span style="color:rgba(255,255,255,.4);font-size:12px;">正在加载资源</span>
+      <span class="loader-percent" id="loaderPercent">0%</span>
+    </div>
+  </div>
+  <div class="loader-tip" id="loaderTip">正在初始化引擎...</div>
+  <div class="loader-theme-switcher">
+    <button class="loader-sun-btn" id="loaderSunBtn" title="切换浅色模式">☀️</button>
+    <span class="loader-theme-label">切换主题</span>
+    <button class="loader-theme-btn" id="loaderThemeBtn" title="切换背景色">🎨</button>
+    <div class="loader-theme-colors" id="loaderThemeColors">
+      <button class="loader-theme-color active" data-theme="deepspace" style="background:linear-gradient(135deg,#0f172a,#1e1b4b)" title="深空蓝"></button>
+      <button class="loader-theme-color" data-theme="aurora" style="background:linear-gradient(135deg,#064e3b,#134e4a)" title="极光绿"></button>
+      <button class="loader-theme-color" data-theme="sunset" style="background:linear-gradient(135deg,#7c2d12,#9a3412)" title="落日橙"></button>
+      <button class="loader-theme-color" data-theme="sakura" style="background:linear-gradient(135deg,#831843,#9d174d)" title="樱花粉"></button>
+      <button class="loader-theme-color" data-theme="royal" style="background:linear-gradient(135deg,#2e1065,#4c1d95)" title="皇家紫"></button>
+      <button class="loader-theme-color" data-theme="ocean" style="background:linear-gradient(135deg,#0c4a6e,#075985)" title="海洋蓝"></button>
+    </div>
+  </div>
+</div>
+    <div class="particle-bg" id="particleBg"></div>
+
+    <header class="header">
+        <h1 class="title">我们的山头</h1>
+        <p class="subtitle">各位合作伙伴大家好，这是我们的网页</p>
+    </header>
+
+    <div class="container">
+        <section class="section" id="teamSection">
+            <h2 class="section-title">团队展示</h2>
+            <div class="team-avatars">
+                <div class="avatar-card">
+                    <div class="avatar-placeholder">
+                        <!-- 团队成员1头像 -->
+                        <img src="1 (5).jpg" alt="成员一">
+                        <span style="display: none;">🎮</span>
+                    </div>
+                    <div class="avatar-name">成员一</div>
+                    <div class="avatar-role">服务器管理员</div>
+                </div>
+                <div class="avatar-card">
+                    <div class="avatar-placeholder">
+                        <!-- 团队成员2头像 -->
+                        <img src="1（6）.jpg" alt="成员二">
+                        <span style="display: none;">⚔️</span>
+                    </div>
+                    <div class="avatar-name">成员二</div>
+                    <div class="avatar-role">建筑设计师</div>
+                </div>
+                <div class="avatar-card">
+                    <div class="avatar-placeholder">
+                        <!-- 团队成员3头像 -->
+                        <img src="1 (4).jpg" alt="成员三">
+                        <span style="display: none;">🏰</span>
+                    </div>
+                    <div class="avatar-name">成员三</div>
+                    <div class="avatar-role">红石工程师</div>
+                </div>
+            </div>
+        </section>
+
+        <section class="section" id="introSection">
+            <h2 class="section-title">服务器简介</h2>
+            <div class="info-card">
+                <div class="info-content">
+                    <p>欢迎来到"我们的山头"我的世界服务器！这里是一个充满创意与友情的游戏社区，我们致力于打造一个和谐、有趣、富有挑战性的游戏环境。</p>
+                    <br>
+                    <p>服务器特色：</p>
+                    <ul style="margin-left: 30px; margin-top: 10px;">
+                        <li>🏰 精美的建筑群和独特的地形设计</li>
+                        <li>⚔️ 丰富的游戏玩法和活动</li>
+                        <li>🤝 友好的社区氛围和活跃的玩家群体</li>
+                        <li>🎯 定期举办各类活动和比赛</li>
+                        <li>🛡️ 完善的管理制度和公平的游戏环境</li>
+                    </ul>
+                </div>
+            </div>
+
+            <h3 class="section-title" style="margin-top: 50px;">服务器建筑展示</h3>
+            <div class="building-gallery">
+                <div class="building-card">
+                    <div class="building-image">
+                        <!-- 建筑1图片 -->
+                        <img src="1 (1).jpg" alt="主城堡">
+                        <span style="display: none;">🏰</span>
+                    </div>
+                    <div class="building-info">
+                        <div class="building-name">主城堡</div>
+                        <div class="building-desc">服务器的核心建筑，宏伟壮观</div>
+                    </div>
+                </div>
+                <div class="building-card">
+                    <div class="building-image">
+                        <!-- 建筑2图片 -->
+                        <img src="1 (3).jpg" alt="自然风光区">
+                        <span style="display: none;">🏞️</span>
+                    </div>
+                    <div class="building-info">
+                        <div class="building-name">自然风光区</div>
+                        <div class="building-desc">美丽的自然景观和生态系统</div>
+                    </div>
+                </div>
+                <div class="building-card">
+                    <div class="building-image">
+                        <!-- 建筑3图片 -->
+                        <img src="1 (2).jpg" alt="红石基地">
+                        <span style="display: none;">⚡</span>
+                    </div>
+                    <div class="building-info">
+                        <div class="building-name">红石基地</div>
+                        <div class="building-desc">先进的红石机械和自动化系统</div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="section" id="membersSection">
+            <h2 class="section-title">成员介绍</h2>
+            <div class="members-grid">
+                <div class="member-card">
+                    <div class="member-name">成员一</div>
+                    <div class="member-info">
+                        <p>服务器创始人，拥有丰富的管理经验，致力于为玩家提供最佳游戏体验。</p>
+                        <br>
+                        <p><strong>擅长：</strong>服务器管理、活动策划</p>
+                    </div>
+                </div>
+                <div class="member-card">
+                    <div class="member-name">成员二</div>
+                    <div class="member-info">
+                        <p>资深建筑设计师，负责服务器主要建筑群的设计与建造工作。</p>
+                        <br>
+                        <p><strong>擅长：</strong>建筑设计、景观规划</p>
+                    </div>
+                </div>
+                <div class="member-card">
+                    <div class="member-name">成员三</div>
+                    <div class="member-info">
+                        <p>红石技术专家，负责服务器各种自动化装置和机械装置的设计。</p>
+                        <br>
+                        <p><strong>擅长：</strong>红石电路、机械装置</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="section" id="hobbiesSection">
+            <h2 class="section-title">兴趣爱好</h2>
+            <div class="hobbies-grid">
+                <div class="hobby-card">
+                    <div class="hobby-icon">🏗️</div><div class="hobby-name">建筑创作</div>
+                    <nav>
+                    <a href="" >点击跳转 </a>
+                     </nav>		
+                </div>
+				<div class="hobby-card">
+                    <div class="hobby-icon">️⚔</div><div class="hobby-name">冒险探索</div>
+                    <nav>
+                    <a href="redstone.html" >点击跳转</a>
+                     </nav>		
+                </div>
+               
+                <div class="hobby-card">
+                    <div class="hobby-icon">🔧</div><div class="hobby-name">红石科技</div>
+                     <nav>
+                      <a href="redstone.html" >点击跳转</a>
+                      </nav>	
+                </div>
+                
+                <div class="hobby-card">
+                    <div class="hobby-icon">🎮</div>
+                    <div class="hobby-name">游戏竞技</div>
+                </div>
+                <div class="hobby-card">
+                    <div class="hobby-icon">🌍</div>
+                    <div class="hobby-name">地图探索</div>
+                </div>
+            </div>
+        </section>
+
+        <section class="section" id="contactSection">
+            <h2 class="section-title">联系我们</h2>
+            <div class="contact-grid">
+                <div class="contact-card">
+                    <div class="contact-icon">🌐</div>
+                    <div class="contact-title">服务器地址</div>
+                    <div class="contact-value">play.ourmountain.com</div>
+                </div>
+                <div class="contact-card">
+                    <div class="contact-icon">💬</div>
+                    <div class="contact-title">QQ群</div>
+                    <div class="contact-value">264087130</div>
+                </div>
+                <div class="contact-card">
+                    <div class="contact-icon">📧</div>
+                    <div class="contact-title">联系邮箱</div>
+                    <div class="contact-value">contact@ourmountain.com</div>
+                </div>
+                <div class="contact-card">
+                    <div class="contact-icon">🎮</div>
+                    <div class="contact-title">游戏版本</div>
+                    <div class="contact-value">BE版 1.21.0.x</div>
+                </div>
+            </div>
+            <div style="text-align: center;">
+                <a href="#" class="neon-btn">立即加入服务器</a>
+            </div>
+        </section>
+    </div>
+
+    <footer class="footer">
+        <div class="footer-content">
+            <p>我们的山头 - 我的世界服务器</p>
+            <p>版权所有 © 2024 Our Mountain Server</p>
+            <p>联系我们：<a href="mailto:contact@ourmountain.com">contact@ourmountain.com</a></p>
+        </div>
+    </footer>
+
+    <div class="scroll-indicator" id="scrollIndicator">↓</div>
+
+    <script>
+        function createParticles() {
+            const particleBg = document.getElementById('particleBg');
+            const particleCount = 50;
+
+            for (let i = 0; i < particleCount; i++) {
+                const particle = document.createElement('div');
+                particle.className = 'particle';
+                particle.style.left = Math.random() * 100 + '%';
+                particle.style.animationDelay = Math.random() * 15 + 's';
+                particle.style.animationDuration = (Math.random() * 10 + 10) + 's';
+                
+                const colors = ['#00ffff', '#ff00ff', '#ffff00', '#00ff00'];
+                particle.style.background = colors[Math.floor(Math.random() * colors.length)];
+                
+                particleBg.appendChild(particle);
+            }
+        }
+
+        function handleScrollAnimation() {
+            const sections = document.querySelectorAll('.section');
+            const scrollIndicator = document.getElementById('scrollIndicator');
+
+            sections.forEach(section => {
+                const rect = section.getBoundingClientRect();
+                const isVisible = rect.top < window.innerHeight * 0.8;
+
+                if (isVisible) {
+                    section.classList.add('visible');
+                }
+            });
+
+            if (window.scrollY > 100) {
+                scrollIndicator.classList.add('hidden');
+            } else {
+                scrollIndicator.classList.remove('hidden');
+            }
+        }
+
+        function smoothScroll() {
+            const scrollIndicator = document.getElementById('scrollIndicator');
+            scrollIndicator.addEventListener('click', () => {
+                window.scrollTo({
+                    top: window.innerHeight,
+                    behavior: 'smooth'
+                });
+            });
+        }
+
+        function addHoverEffects() {
+            const cards = document.querySelectorAll('.avatar-card, .member-card, .hobby-card, .contact-card');
+            
+            cards.forEach(card => {
+                card.addEventListener('mouseenter', function() {
+                    this.style.transform = 'translateY(-10px) scale(1.02)';
+                });
+                
+                card.addEventListener('mouseleave', function() {
+                    this.style.transform = 'translateY(0) scale(1)';
+                });
+            });
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            createParticles();
+            handleScrollAnimation();
+            smoothScroll();
+            addHoverEffects();
+
+            window.addEventListener('scroll', handleScrollAnimation);
+
+            const firstSection = document.querySelector('.section');
+            if (firstSection) {
+                setTimeout(() => {
+                    firstSection.classList.add('visible');
+                }, 500);
+            }
+        });
+    </script>		<h6>音乐	</h6>
+		<hr>
+		<audio src="夜莺 - 纯音乐网.mp3" controls></audio>
+<style>
+.back-to-blog{position:fixed;top:14px;left:14px;z-index:99999;background:rgba(26,26,46,.85);color:#fff;padding:7px 14px;border-radius:8px;text-decoration:none;font-size:12.5px;font-weight:600;font-family:-apple-system,'Segoe UI','Microsoft YaHei',sans-serif;backdrop-filter:blur(8px);box-shadow:0 4px 14px rgba(0,0,0,.3);transition:all .2s;display:inline-flex;align-items:center;gap:4px}
+.back-to-blog:hover{background:rgba(91,108,255,.92);transform:translateY(-1px);box-shadow:0 6px 18px rgba(91,108,255,.45)}
+</style>
+<a href="../../index.html" class="back-to-blog">← 返回博客</a>
+<script>
+(function(){
+  var fill=document.getElementById("loaderFill");
+  var percentEl=document.getElementById("loaderPercent");
+  var tipEl=document.getElementById("loaderTip");
+  var progress=0,timer=null;
+  var tips=["正在初始化引擎...","正在加载核心模块...","正在连接数据服务...","正在渲染界面组件...","即将完成，请稍候..."];
+  var tipIndex=0;
+  function setProgress(p){progress=Math.min(100,Math.max(0,p));if(fill)fill.style.width=progress+"%";if(percentEl)percentEl.textContent=Math.floor(progress)+"%";}
+  function nextTip(){tipIndex=(tipIndex+1)%tips.length;if(tipEl){tipEl.style.opacity="0";setTimeout(function(){tipEl.textContent=tips[tipIndex];tipEl.style.opacity="1";},300);}}
+  function simulate(){
+    if(progress>=92)return;
+    var inc=progress<30?Math.random()*8+4:progress<60?Math.random()*5+2:Math.random()*2+0.5;
+    setProgress(progress+inc);
+    if(Math.floor(progress/20)!==tipIndex&&progress<90)nextTip();
+    timer=setTimeout(simulate,200+Math.random()*300);
+  }
+  window.__loaderComplete=function(){
+    if(timer)clearTimeout(timer);
+    setProgress(100);
+    if(tipEl)tipEl.textContent="加载完成！";
+    setTimeout(function(){
+      var loader=document.getElementById("globalLoader");
+      if(loader)loader.classList.add("loader-hide");
+      setTimeout(function(){if(loader)loader.style.display="none";},600);
+    },400);
+  };
+  setTimeout(function(){if(progress<100)window.__loaderComplete();},6000);
+  simulate();
+  var themes={deepspace:"linear-gradient(135deg,#0f172a 0%,#1e1b4b 50%,#0f172a 100%)",aurora:"linear-gradient(135deg,#064e3b 0%,#134e4a 50%,#064e3b 100%)",sunset:"linear-gradient(135deg,#7c2d12 0%,#9a3412 50%,#7c2d12 100%)",sakura:"linear-gradient(135deg,#831843 0%,#9d174d 50%,#831843 100%)",royal:"linear-gradient(135deg,#2e1065 0%,#4c1d95 50%,#2e1065 100%)",ocean:"linear-gradient(135deg,#0c4a6e 0%,#075985 50%,#0c4a6e 100%)"};
+  var savedTheme=localStorage.getItem("loaderTheme")||"deepspace";
+  var loaderEl=document.getElementById("globalLoader");
+  if(loaderEl&&themes[savedTheme])loaderEl.style.background=themes[savedTheme];
+  var themeBtn=document.getElementById("loaderThemeBtn");
+  var themeColors=document.getElementById("loaderThemeColors");
+  if(themeBtn&&themeColors){
+    themeBtn.addEventListener("click",function(e){e.stopPropagation();themeColors.classList.toggle("show");});
+    document.addEventListener("click",function(){themeColors.classList.remove("show");});
+    var colorBtns=themeColors.querySelectorAll(".loader-theme-color");
+    colorBtns.forEach(function(btn){
+      if(btn.dataset.theme===savedTheme)btn.classList.add("active");else btn.classList.remove("active");
+      btn.addEventListener("click",function(e){
+        e.stopPropagation();
+        var t=btn.dataset.theme;
+        if(loaderEl&&themes[t])loaderEl.style.background=themes[t];
+        localStorage.setItem("loaderTheme",t);
+        colorBtns.forEach(function(b){b.classList.remove("active");});
+        btn.classList.add("active");
+      });
+    });
+  }
+  /* ===== 小太阳浅色模式切换 ===== */
+  var sunBtn=document.getElementById("loaderSunBtn");
+  var savedLight=localStorage.getItem("loaderLight")==="true";
+  if(savedLight&&loaderEl)loaderEl.classList.add("light-mode");
+  if(sunBtn){
+    sunBtn.addEventListener("click",function(e){
+      e.stopPropagation();
+      var isLight=loaderEl.classList.toggle("light-mode");
+      localStorage.setItem("loaderLight",isLight?"true":"false");
+    });
+  }
+  window.addEventListener("load",function(){setTimeout(function(){if(window.__loaderComplete)window.__loaderComplete();},800);});
+})();
+</script>
+<script>
+(function(){
+  var html=document.documentElement;
+  var btn=document.getElementById("globalSunBtn");
+  function setTheme(t){ html.setAttribute("data-theme", t); }
+  var saved=localStorage.getItem("globalTheme");
+  if(saved==="light"||saved==="dark"){ setTheme(saved); }
+  else { setTheme(window.matchMedia("(prefers-color-scheme: light)").matches ? "light":"dark"); }
+  if(btn)btn.addEventListener("click",function(e){
+    e.stopPropagation();
+    var cur=(html.getAttribute("data-theme")==="light")?"light":"dark";
+    var next=cur==="light"?"dark":"light";
+    setTheme(next);
+    localStorage.setItem("globalTheme", next);
+  });
+})();
+</script>
+<!-- sun-drag -->
+<style>
+.global-sun-btn{cursor:grab;touch-action:none;-webkit-user-select:none;user-select:none}
+.global-sun-btn.dragging{cursor:grabbing;transition:none!important;animation-play-state:paused!important;box-shadow:0 8px 24px rgba(255,165,0,.85)!important}
+</style>
+<script>
+(function(){
+  var btn=document.getElementById("globalSunBtn");
+  if(!btn)return;
+  btn.title="切换主题 · 按住可拖动位置";
+  var KEY="globalSunPos",x=null,y=null;
+  try{var s=localStorage.getItem(KEY);if(s){var p=JSON.parse(s);if(typeof p.x==="number"&&typeof p.y==="number"){x=p.x;y=p.y;}}}catch(e){}
+  function clamp(){var w=btn.offsetWidth||42,h=btn.offsetHeight||42;x=Math.max(0,Math.min(x,window.innerWidth-w));y=Math.max(0,Math.min(y,window.innerHeight-h));}
+  function render(noAnim){if(x===null||y===null)return;clamp();if(noAnim)btn.style.transition="none";btn.style.left=x+"px";btn.style.top=y+"px";btn.style.right="auto";btn.style.bottom="auto";if(noAnim)requestAnimationFrame(function(){btn.style.transition="";});}
+  render(true);
+  window.addEventListener("resize",function(){if(x!==null&&y!==null)render(false);});
+  var dragging=false,moved=false,sx=0,sy=0,ox=0,oy=0;
+  btn.addEventListener("pointerdown",function(e){dragging=true;moved=false;if(btn.setPointerCapture)btn.setPointerCapture(e.pointerId);btn.classList.add("dragging");sx=e.clientX;sy=e.clientY;var r=btn.getBoundingClientRect();ox=r.left;oy=r.top;x=ox;y=oy;});
+  btn.addEventListener("pointermove",function(e){if(!dragging)return;var dx=e.clientX-sx,dy=e.clientY-sy;if(Math.abs(dx)>4||Math.abs(dy)>4)moved=true;x=ox+dx;y=oy+dy;render(false);});
+  function end(){if(!dragging)return;dragging=false;btn.classList.remove("dragging");try{localStorage.setItem(KEY,JSON.stringify({x:x,y:y}));}catch(e){}}
+  btn.addEventListener("pointerup",end);
+  btn.addEventListener("pointercancel",end);
+  btn.addEventListener("click",function(e){if(moved){e.stopPropagation();e.preventDefault();moved=false;}},true);
+})();
+</script>
+</body>
+</html>

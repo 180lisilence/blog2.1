@@ -1,0 +1,42 @@
+# 操作系统
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# 编辑器
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# 日志
+*.log
+npm-debug.log*
+
+# 依赖（本项目无依赖，纯静态）
+node_modules/
+
+# 打包产物（本地 APP 打包用的压缩包，体积大且非源码，不上传）
+*.zip
+
+# 登录系统用户数据（含密码加盐哈希，属于本机数据，不应公开）
+qrcode-login/users.json
+
+# 临时文件
+*.tmp
+*.temp
+*.bak
+*.old
+
+# 环境变量
+.env
+.env.local
+.env.*.local
+
+# 缓存
+.cache/
+.temp/
+
+# ChatRecord 用户会话数据（聊天记录，属于本机数据，不应公开）
+qrcode-login/data/

@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PWA 待办清单</title>
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#3F51B5">
+  <style>
+    body { font-family: sans-serif; max-width: 500px; margin: 40px auto; padding: 0 20px; }
+    h1 { color: #3F51B5; }
+    .todo-item { display: flex; align-items: center; gap: 10px; padding: 12px; border-bottom: 1px solid #eee; }
+    .done { text-decoration: line-through; color: #999; }
+    button { cursor: pointer; padding: 8px 14px; border: none; border-radius: 6px; }
+    .btn-add { background: #3F51B5; color: white; }
+    .btn-del { background: #f44336; color: white; }
+    .btn-install { background: #4CAF50; color: white; display: none; margin-bottom: 16px; }
+    input[type="text"] { padding: 10px; width: 300px; border: 1px solid #ddd; border-radius: 6px; }
+    .count { color: #666; margin: 10px 0; }
+    .badge { display: inline-block; background: #e8eaf6; color: #3F51B5; padding: 2px 8px; border-radius: 10px; font-size: 12px; margin-left: 8px; }
+  </style>
+</head>
+<body>
+  <h1>📱 PWA 待办清单 <span class="badge">可安装·离线可用</span></h1>
+  <button id="installBtn" class="btn-install">📲 安装到桌面</button>
+  <p class="count" id="count"></p>
+  <input type="text" id="input" placeholder="输入待办事项...">
+  <button class="btn-add" onclick="addTodo()">添加</button>
+  <div id="list" style="margin-top: 20px;"></div>
+
+  <script src="app.js"></script>
+</body>
+</html>

@@ -1,0 +1,41 @@
+{
+  "name": "myself-blog-project-center",
+  "version": "2.0.0",
+  "description": "项目中心服务 - 模块化架构，支持扫码登录、账号注册、项目管理、ChatRecord 时序分析",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node --watch server.js",
+    "lint": "eslint . --ext .js",
+    "lint:fix": "eslint . --ext .js --fix",
+    "format": "prettier --write \"**/*.js\"",
+    "format:check": "prettier --check \"**/*.js\"",
+    "test": "node ../tests/run.js",
+    "test:integration": "node ../tests/integration.test.js"
+  },
+  "keywords": [
+    "blog",
+    "project-center",
+    "qrcode-login",
+    "chatrecord",
+    "mysql"
+  ],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "cookie-parser": "^1.4.7",
+    "cors": "^2.8.6",
+    "dotenv": "^17.4.2",
+    "express": "^4.22.2",
+    "mysql2": "^3.24.2",
+    "qrcode": "^1.5.4",
+    "uuid": "^10.0.0"
+  },
+  "devDependencies": {
+    "eslint": "^8.57.0",
+    "prettier": "^3.2.5"
+  },
+  "engines": {
+    "node": ">=16.0.0"
+  }
+}

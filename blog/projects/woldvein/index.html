@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>woldvein 游戏 AI 项目 · 项目入口</title>
+<style>
+  :root{--bg:#0a0e1a;--card:rgba(255,255,255,0.04);--accent:#38bdf8;--accent2:#a78bfa;--accent3:#34d399;--text:#e2e8f0;--muted:#94a3b8}
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif;background:var(--bg);color:var(--text);min-height:100vh;display:flex;align-items:center;justify-content:center;padding:32px 16px}
+  .bg-grid{position:fixed;inset:0;z-index:0;background-image:linear-gradient(rgba(255,255,255,.04) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.04) 1px,transparent 1px);background-size:60px 60px;pointer-events:none}
+  .bg-orb{position:fixed;width:480px;height:480px;border-radius:50%;filter:blur(90px);opacity:.22;pointer-events:none;z-index:0}
+  .orb-1{background:#38bdf8;top:-160px;right:-120px}
+  .orb-2{background:#a78bfa;bottom:-180px;left:-140px}
+  .wrap{position:relative;z-index:1;max-width:680px;width:100%;text-align:center}
+  .badge{display:inline-flex;align-items:center;gap:8px;padding:6px 14px;border:1px solid rgba(56,189,248,.35);border-radius:999px;font-size:13px;color:var(--accent);background:rgba(56,189,248,.08);margin-bottom:22px}
+  .badge .dot{width:7px;height:7px;border-radius:50%;background:var(--accent3);animation:pulse 1.8s ease-in-out infinite}
+  @keyframes pulse{0%,100%{opacity:1}50%{opacity:.35}}
+  h1{font-size:38px;line-height:1.25;font-weight:800;margin-bottom:14px;background:linear-gradient(135deg,#fff 0%,var(--accent) 55%,var(--accent2) 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+  .sub{color:var(--muted);font-size:15px;line-height:1.8;margin-bottom:30px}
+  .sub b{color:var(--text);font-weight:600}
+  .cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:14px;margin-bottom:30px;text-align:left}
+  .card{background:var(--card);border:1px solid rgba(255,255,255,.08);border-radius:16px;padding:18px}
+  .card .num{font-size:30px;font-weight:800;background:linear-gradient(135deg,var(--accent),var(--accent2));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+  .card .lab{font-size:12px;color:var(--muted);margin-top:6px;line-height:1.6}
+  .btns{display:flex;gap:14px;justify-content:center;flex-wrap:wrap}
+  .btn{padding:13px 28px;border-radius:12px;text-decoration:none;font-weight:600;font-size:15px;transition:transform .2s,box-shadow .2s}
+  .btn-primary{background:linear-gradient(135deg,var(--accent),var(--accent2));color:#0a0e1a}
+  .btn-primary:hover{transform:translateY(-2px);box-shadow:0 8px 28px rgba(56,189,248,.35)}
+  .btn-ghost{background:rgba(255,255,255,.05);color:var(--text);border:1px solid rgba(255,255,255,.14)}
+  .btn-ghost:hover{transform:translateY(-2px);background:rgba(255,255,255,.09)}
+  .foot{position:fixed;bottom:18px;left:0;right:0;text-align:center;font-size:12px;color:rgba(148,163,184,.55)}
+</style>
+</head>
+<body>
+<div class="bg-grid"></div>
+<div class="bg-orb orb-1"></div>
+<div class="bg-orb orb-2"></div>
+
+<div class="wrap">
+  <div class="badge"><span class="dot"></span>woldvein · 游戏 AI 项目</div>
+  <h1>先让游戏可启动，<br>再让游戏可控，最后让游戏可自动</h1>
+  <p class="sub">
+    为《东方：平野孤鸿》（BalladsOfHongye）打造的工具家族：<b>v2.0 启动器</b>、
+    <b>v3.0 八目录产品矩阵</b>、<b>v3.5 审计修复</b>、<b>v3.6 Steam 启动改道</b>、
+    <b>v4.0 AI Agent</b> 与<b>第七项目存档修复</b>。一天内从三次崩溃到可玩闭环。
+  </p>
+  <div class="cards">
+    <div class="card"><div class="num">8</div><div class="lab">游戏侧散文件改造（GBK + Goldberg 离线可用）</div></div>
+    <div class="card"><div class="num">43</div><div class="lab">v3.5 审计断言全通过</div></div>
+    <div class="card"><div class="num">4</div><div class="lab">v4.0 建造策略轮换</div></div>
+    <div class="card"><div class="num">3</div><div class="lab">次进场景崩溃，最终归零</div></div>
+  </div>
+  <div class="btns">
+    <a class="btn btn-primary" href="review.html">📊 查看全景复盘</a>
+    <a class="btn btn-ghost" href="https://my.feishu.cn/slides/BEUdsCsbUllRqkdyo6bcdOfenpR" target="_blank" rel="noopener">🖥️ 复盘 PPT 2.0</a>
+  </div>
+</div>
+
+<div class="foot">© 2026 · woldvein 项目 · 东方：平野孤鸿 (BalladsOfHongye/woldvein)</div>
+</body>
+</html>

@@ -1,0 +1,167 @@
+/* ChatRecord 样式 —— 暗色数据实验室风格 */
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+:root {
+  --bg: #0e1117;
+  --bg2: #161b24;
+  --bg3: #1c2330;
+  --border: #262e3d;
+  --text: #e6e9ef;
+  --muted: #8b93a7;
+  --accent: #4f8cff;
+  --accent2: #22d3a5;
+  --warn: #f59e0b;
+  --danger: #f87171;
+}
+
+body {
+  background: #0a0f1c;
+  background-image: url('../assets/bg.jpg');
+  background-size: cover;
+  background-position: center;
+  background-attachment: fixed;
+  color: var(--text);
+  font-family: "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+  min-height: 100vh;
+}
+
+/* ---------- 顶栏 ---------- */
+.topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 18px 28px;
+  background: var(--bg2);
+  border-bottom: 1px solid var(--border);
+  flex-wrap: wrap;
+  gap: 12px;
+}
+.brand { display: flex; align-items: center; gap: 14px; }
+.logo {
+  width: 44px; height: 44px; border-radius: 12px;
+  background: linear-gradient(135deg, var(--accent), #7c5cff);
+  display: flex; align-items: center; justify-content: center;
+  font-weight: 800; font-size: 17px; color: #fff;
+}
+.brand-text h1 { font-size: 20px; font-weight: 700; }
+.brand-text h1 span { font-size: 13px; color: var(--muted); font-weight: 400; margin-left: 8px; }
+.brand-text p { font-size: 12px; color: var(--muted); margin-top: 2px; }
+.actions { display: flex; gap: 10px; }
+
+/* ---------- 按钮 ---------- */
+.btn {
+  border: 1px solid var(--border);
+  background: var(--bg3);
+  color: var(--text);
+  padding: 9px 18px;
+  border-radius: 10px;
+  cursor: pointer;
+  font-size: 13px;
+  transition: all .15s;
+}
+.btn:hover { border-color: var(--accent); color: #fff; }
+.btn.primary { background: var(--accent); border-color: var(--accent); color: #fff; font-weight: 600; }
+.btn.primary:hover { background: #3d7bff; }
+.btn.ghost { background: transparent; }
+.btn:disabled { opacity: .5; cursor: not-allowed; }
+
+/* ---------- 主体 ---------- */
+main { padding: 22px 28px 40px; max-width: 1280px; margin: 0 auto; }
+
+/* ---------- 统计卡 ---------- */
+.stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 14px;
+  margin-bottom: 22px;
+}
+.stat-card {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 16px 18px;
+  position: relative;
+  overflow: hidden;
+}
+.stat-card::after {
+  content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 3px;
+  background: var(--accent); opacity: .7;
+}
+.stat-card .k { font-size: 12px; color: var(--muted); }
+.stat-card .v { font-size: 26px; font-weight: 800; margin-top: 6px; font-variant-numeric: tabular-nums; }
+.stat-card .s { font-size: 11px; color: var(--muted); margin-top: 4px; }
+.stat-card.placeholder { color: var(--muted); display: flex; align-items: center; justify-content: center; grid-column: 1 / -1; padding: 30px; }
+
+/* ---------- 图表区 ---------- */
+.charts { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+.chart-card {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 16px 18px;
+}
+.chart-card.wide { grid-column: 1 / -1; }
+.chart-head { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; margin-bottom: 10px; flex-wrap: wrap; }
+.chart-head h2 { font-size: 15px; font-weight: 700; }
+.chart-head .desc { font-size: 11px; color: var(--muted); }
+.chart { width: 100%; height: 320px; }
+.chart-card.wide .chart { height: 340px; }
+
+/* ---------- 底部 ---------- */
+.foot { text-align: center; color: var(--muted); font-size: 11px; padding: 26px 0 10px; }
+
+/* ---------- 弹窗 ---------- */
+.modal-mask {
+  position: fixed; inset: 0; background: rgba(0,0,0,.6);
+  display: flex; align-items: center; justify-content: center; z-index: 99;
+}
+.modal {
+  width: min(600px, 92vw);
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 18px 20px;
+}
+.modal-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+.modal-head h3 { font-size: 16px; }
+.close { background: none; border: none; color: var(--muted); font-size: 22px; cursor: pointer; }
+.close:hover { color: #fff; }
+.tabs { display: flex; gap: 8px; margin-bottom: 12px; }
+.tab {
+  background: var(--bg3); border: 1px solid var(--border); color: var(--muted);
+  padding: 7px 16px; border-radius: 8px; cursor: pointer; font-size: 13px;
+}
+.tab.active { background: var(--accent); border-color: var(--accent); color: #fff; }
+.modal-body .hint { font-size: 12px; color: var(--muted); margin-bottom: 8px; line-height: 1.7; }
+.modal-body code { background: var(--bg3); padding: 1px 6px; border-radius: 5px; font-size: 11px; }
+textarea {
+  width: 100%; background: var(--bg); color: var(--text);
+  border: 1px solid var(--border); border-radius: 10px;
+  padding: 10px; font-size: 13px; font-family: Consolas, monospace;
+  resize: vertical;
+}
+textarea:focus { outline: none; border-color: var(--accent); }
+.modal-foot { display: flex; justify-content: flex-end; align-items: center; gap: 12px; margin-top: 14px; }
+.import-msg { font-size: 12px; color: var(--danger); flex: 1; }
+.import-msg.ok { color: var(--accent2); }
+.import-msg.err { color: var(--danger); }
+
+/* ---------- OCR 识别截图 ---------- */
+.modal.wide { width: min(720px, 94vw); }
+.ocr-opts { display: flex; gap: 16px; margin: 10px 0; flex-wrap: wrap; }
+.ocr-opts label { font-size: 13px; color: var(--muted); display: flex; align-items: center; gap: 8px; }
+.ocr-opts input[type="text"], .ocr-opts input[type="date"] {
+  background: var(--bg); color: var(--text); border: 1px solid var(--border);
+  border-radius: 8px; padding: 6px 10px; font-size: 13px; width: 120px;
+}
+.ocr-opts input:focus { outline: none; border-color: var(--accent); }
+.ocr-upload { display: flex; align-items: center; gap: 12px; margin: 6px 0 12px; flex-wrap: wrap; }
+.ocr-upload input[type="file"] { color: var(--muted); font-size: 12px; }
+.ocr-status { font-size: 12px; color: var(--muted); margin-bottom: 10px; min-height: 18px; }
+.ocr-status.run, .ocr-status.ok { color: var(--accent2); }
+.ocr-status.warn { color: var(--danger); }
+
+@media (max-width: 720px) {
+  .charts { grid-template-columns: 1fr; }
+  .chart-card.wide { grid-column: auto; }
+}

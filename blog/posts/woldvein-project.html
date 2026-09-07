@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>woldvein 项目全景复盘：从启动器到游戏 AI · 我的博客</title>
+<link rel="stylesheet" href="../assets/css/blog.css">
+</head>
+<body>
+
+<header class="site-header">
+  <div class="nav-wrap">
+    <a href="../index.html" class="brand"><span class="dot"></span>我的博客</a>
+    <nav class="nav-links">
+      <a href="../index.html">首页</a>
+      <a href="../index.html#posts">文章</a>
+      <a href="../projects/woldvein/index.html">项目</a>
+      <a href="../workbench/index.html">工作台</a>
+      <a href="../index.html#about">关于</a>
+    </nav>
+  </div>
+</header>
+
+<article class="article">
+  <a class="back-link" href="../index.html">← 返回首页</a>
+  <h1>woldvein 项目全景复盘：从启动器到游戏 AI</h1>
+  <div class="article-meta"><span>📅 2026-09-08</span><span>🏷 游戏 · 工具 · AI</span></div>
+  <div class="content">
+    <p>《东方：平野孤鸿》（BalladsOfHongye / woldvein）是一款 Steam 上的城市建造游戏。这个项目围绕它做了整整五版工具：v2.0 启动器、v3.0 八目录产品家族、v3.5 审计修复、v3.6 Steam 启动改道、v4.0 AI Agent，外加独立的第七项目（存档修复）。主线一句话：<b>先让游戏可启动，再让游戏可控，最后让游戏可自动</b>。</p>
+
+    <h2>v2.0：启动器初版</h2>
+    <p>第一个版本是 PCL2 风格的启动器，Python 3.14 + PySide6 四页 UI（启动页 / 模块页 / 监控页 / 设置页），用 PyInstaller + NSIS 打包分发。目标很朴素：把散乱的游戏文件整理成"一键启动"。</p>
+
+    <h2>v3.0：八目录产品家族</h2>
+    <p>第二个版本把工具扩成产品矩阵：01 启动器 2.0、02 部署器、03 网页版、04 项目文档、07 整合包、08 撤回备份（05/06 预留）。核心技术是 GBK 编码散文件的 Lua 改造 + Goldberg 模拟器 + version.dll 代理 + steam_appid.txt，让游戏离线也能跑。</p>
+
+    <h2>崩溃危机：三次进场景必崩</h2>
+    <p>2026-09-07 晚上，启动器直启后进场景连续三次崩溃（20:31 / 20:50 / 21:44），每次都是同一个 Lua 栈：CreateScene → scene.lua:61 Init → scene_manager.lua:38 → ingame_state.lua:97。崩溃监控器 v1.0 自动捕获了堆栈。</p>
+    <blockquote>根因不在游戏文件，而在存档路径：存档路径由 FS.GetCwd()/storage/&lt;userFolder&gt; 拼接，启动器直启时工作目录不是游戏根目录，存档上下文整个丢失。</blockquote>
+    <p>22:04 做了一个决定性对照实验：Steam 直接启动游戏一切正常，启动器启动必崩——根因锁定在启动方式的工作目录上。</p>
+
+    <h2>v3.5 / v3.6：修复之路</h2>
+    <p>v3.5 做了八模块审计（config / game_core / ui_pages / ui_main / ui_widgets / utils / fix_saves / main），修复路径硬编码、重复代码、参数校验等问题，43 项断言 + offscreen 冒烟全绿，并交付了崩溃监控器 v1.0。</p>
+    <p>v3.6 换了一条更稳的路：启动按钮不再直接拉起游戏进程，而是唤醒 Steam（<code>steam://rungameid/2656540</code>），让游戏永远在自己的工作目录里启动。同时目录改成 01_qidongqi / 02_shuju / 03_wendang 的拼音布局，43 项断言重跑全过。</p>
+
+    <h2>v4.0：AI Agent</h2>
+    <p>第四版是让 AI 自己玩平野孤鸿。Python 侧是决策大脑（agent_loop 主循环、strategy_manager 四策略、effect_evaluator 效果评估、self_healing 自愈、logger_wal 审计），游戏侧挂 agent_bridge.lua，两边用 JSON 三文件协议（agent_cmd.json / game_state.json / cmd_ack.json）原子读写通信。</p>
+    <p>四策略轮换（建造住宅 / 商业 / 基础设施 / 探索）按效果加权；自愈四道防线兜底（失败降级、无令扩张、停滞轮换、重复换型）。修了两个 P1 问题：building_count 恒为 0（GetBuildingList 返回二维 dict，Lua 的 <code>#</code> 算不出）和 population 恒为 0（GetPopulation 必须传参）。</p>
+    <p>验证结果：功能测试全过，test-mode 12 秒、sim-mode 24 秒（action_executed=72 / strategy_switch=11 / dead_loop=2 / failures=0），13 个模块 py_compile 通过，游戏侧桥接已部署待真机验收。</p>
+
+    <h2>第七项目：存档修复与备份</h2>
+    <p>独立工具线：fix_saves.py 诊断修复卡档存档，CreateAndCopySaveArchive 补丁写入 TRANSLATE_V，改动文件自动留备份可回滚。存档健康是进场景不崩、AI 能持续建造的前提。</p>
+
+    <h2>沉淀与下一步</h2>
+    <p>五个版本沉淀下来五类资产：GBK 散文件 + Goldberg 的离线可部署方案、Steam 启动协议、JSON 桥接协议、WAL 审计日志、编号拼音目录 + 项目记忆 + 交接文档的工程规范。</p>
+    <p>下一步按优先级：① v4.0 真机验收（重启游戏验证状态非 0、ACK 成功）；② 长期运行观察策略效果与稳定性；③ 打包分发。</p>
+    <blockquote>一天之内：三次崩溃 → 对照实验锁定根因 → 启动改道 → AI Agent 端到端验证。问题来了有证据、有对策，这就是这个项目最值钱的部分。</blockquote>
+  </div>
+</article>
+
+<footer class="site-footer">
+  <p>© 2026 我的博客 · 所有数据本地存储 · 不追踪、不收集</p>
+</footer>
+</body>
+</html>

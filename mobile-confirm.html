@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>确认登录</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif;
+      min-height: 100vh;
+      background: linear-gradient(160deg, #667eea 0%, #764ba2 100%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+    .card {
+      width: 400px;
+      max-width: 100%;
+      background: #fff;
+      border-radius: 22px;
+      box-shadow: 0 16px 50px rgba(0, 0, 0, 0.25);
+      padding: 30px 24px 26px;
+    }
+    .brand { text-align: center; margin-bottom: 22px; }
+    .brand .icon {
+      width: 52px; height: 52px; margin: 0 auto 10px;
+      border-radius: 14px;
+      background: linear-gradient(135deg, #667eea, #764ba2);
+      color: #fff; font-size: 24px; font-weight: 700;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .brand h1 { font-size: 20px; color: #1f2937; }
+    .brand p { font-size: 13px; color: #9ca3af; margin-top: 4px; }
+
+    .tabs {
+      display: flex;
+      background: #f3f4f6;
+      border-radius: 12px;
+      padding: 4px;
+      margin-bottom: 22px;
+    }
+    .tab {
+      flex: 1; text-align: center; padding: 9px 0;
+      border-radius: 9px; font-size: 15px; color: #6b7280;
+      cursor: pointer; transition: all .2s;
+    }
+    .tab.active { background: #fff; color: #4f46e5; font-weight: 600; box-shadow: 0 2px 6px rgba(0,0,0,.08); }
+
+    .field { margin-bottom: 16px; }
+    .field label { display: block; font-size: 13px; color: #6b7280; margin-bottom: 6px; }
+    .field input {
+      width: 100%;
+      border: 1px solid #e5e7eb;
+      border-radius: 12px;
+      padding: 13px 14px;
+      font-size: 16px;
+      outline: none;
+      background: #fafafa;
+      transition: border .2s, box-shadow .2s;
+    }
+    .field input:focus { border-color: #667eea; background: #fff; box-shadow: 0 0 0 3px rgba(102,126,234,.15); }
+
+    .btn {
+      width: 100%;
+      border: none;
+      border-radius: 12px;
+      padding: 14px;
+      font-size: 16px;
+      font-weight: 600;
+      color: #fff;
+      background: linear-gradient(135deg, #667eea, #764ba2);
+      cursor: pointer;
+      transition: transform .1s, opacity .2s;
+      box-shadow: 0 6px 16px rgba(102,126,234,.35);
+    }
+    .btn:active { transform: scale(.98); }
+    .btn:disabled { opacity: .6; }
+
+    .msg {
+      margin-top: 14px;
+      min-height: 22px;
+      text-align: center;
+      font-size: 14px;
+      border-radius: 10px;
+      padding: 8px;
+      display: none;
+    }
+    .msg.ok { display: block; color: #047857; background: #ecfdf5; }
+    .msg.err { display: block; color: #b91c1c; background: #fef2f2; }
+    .msg.info { display: block; color: #1d4ed8; background: #eff6ff; }
+
+    .expired {
+      text-align: center; color: #ef4444; font-size: 13px;
+      margin-top: 14px; display: none;
+    }
+    .footer { text-align: center; font-size: 12px; color: #c3c7d1; margin-top: 18px; }
+  </style>
+</head>
+<body>
+<div class="card">
+  <div class="brand">
+    <div class="icon">M</div>
+    <h1>网页登录确认</h1>
+    <p>确认后，PC 端将登录你的账号</p>
+  </div>
+
+  <div class="tabs">
+    <div class="tab active" id="tabLogin" onclick="switchTab('login')">登录</div>
+    <div class="tab" id="tabReg" onclick="switchTab('reg')">注册</div>
+  </div>
+
+  <!-- 登录表单 -->
+  <form id="loginForm" onsubmit="return doLogin(event)">
+    <div class="field">
+      <label>账号</label>
+      <input type="text" id="username" placeholder="输入已注册的账号" autocomplete="username">
+    </div>
+    <div class="field">
+      <label>密码</label>
+      <input type="password" id="pwd" placeholder="输入密码" autocomplete="current-password">
+    </div>
+    <button type="submit" class="btn" id="loginBtn">确认登录</button>
+  </form>
+
+  <!-- 注册表单 -->
+  <form id="regForm" style="display:none" onsubmit="return doRegister(event)">
+    <div class="field">
+      <label>账号</label>
+      <input type="text" id="regUsername" placeholder="2-20位字母、数字、中文或 @._-" autocomplete="username">
+    </div>
+    <div class="field">
+      <label>密码</label>
+      <input type="password" id="regPwd" placeholder="6-32 位" autocomplete="new-password">
+    </div>
+    <div class="field">
+      <label>确认密码</label>
+      <input type="password" id="regPwd2" placeholder="再次输入密码" autocomplete="new-password">
+    </div>
+    <button type="submit" class="btn" id="regBtn">注册并登录</button>
+  </form>
+
+  <div class="msg" id="msg"></div>
+  <div class="expired" id="expired">会话已过期，请回到 PC 页面刷新二维码后重新扫码</div>
+  <div class="footer">扫码登录 · 登录后可进入项目中心</div>
+</div>
+
+<script>
+  const params = new URLSearchParams(location.search);
+  const qid = params.get("qid");
+
+  function showMsg(text, type) {
+    const el = document.querySelector("#msg");
+    el.className = "msg " + type;
+    el.innerText = text;
+  }
+
+  function switchTab(name) {
+    const isLogin = name === "login";
+    document.querySelector("#tabLogin").className = "tab " + (isLogin ? "active" : "");
+    document.querySelector("#tabReg").className = "tab " + (isLogin ? "" : "active");
+    document.querySelector("#loginForm").style.display = isLogin ? "" : "none";
+    document.querySelector("#regForm").style.display = isLogin ? "none" : "";
+    showMsg("", "ok");
+  }
+
+  // 打开页面即通知后端：已扫码
+  async function notifyScanned() {
+    try {
+      const r = await fetch(`/api/qrcode/scanned?qid=${qid}`);
+      const d = await r.json();
+      if (!d.ok) {
+        document.querySelector("#expired").style.display = "block";
+        document.querySelector("#loginForm").style.display = "none";
+        document.querySelector("#regForm").style.display = "none";
+      }
+    } catch (e) {}
+  }
+
+  async function doLogin(e) {
+    e.preventDefault();
+    const username = document.querySelector("#username").value.trim();
+    const password = document.querySelector("#pwd").value;
+    if (!username || !password) { showMsg("请输入账号和密码", "err"); return false; }
+    document.querySelector("#loginBtn").disabled = true;
+    document.querySelector("#loginBtn").innerText = "确认中...";
+    showMsg("", "ok");
+    try {
+      const resp = await fetch("/api/qrcode/confirm", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ qid, username, password })
+      });
+      const ret = await resp.json();
+      if (ret.ok) {
+        showMsg("✅ 登录成功！PC 端已进入系统，可关闭本页面", "ok");
+        document.querySelector("#loginForm").style.display = "none";
+        document.querySelector("#regForm").style.display = "none";
+        document.querySelector(".tabs").style.display = "none";
+      } else {
+        showMsg("❌ " + (ret.msg || "登录失败"), "err");
+      }
+    } catch (e) {
+      showMsg("❌ 网络错误，请重试", "err");
+    }
+    document.querySelector("#loginBtn").disabled = false;
+    document.querySelector("#loginBtn").innerText = "确认登录";
+    return false;
+  }
+
+  async function doRegister(e) {
+    e.preventDefault();
+    const username = document.querySelector("#regUsername").value.trim();
+    const pwd = document.querySelector("#regPwd").value;
+    const pwd2 = document.querySelector("#regPwd2").value;
+    if (!username || !pwd) { showMsg("请输入账号和密码", "err"); return false; }
+    if (pwd !== pwd2) { showMsg("两次输入的密码不一致", "err"); return false; }
+    document.querySelector("#regBtn").disabled = true;
+    document.querySelector("#regBtn").innerText = "注册中...";
+    showMsg("", "ok");
+    try {
+      const resp = await fetch("/api/register", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ username, password: pwd })
+      });
+      const ret = await resp.json();
+      if (ret.ok) {
+        showMsg("✅ 注册成功，正在登录...", "ok");
+        // 注册成功自动用该账号登录
+        const r2 = await fetch("/api/qrcode/confirm", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ qid, username, password: pwd })
+        });
+        const d2 = await r2.json();
+        if (d2.ok) {
+          showMsg("✅ 注册并登录成功！PC 端已进入系统，可关闭本页面", "ok");
+          document.querySelector("#loginForm").style.display = "none";
+          document.querySelector("#regForm").style.display = "none";
+          document.querySelector(".tabs").style.display = "none";
+        } else {
+          showMsg("❌ 注册成功，但自动登录失败：" + (d2.msg || ""), "err");
+          switchTab("login");
+          document.querySelector("#username").value = username;
+          document.querySelector("#pwd").value = pwd;
+        }
+      } else {
+        showMsg("❌ " + (ret.msg || "注册失败"), "err");
+      }
+    } catch (e) {
+      showMsg("❌ 网络错误，请重试", "err");
+    }
+    document.querySelector("#regBtn").disabled = false;
+    document.querySelector("#regBtn").innerText = "注册并登录";
+    return false;
+  }
+
+  notifyScanned();
+</script>
+</body>
+</html>

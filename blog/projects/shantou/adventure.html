@@ -1,0 +1,631 @@
+﻿<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>山头服 · 冒险探索纪念</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Microsoft YaHei', Arial, sans-serif;
+            background: linear-gradient(135deg, #0a0a1a 0%, #1a1a3a 50%, #0a0a1a 100%);
+            color: #ffffff;
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        .particle-bg {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+            overflow: hidden;
+        }
+
+        .particle {
+            position: absolute;
+            width: 3px;
+            height: 3px;
+            background: #00ffff;
+            border-radius: 50%;
+            animation: float 15s infinite;
+            opacity: 0.6;
+        }
+
+        @keyframes float {
+            0%, 100% {
+                transform: translateY(100vh) rotate(0deg);
+                opacity: 0;
+            }
+            10% {
+                opacity: 0.6;
+            }
+            90% {
+                opacity: 0.6;
+            }
+            100% {
+                transform: translateY(-100vh) rotate(720deg);
+                opacity: 0;
+            }
+        }
+
+        .header {
+            text-align: center;
+            padding: 60px 20px 40px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .header::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 80%;
+            height: 2px;
+            background: linear-gradient(90deg, transparent, #00ffff, #ff00ff, #00ffff, transparent);
+            animation: glow 3s ease-in-out infinite;
+        }
+
+        @keyframes glow {
+            0%, 100% {
+                box-shadow: 0 0 20px #00ffff, 0 0 40px #00ffff;
+            }
+            50% {
+                box-shadow: 0 0 40px #ff00ff, 0 0 80px #ff00ff;
+            }
+        }
+
+        .nav-links {
+            position: absolute;
+            top: 30px;
+            left: 30px;
+            display: flex;
+            gap: 20px;
+            z-index: 10;
+        }
+
+        .nav-link {
+            color: #00ffff;
+            text-decoration: none;
+            font-size: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.3s ease;
+            padding: 8px 15px;
+            border: 1px solid rgba(0, 255, 255, 0.3);
+            border-radius: 20px;
+            background: rgba(0, 255, 255, 0.1);
+        }
+
+        .nav-link:hover {
+            color: #ff00ff;
+            text-shadow: 0 0 10px #ff00ff;
+            border-color: #ff00ff;
+            background: rgba(255, 0, 255, 0.1);
+        }
+
+        .title {
+            font-size: 3.5rem;
+            font-weight: bold;
+            background: linear-gradient(90deg, #00ffff, #ff00ff, #ffff00, #00ffff);
+            background-size: 300% 100%;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            animation: gradient 5s ease infinite;
+            text-shadow: 0 0 30px rgba(0, 255, 255, 0.5);
+            margin-bottom: 20px;
+            letter-spacing: 8px;
+        }
+
+        @keyframes gradient {
+            0% {
+                background-position: 0% 50%;
+            }
+            50% {
+                background-position: 100% 50%;
+            }
+            100% {
+                background-position: 0% 50%;
+            }
+        }
+
+        .subtitle {
+            font-size: 1.3rem;
+            color: #00ffff;
+            text-shadow: 0 0 10px #00ffff;
+            letter-spacing: 3px;
+            opacity: 0.9;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .section {
+            margin-bottom: 60px;
+            opacity: 0;
+            transform: translateY(50px);
+            transition: all 0.8s ease;
+        }
+
+        .section.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .section-title {
+            font-size: 2rem;
+            color: #ff00ff;
+            text-align: center;
+            margin-bottom: 40px;
+            text-shadow: 0 0 20px #ff00ff;
+            position: relative;
+            display: inline-block;
+            left: 50%;
+            transform: translateX(-50%);
+        }
+
+        .section-title::before,
+        .section-title::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            width: 60px;
+            height: 2px;
+            background: linear-gradient(90deg, transparent, #00ffff);
+        }
+
+        .section-title::before {
+            left: -80px;
+        }
+
+        .section-title::after {
+            right: -80px;
+            background: linear-gradient(90deg, #00ffff, transparent);
+        }
+
+        .gallery-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 40px;
+        }
+
+        .gallery-card {
+            background: rgba(255, 255, 255, 0.05);
+            border: 2px solid rgba(0, 255, 255, 0.3);
+            border-radius: 20px;
+            overflow: hidden;
+            transition: all 0.3s ease;
+            backdrop-filter: blur(10px);
+            position: relative;
+        }
+
+        .gallery-card::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: linear-gradient(45deg, transparent, rgba(0, 255, 255, 0.1), transparent);
+            transform: rotate(45deg);
+            transition: all 0.5s ease;
+        }
+
+        .gallery-card:hover::before {
+            left: 100%;
+        }
+
+        .gallery-card:hover {
+            border-color: #00ffff;
+            box-shadow: 0 0 40px rgba(0, 255, 255, 0.5);
+            transform: translateY(-15px) scale(1.02);
+        }
+
+        .gallery-image {
+            width: 100%;
+            height: 250px;
+            background: linear-gradient(135deg, #1a1a3a, #2a2a5a);
+            border-bottom: 2px solid rgba(0, 255, 255, 0.3);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 4rem;
+            color: #00ffff;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .gallery-image img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            transition: transform 0.5s ease;
+        }
+
+        .gallery-card:hover .gallery-image img {
+            transform: scale(1.1);
+        }
+
+        .gallery-info {
+            padding: 25px;
+            position: relative;
+            z-index: 1;
+        }
+
+        .gallery-name {
+            font-size: 1.3rem;
+            color: #ffff00;
+            margin-bottom: 12px;
+            text-shadow: 0 0 10px rgba(255, 255, 0, 0.5);
+        }
+
+        .gallery-desc {
+            font-size: 1rem;
+            color: #c0c0c0;
+            line-height: 1.6;
+        }
+
+        .gallery-date {
+            display: inline-block;
+            margin-top: 15px;
+            background: rgba(255, 0, 255, 0.1);
+            border: 1px solid rgba(255, 0, 255, 0.3);
+            border-radius: 20px;
+            padding: 5px 12px;
+            font-size: 0.85rem;
+            color: #ff00ff;
+        }
+
+        .footer {
+            text-align: center;
+            padding: 40px 20px;
+            background: rgba(0, 0, 0, 0.3);
+            border-top: 2px solid rgba(0, 255, 255, 0.3);
+            margin-top: 60px;
+        }
+
+        .footer-content {
+            color: #808080;
+            font-size: 0.9rem;
+            line-height: 1.8;
+        }
+
+        .footer-content a {
+            color: #00ffff;
+            text-decoration: none;
+            transition: color 0.3s ease;
+        }
+
+        .footer-content a:hover {
+            color: #ff00ff;
+        }
+
+        @media (max-width: 768px) {
+            .title {
+                font-size: 2.5rem;
+                letter-spacing: 5px;
+            }
+
+            .subtitle {
+                font-size: 1rem;
+            }
+
+            .section-title {
+                font-size: 1.5rem;
+            }
+
+            .section-title::before,
+            .section-title::after {
+                display: none;
+            }
+
+            .gallery-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .nav-links {
+                position: relative;
+                top: 0;
+                left: 0;
+                justify-content: center;
+                margin-bottom: 20px;
+                flex-wrap: wrap;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .title {
+                font-size: 2rem;
+            }
+
+            .gallery-card {
+                margin: 0 10px;
+            }
+        }
+
+        .scroll-indicator {
+            position: fixed;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            color: #00ffff;
+            font-size: 2rem;
+            animation: bounce 2s infinite;
+            z-index: 100;
+            cursor: pointer;
+        }
+
+        @keyframes bounce {
+            0%, 20%, 50%, 80%, 100% {
+                transform: translateX(-50%) translateY(0);
+            }
+            40% {
+                transform: translateX(-50%) translateY(-20px);
+            }
+            60% {
+                transform: translateX(-50%) translateY(-10px);
+            }
+        }
+
+        .scroll-indicator.hidden {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="particle-bg" id="particleBg"></div>
+
+    <header class="header">
+        <div class="nav-links">
+            <a href="index.html" class="nav-link">← 返回首页</a>
+            <a href="redstone.html" class="nav-link">红石机械大全</a>
+        </div>
+        <h1 class="title">冒险探索 · 纪念展示</h1>
+        <p class="subtitle">记录服务器每一段精彩冒险与共同回忆</p>
+    </header>
+
+    <div class="container">
+        <section class="section" id="gallerySection">
+            <h2 class="section-title">精彩瞬间</h2>
+            <div class="gallery-grid">
+                <div class="gallery-card">
+                    <div class="gallery-image">
+                        <!-- 【此处可替换图片】元旦大合照 -->
+                        <!-- <img src="path/to/new_year_photo.jpg" alt="元旦大合照"> -->
+                        <span>📸</span>
+                    </div>
+                    <div class="gallery-info">
+                        <div class="gallery-name">元旦大合照</div>
+                        <div class="gallery-desc">2024年元旦，服务器全体成员齐聚一堂，共同庆祝新年的到来，留下了珍贵的合影纪念。</div>
+                        <div class="gallery-date">📅 2024年1月1日</div>
+                    </div>
+                </div>
+
+                <div class="gallery-card">
+                    <div class="gallery-image">
+                        <!-- 【此处可替换图片】仓库大展示 -->
+                        <!-- <img src="path/to/warehouse_display.jpg" alt="仓库大展示"> -->
+                        <span>📦</span>
+                    </div>
+                    <div class="gallery-info">
+                        <div class="gallery-name">仓库大展示</div>
+                        <div class="gallery-desc">服务器公共仓库全景展示，各类物资整齐排列，展现了玩家们的勤劳与智慧。</div>
+                        <div class="gallery-date">📅 2024年2月</div>
+                    </div>
+                </div>
+
+                <div class="gallery-card">
+                    <div class="gallery-image">
+                        <!-- 【此处可替换图片】主城建设历程 -->
+                        <!-- <img src="path/to/main_city_progress.jpg" alt="主城建设历程"> -->
+                        <span>🏰</span>
+                    </div>
+                    <div class="gallery-info">
+                        <div class="gallery-name">主城建设历程</div>
+                        <div class="gallery-desc">从一片荒芜到繁华都市，记录主城从无到有的建设过程，见证玩家的创造力。</div>
+                        <div class="gallery-date">📅 2024年3月</div>
+                    </div>
+                </div>
+
+                <div class="gallery-card">
+                    <div class="gallery-image">
+                        <!-- 【此处可替换图片】末地探险 -->
+                        <!-- <img src="path/to/end_adventure.jpg" alt="末地探险"> -->
+                        <span>🌌</span>
+                    </div>
+                    <div class="gallery-info">
+                        <div class="gallery-name">末地探险</div>
+                        <div class="gallery-desc">团队协作挑战末影龙，探索末地城市，获取珍贵的鞘翅和潜影壳。</div>
+                        <div class="gallery-date">📅 2024年4月</div>
+                    </div>
+                </div>
+
+                <div class="gallery-card">
+                    <div class="gallery-image">
+                        <!-- 【此处可替换图片】下界要塞攻略 -->
+                        <!-- <img src="path/to/nether_fortress.jpg" alt="下界要塞攻略"> -->
+                        <span>🔥</span>
+                    </div>
+                    <div class="gallery-info">
+                        <div class="gallery-name">下界要塞攻略</div>
+                        <div class="gallery-desc">深入下界要塞，与烈焰人战斗，收集烈焰棒，为酿造台和末影眼做准备。</div>
+                        <div class="gallery-date">📅 2024年5月</div>
+                    </div>
+                </div>
+
+                <div class="gallery-card">
+                    <div class="gallery-image">
+                        <!-- 【此处可替换图片】海底神殿探险 -->
+                        <!-- <img src="path/to/ocean_monument.jpg" alt="海底神殿探险"> -->
+                        <span>🌊</span>
+                    </div>
+                    <div class="gallery-info">
+                        <div class="gallery-name">海底神殿探险</div>
+                        <div class="gallery-desc">挑战海底神殿，与守卫者战斗，获取海晶碎片和海绵，建设水下基地。</div>
+                        <div class="gallery-date">📅 2024年6月</div>
+                    </div>
+                </div>
+
+                <div class="gallery-card">
+                    <div class="gallery-image">
+                        <!-- 【此处可替换图片】建筑大赛作品 -->
+                        <!-- <img src="path/to/building_contest.jpg" alt="建筑大赛作品"> -->
+                        <span>🏆</span>
+                    </div>
+                    <div class="gallery-info">
+                        <div class="gallery-name">建筑大赛作品</div>
+                        <div class="gallery-desc">服务器首届建筑大赛优秀作品展示，展现了玩家们惊人的建筑才华。</div>
+                        <div class="gallery-date">📅 2024年7月</div>
+                    </div>
+                </div>
+
+                <div class="gallery-card">
+                    <div class="gallery-image">
+                        <!-- 【此处可替换图片】红石机械展示 -->
+                        <!-- <img src="path/to/redstone_showcase.jpg" alt="红石机械展示"> -->
+                        <span>⚡</span>
+                    </div>
+                    <div class="gallery-info">
+                        <div class="gallery-name">红石机械展示</div>
+                        <div class="gallery-desc">服务器红石工程师们的杰作展示，各种自动化装置令人叹为观止。</div>
+                        <div class="gallery-date">📅 2024年8月</div>
+                    </div>
+                </div>
+
+                <div class="gallery-card">
+                    <div class="gallery-image">
+                        <!-- 【此处可替换图片】节日庆典活动 -->
+                        <!-- <img src="path/to/festival_event.jpg" alt="节日庆典活动"> -->
+                        <span>🎉</span>
+                    </div>
+                    <div class="gallery-info">
+                        <div class="gallery-name">节日庆典活动</div>
+                        <div class="gallery-desc">各类节日庆典活动精彩瞬间，玩家们共同庆祝，增进友谊。</div>
+                        <div class="gallery-date">📅 持续更新中</div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </div>
+
+    <footer class="footer">
+        <div class="footer-content">
+            <p>山头服 · 冒险探索纪念 - 我们的山头服务器</p>
+            <p>版权所有 © 2024 Our Mountain Server</p>
+            <p>
+                <a href="index.html">返回首页</a> | 
+                <a href="redstone.html">红石机械大全</a> | 
+                <a href="#">联系我们</a>
+            </p>
+        </div>
+    </footer>
+
+    <div class="scroll-indicator" id="scrollIndicator">↓</div>
+
+    <script>
+        // 创建粒子背景效果
+        function createParticles() {
+            const particleBg = document.getElementById('particleBg');
+            const particleCount = 50;
+
+            for (let i = 0; i < particleCount; i++) {
+                const particle = document.createElement('div');
+                particle.className = 'particle';
+                particle.style.left = Math.random() * 100 + '%';
+                particle.style.animationDelay = Math.random() * 15 + 's';
+                particle.style.animationDuration = (Math.random() * 10 + 10) + 's';
+                
+                const colors = ['#00ffff', '#ff00ff', '#ffff00', '#00ff00'];
+                particle.style.background = colors[Math.floor(Math.random() * colors.length)];
+                
+                particleBg.appendChild(particle);
+            }
+        }
+
+        // 滚动动画效果
+        function handleScrollAnimation() {
+            const sections = document.querySelectorAll('.section');
+            const scrollIndicator = document.getElementById('scrollIndicator');
+
+            sections.forEach(section => {
+                const rect = section.getBoundingClientRect();
+                const isVisible = rect.top < window.innerHeight * 0.8;
+
+                if (isVisible) {
+                    section.classList.add('visible');
+                }
+            });
+
+            // 隐藏滚动指示器
+            if (window.scrollY > 100) {
+                scrollIndicator.classList.add('hidden');
+            } else {
+                scrollIndicator.classList.remove('hidden');
+            }
+        }
+
+        // 平滑滚动
+        function smoothScroll() {
+            const scrollIndicator = document.getElementById('scrollIndicator');
+            scrollIndicator.addEventListener('click', () => {
+                window.scrollTo({
+                    top: window.innerHeight,
+                    behavior: 'smooth'
+                });
+            });
+        }
+
+        // 添加悬停效果
+        function addHoverEffects() {
+            const cards = document.querySelectorAll('.gallery-card');
+            
+            cards.forEach(card => {
+                card.addEventListener('mouseenter', function() {
+                    this.style.transform = 'translateY(-15px) scale(1.02)';
+                });
+                
+                card.addEventListener('mouseleave', function() {
+                    this.style.transform = 'translateY(0) scale(1)';
+                });
+            });
+        }
+
+        // 初始化
+        document.addEventListener('DOMContentLoaded', () => {
+            createParticles();
+            handleScrollAnimation();
+            smoothScroll();
+            addHoverEffects();
+
+            window.addEventListener('scroll', handleScrollAnimation);
+
+            // 初始显示第一个section
+            const firstSection = document.querySelector('.section');
+            if (firstSection) {
+                setTimeout(() => {
+                    firstSection.classList.add('visible');
+                }, 500);
+            }
+        });
+    </script>
+<style>
+.back-to-blog{position:fixed;top:14px;left:14px;z-index:99999;background:rgba(26,26,46,.85);color:#fff;padding:7px 14px;border-radius:8px;text-decoration:none;font-size:12.5px;font-weight:600;font-family:-apple-system,'Segoe UI','Microsoft YaHei',sans-serif;backdrop-filter:blur(8px);box-shadow:0 4px 14px rgba(0,0,0,.3);transition:all .2s;display:inline-flex;align-items:center;gap:4px}
+.back-to-blog:hover{background:rgba(91,108,255,.92);transform:translateY(-1px);box-shadow:0 6px 18px rgba(91,108,255,.45)}
+</style>
+<a href="../../index.html" class="back-to-blog">← 返回博客</a>
+</body>
+</html>

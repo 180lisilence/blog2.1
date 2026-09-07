@@ -1,0 +1,17 @@
+{
+  "name": "PWA 待办清单",
+  "short_name": "待办",
+  "description": "渐进式 Web 应用待办清单",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#3F51B5",
+  "icons": [
+    {
+      "src": "icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

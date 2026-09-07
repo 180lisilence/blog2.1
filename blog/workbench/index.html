@@ -1,0 +1,123 @@
+﻿<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>个人工作台</title>
+<script>
+  (function(){
+    try {
+      var t = localStorage.getItem('theme') || 'dark';
+      document.documentElement.setAttribute('data-theme', t);
+    } catch(e) {
+      document.documentElement.setAttribute('data-theme', 'dark');
+    }
+  })();
+</script>
+<link rel="stylesheet" href="styles.css">
+<link rel="stylesheet" href="workbench-enhance.css">
+</head>
+<body>
+<!-- 其余不变 -->
+<div class="app">
+  <aside class="sidebar" id="sidebar">
+    <div class="logo">
+      <div class="logo-icon">🏠</div>
+      <div class="logo-text">个人工作台</div>
+      <button class="sidebar-collapse-btn" id="sidebar-collapse-btn" title="收起侧边栏">
+        <span class="collapse-icon">◀</span>
+      </button>
+    </div>
+    <nav class="nav" id="main-nav">
+      <a href="#/home" class="nav-item" data-route="home"><span class="nav-icon">🏠</span><span>首页总览</span></a>
+      <a href="#/todayPlan" class="nav-item" data-route="todayPlan"><span class="nav-icon">📅</span><span>今日计划</span></a>
+      <a href="#/media" class="nav-item" data-route="media"><span class="nav-icon">📱</span><span>自媒体</span></a>
+      <a href="#/develop" class="nav-item" data-route="develop"><span class="nav-icon">💻</span><span>开发工作</span></a>
+      <a href="#/consult" class="nav-item" data-route="consult"><span class="nav-icon">💼</span><span>咨询工作</span></a>
+      <a href="#/fitness" class="nav-item" data-route="fitness"><span class="nav-icon">💪</span><span>健身计划</span></a>
+      <a href="#/diet" class="nav-item" data-route="diet"><span class="nav-icon">🍱</span><span>饮食计划</span></a>
+      <a href="#/game" class="nav-item" data-route="game"><span class="nav-icon">🎮</span><span>游戏娱乐</span></a>
+      <a href="#/ai" class="nav-item" data-route="ai"><span class="nav-icon">🤖</span><span>AI 对话</span></a>
+      <a href="#/profile" class="nav-item" data-route="profile"><span class="nav-icon">👤</span><span>个人中心</span></a>
+      <a href="#/setting" class="nav-item" data-route="setting"><span class="nav-icon">⚙️</span><span>数据与设置</span></a>
+    </nav>
+    <div class="sidebar-footer">
+      <div class="status-chip" id="db-status">● 数据已持久化</div>
+    </div>
+  </aside>
+
+  <main class="main">
+    <header class="topbar">
+      <div class="topbar-left">
+        <button class="sidebar-toggle-btn" id="sidebar-toggle-btn" title="展开/收起导航栏">
+          <span class="toggle-icon">☰</span>
+        </button>
+        <div class="page-title" id="page-title">首页总览</div>
+      </div>
+      <div class="topbar-right">
+        <div class="clock" id="clock"></div>
+      </div>
+    </header>
+    <section class="content" id="content"></section>
+  </main>
+</div>
+
+<div class="modal-backdrop" id="modal-backdrop" style="display:none">
+  <div class="modal" id="modal">
+    <div class="modal-header">
+      <div class="modal-title" id="modal-title"></div>
+      <button class="modal-close" id="modal-close">✕</button>
+    </div>
+    <div class="modal-body" id="modal-body"></div>
+    <div class="modal-footer" id="modal-footer"></div>
+  </div>
+</div>
+
+<div class="toast-container" id="toast-container"></div>
+
+<div class="ai-fab" id="ai-fab" title="AI 快捷对话">
+  <span>🤖</span>
+  <div class="ai-fab-badge" id="ai-fab-badge" style="display:none"></div>
+</div>
+
+<div class="ai-quick-panel" id="ai-quick-panel" style="display:none">
+  <div class="ai-quick-header">
+    <div class="ai-quick-title">🤖 AI 快捷对话</div>
+    <button class="ai-quick-close" id="ai-quick-close">✕</button>
+  </div>
+  <div class="ai-quick-body" id="ai-quick-body"></div>
+  <div class="ai-quick-input-wrap">
+    <textarea id="ai-quick-input" placeholder="输入消息，Enter 发送，Shift+Enter 换行..." rows="2"></textarea>
+    <button id="ai-quick-send" class="btn btn-primary btn-sm">发送</button>
+  </div>
+</div>
+
+<script src="../assets/js/blog-storage.js"></script>
+<script src="renderer/store.js"></script>
+<script src="renderer/ui.js"></script>
+<script src="renderer/api-ai.js"></script>
+<script src="renderer/router.js"></script>
+
+<!-- home.js必须第一个加载，挂载全局工具 window.renderListPage / window.openEditor -->
+<script src="renderer/modules/home.js"></script>
+
+<script src="renderer/modules/todayPlan.js"></script>
+<script src="renderer/modules/media.js"></script>
+<script src="renderer/modules/develop.js"></script>
+<script src="renderer/modules/consult.js"></script>
+<script src="renderer/modules/fitness.js"></script>
+<script src="renderer/modules/diet.js"></script>
+<script src="renderer/modules/game.js"></script>
+<script src="renderer/modules/aiPage.js"></script>
+<script src="renderer/modules/setting.js"></script>
+<script src="renderer/modules/profile.js"></script>
+<!-- 新增boot外部脚本，放在全部脚本末尾 -->
+<script src="renderer/boot.js">
+</script>
+<style>
+.back-to-blog{position:fixed;top:14px;right:14px;z-index:99999;background:rgba(26,26,46,.85);color:#fff;padding:7px 14px;border-radius:8px;text-decoration:none;font-size:12.5px;font-weight:600;font-family:-apple-system,'Segoe UI','Microsoft YaHei',sans-serif;backdrop-filter:blur(8px);box-shadow:0 4px 14px rgba(0,0,0,.3);transition:all .2s;display:inline-flex;align-items:center;gap:4px}
+.back-to-blog:hover{background:rgba(91,108,255,.92);transform:translateY(-1px);box-shadow:0 6px 18px rgba(91,108,255,.45)}
+</style>
+<a href="../index.html" class="back-to-blog">← 返回博客</a>
+</body>
+</html>

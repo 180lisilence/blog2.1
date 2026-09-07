@@ -1,0 +1,352 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>woldvein 项目全景复盘 · v2.0 → v4.0 与第七项目</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  :root {
+    --bg: #0a0e1a;
+    --bg2: #111827;
+    --card: rgba(255,255,255,0.04);
+    --border: rgba(255,255,255,0.08);
+    --text: #e2e8f0;
+    --muted: #94a3b8;
+    --accent: #38bdf8;
+    --accent2: #a78bfa;
+    --accent3: #34d399;
+    --glow: 0 0 40px rgba(56,189,248,0.15);
+  }
+  html { scroll-behavior: smooth; }
+  body {
+    font-family: "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.7;
+    overflow-x: hidden;
+  }
+  .bg-grid {
+    position: fixed; inset: 0; z-index: 0; pointer-events: none;
+    background-image:
+      linear-gradient(rgba(56,189,248,0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(56,189,248,0.03) 1px, transparent 1px);
+    background-size: 60px 60px;
+  }
+  .bg-orb { position: fixed; border-radius: 50%; filter: blur(120px); z-index: 0; pointer-events: none; }
+  .orb1 { width: 500px; height: 500px; background: rgba(56,189,248,0.08); top: -100px; left: -100px; }
+  .orb2 { width: 400px; height: 400px; background: rgba(167,139,250,0.08); bottom: -100px; right: -100px; }
+  .wrap { position: relative; z-index: 1; max-width: 1100px; margin: 0 auto; padding: 0 24px; }
+
+  .hero { min-height: 100vh; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; padding: 80px 24px; }
+  .hero-badge {
+    display: inline-flex; align-items: center; gap: 8px;
+    padding: 6px 16px; border-radius: 999px;
+    background: rgba(56,189,248,0.1); border: 1px solid rgba(56,189,248,0.25);
+    color: var(--accent); font-size: 13px; font-weight: 500; margin-bottom: 28px;
+    animation: fadeUp 0.8s ease both;
+  }
+  .hero-badge .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--accent3); box-shadow: 0 0 10px var(--accent3); animation: pulse 2s infinite; }
+  .hero h1 {
+    font-size: clamp(42px, 7vw, 80px); font-weight: 800; letter-spacing: -2px;
+    background: linear-gradient(135deg, #fff 0%, var(--accent) 50%, var(--accent2) 100%);
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+    margin-bottom: 20px; animation: fadeUp 0.8s ease 0.1s both;
+  }
+  .hero .sub { font-size: clamp(16px, 2.2vw, 20px); color: var(--muted); max-width: 700px; margin-bottom: 40px; animation: fadeUp 0.8s ease 0.2s both; }
+  .hero-stats { display: flex; gap: 48px; flex-wrap: wrap; justify-content: center; animation: fadeUp 0.8s ease 0.3s both; }
+  .stat { text-align: center; }
+  .stat .num { font-size: 32px; font-weight: 700; color: var(--accent); }
+  .stat .label { font-size: 13px; color: var(--muted); margin-top: 4px; }
+  .scroll-hint { position: absolute; bottom: 32px; left: 50%; transform: translateX(-50%); color: var(--muted); font-size: 12px; animation: bounce 2s infinite; }
+
+  section { padding: 100px 0; }
+  .sec-title { font-size: clamp(28px, 4vw, 40px); font-weight: 700; margin-bottom: 12px; text-align: center; }
+  .sec-title span { background: linear-gradient(135deg, var(--accent), var(--accent2)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+  .sec-desc { text-align: center; color: var(--muted); max-width: 640px; margin: 0 auto 56px; font-size: 16px; }
+
+  .products { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 24px; }
+  .card {
+    background: var(--card); border: 1px solid var(--border); border-radius: 20px;
+    padding: 32px; transition: all 0.3s ease; position: relative; overflow: hidden;
+  }
+  .card::before {
+    content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px;
+    background: linear-gradient(90deg, var(--accent), var(--accent2)); opacity: 0; transition: opacity 0.3s;
+  }
+  .card:hover { transform: translateY(-6px); border-color: rgba(56,189,248,0.3); box-shadow: var(--glow); }
+  .card:hover::before { opacity: 1; }
+  .card-icon { width: 52px; height: 52px; border-radius: 14px; display: flex; align-items: center; justify-content: center; font-size: 24px; margin-bottom: 20px; }
+  .card:nth-child(1) .card-icon { background: rgba(56,189,248,0.12); }
+  .card:nth-child(2) .card-icon { background: rgba(167,139,250,0.12); }
+  .card:nth-child(3) .card-icon { background: rgba(52,211,153,0.12); }
+  .card h3 { font-size: 20px; font-weight: 700; margin-bottom: 10px; }
+  .card .tag { display: inline-block; font-size: 11px; padding: 3px 10px; border-radius: 999px; background: rgba(255,255,255,0.06); color: var(--muted); margin-bottom: 14px; }
+  .card p { color: var(--muted); font-size: 14px; margin-bottom: 16px; }
+  .card ul { list-style: none; }
+  .card ul li { font-size: 13px; color: var(--muted); padding: 4px 0; padding-left: 20px; position: relative; }
+  .card ul li::before { content: '▸'; position: absolute; left: 0; color: var(--accent); }
+
+  .features { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 20px; }
+  .feat { background: var(--card); border: 1px solid var(--border); border-radius: 16px; padding: 24px; transition: all 0.3s; }
+  .feat:hover { border-color: rgba(167,139,250,0.3); transform: translateY(-3px); }
+  .feat .ico { font-size: 28px; margin-bottom: 12px; }
+  .feat h4 { font-size: 15px; font-weight: 600; margin-bottom: 6px; }
+  .feat p { font-size: 13px; color: var(--muted); }
+
+  .tech { display: flex; flex-wrap: wrap; gap: 12px; justify-content: center; }
+  .tech-pill { padding: 10px 22px; border-radius: 999px; font-size: 14px; font-weight: 500; background: var(--card); border: 1px solid var(--border); transition: all 0.3s; }
+  .tech-pill:hover { border-color: var(--accent); color: var(--accent); transform: translateY(-2px); }
+
+  .timeline { position: relative; max-width: 760px; margin: 0 auto; padding-left: 40px; }
+  .timeline::before { content: ''; position: absolute; left: 12px; top: 0; bottom: 0; width: 2px; background: linear-gradient(180deg, var(--accent), var(--accent2), transparent); }
+  .tl-item { position: relative; margin-bottom: 36px; }
+  .tl-item::before {
+    content: ''; position: absolute; left: -34px; top: 6px; width: 14px; height: 14px;
+    border-radius: 50%; background: var(--bg); border: 3px solid var(--accent);
+    box-shadow: 0 0 12px rgba(56,189,248,0.4);
+  }
+  .tl-item.crisis::before { border-color: #f87171; box-shadow: 0 0 12px rgba(248,113,113,0.5); }
+  .tl-date { font-size: 12px; color: var(--accent); font-weight: 600; margin-bottom: 4px; }
+  .tl-item.crisis .tl-date { color: #f87171; }
+  .tl-title { font-size: 16px; font-weight: 600; margin-bottom: 4px; }
+  .tl-desc { font-size: 13px; color: var(--muted); }
+
+  .arch { display: grid; grid-template-columns: 1.2fr 0.9fr 1fr; gap: 14px; max-width: 900px; margin: 0 auto 30px; }
+  .arch .box { background: var(--card); border: 1px solid var(--border); border-radius: 16px; padding: 20px 22px; }
+  .arch .box h5 { font-size: 15px; color: var(--accent); margin-bottom: 10px; }
+  .arch .box li { font-size: 13px; color: var(--muted); margin-left: 18px; padding: 2px 0; }
+  .arch .flow { text-align: center; font-size: 13px; color: var(--accent2); margin-bottom: 8px; }
+
+  footer { padding: 60px 0 40px; border-top: 1px solid var(--border); text-align: center; }
+  footer .logo { font-size: 20px; font-weight: 700; margin-bottom: 8px; background: linear-gradient(135deg, var(--accent), var(--accent2)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+  footer p { color: var(--muted); font-size: 13px; }
+
+  @keyframes fadeUp { from { opacity: 0; transform: translateY(24px); } to { opacity: 1; transform: translateY(0); } }
+  @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.4; } }
+  @keyframes bounce { 0%,100% { transform: translateX(-50%) translateY(0); } 50% { transform: translateX(-50%) translateY(8px); } }
+  .reveal { opacity: 0; transform: translateY(30px); transition: all 0.7s ease; }
+  .reveal.visible { opacity: 1; transform: translateY(0); }
+
+  @media (max-width: 760px) { .arch { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+<div class="bg-grid"></div>
+<div class="bg-orb orb1"></div>
+<div class="bg-orb orb2"></div>
+
+<!-- HERO -->
+<header class="hero">
+  <div class="hero-badge"><span class="dot"></span> 项目复盘 · 2026-09-08</div>
+  <h1>woldvein 项目全景复盘</h1>
+  <p class="sub">为《东方：平野孤鸿》打造的游戏生态 —— 从启动器到部署器，再到 AI Agent，一条让游戏可启动、可控、可自动的推进线：v2.0 / v3.0 / v3.5 / v3.6 / v4.0 与第七项目。</p>
+  <div class="hero-stats">
+    <div class="stat"><div class="num">8</div><div class="label">游戏侧散文件</div></div>
+    <div class="stat"><div class="num">43</div><div class="label">v3.5 审计断言全通过</div></div>
+    <div class="stat"><div class="num">4</div><div class="label">v4.0 建造策略轮换</div></div>
+    <div class="stat"><div class="num">3</div><div class="label">次进场景崩溃，最终归零</div></div>
+  </div>
+  <div class="scroll-hint">↓ 向下滚动了解项目</div>
+</header>
+
+<!-- VERSIONS -->
+<section class="wrap">
+  <h2 class="sec-title reveal">六个<span>项目单元</span></h2>
+  <p class="sec-desc reveal">v2.0 起步 → v3.0 成家族 → 崩溃危机 → v3.5 / v3.6 修复 → v4.0 AI Agent，第七项目独立补位。</p>
+  <div class="products">
+    <div class="card reveal">
+      <div class="card-icon">🚀</div>
+      <span class="tag">Python 3.14 · PySide6</span>
+      <h3>v2.0 启动器初版</h3>
+      <p>PCL2 风格桌面启动器，从零落地，项目第一步。</p>
+      <ul>
+        <li>四页架构：启动 / 模块 / 监控 / 设置</li>
+        <li>无边框圆角窗口、自定义标题栏</li>
+        <li>PyInstaller 打包 + NSIS 安装包</li>
+      </ul>
+    </div>
+    <div class="card reveal">
+      <div class="card-icon">🏗️</div>
+      <span class="tag">八目录产品矩阵</span>
+      <h3>v3.0 启动器 2.0 家族</h3>
+      <p>把"部署"从启动器拆成独立能力，形成产品家族与目录规范。</p>
+      <ul>
+        <li>01 启动器2.0 / 02 部署器 / 03 网页版</li>
+        <li>04 文档 / 07 整合包 / 08 撤回备份</li>
+        <li>GBK 散文件 + 模拟器 + version 代理</li>
+      </ul>
+    </div>
+    <div class="card reveal">
+      <div class="card-icon">💥</div>
+      <span class="tag">2026-09-07 · 三连崩</span>
+      <h3>崩溃危机（转折点）</h3>
+      <p>三次进场景 CreateScene 崩溃，同一 Lua 栈，逼出真正的根因。</p>
+      <ul>
+        <li>20:31 / 20:50 / 21:44 三次复现</li>
+        <li>根因：存档路径依赖 FS.GetCwd()</li>
+        <li>工作目录错位 → 存档上下文丢失</li>
+      </ul>
+    </div>
+    <div class="card reveal">
+      <div class="card-icon">🔍</div>
+      <span class="tag">8 模块 · 43 断言</span>
+      <h3>v3.5 代码审计修复</h3>
+      <p>全量代码"只找问题"审计并修复，交付崩溃监控器。</p>
+      <ul>
+        <li>路径硬编码 / 重复代码 / 参数校验</li>
+        <li>PowerShell 转义 / 存档判定 / 监控逻辑</li>
+        <li>43 断言 + offscreen 冒烟全绿</li>
+      </ul>
+    </div>
+    <div class="card reveal">
+      <div class="card-icon">🎮</div>
+      <span class="tag">Steam rungameid/2656540</span>
+      <h3>v3.6 Steam 启动修复</h3>
+      <p>启动与部署解耦，从根上消除崩溃，目录按编号 + 拼音重组。</p>
+      <ul>
+        <li>启动按钮 = 唤醒 Steam，不再直启 exe</li>
+        <li>01_qidongqi / 02_shuju / 03_wendang</li>
+        <li>43 断言重跑全过</li>
+      </ul>
+    </div>
+    <div class="card reveal">
+      <div class="card-icon">🤖</div>
+      <span class="tag">Lua 桥接 · 自动建造</span>
+      <h3>v4.0 AI Agent</h3>
+      <p>Python 决策大脑 + Lua 游戏侧桥接，JSON 文件协议自动建造循环。</p>
+      <ul>
+        <li>四策略轮换：住宅 / 商业 / 基建 / 探索</li>
+        <li>自愈四防线：降级 / 扩张 / 轮换 / 换型</li>
+        <li>P1 状态采集根因已修复</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- ARCH -->
+<section class="wrap" style="background: linear-gradient(180deg, transparent, rgba(56,189,248,0.02), transparent);">
+  <h2 class="sec-title reveal">v4.0 <span>系统架构</span></h2>
+  <p class="sec-desc reveal">Python 决策大脑与 Lua 桥接、游戏世界通过三个 JSON 文件完成双向通信。</p>
+  <div class="arch reveal">
+    <div class="box">
+      <h5>🧠 Python Agent</h5>
+      <li>agent_loop 主循环</li>
+      <li>strategy_manager 4 策略</li>
+      <li>effect_evaluator 效果评估</li>
+      <li>self_healing 自愈</li>
+      <li>logger_wal 审计日志</li>
+    </div>
+    <div class="box">
+      <h5>🔗 agent_bridge.lua</h5>
+      <li>游戏侧桥接模块</li>
+      <li>GameTick 挂钩</li>
+      <li>原子读写 JSON</li>
+      <li>命令执行与状态采集</li>
+    </div>
+    <div class="box">
+      <h5>🌍 游戏世界</h5>
+      <li>game_world.lua 补丁</li>
+      <li>L15-30 加载桥接</li>
+      <li>L1015-1017 Tick 回调</li>
+      <li>每 2 秒状态输出</li>
+    </div>
+  </div>
+  <div class="flow reveal">agent_cmd.json 命令 → · ← game_state.json 状态 · ← cmd_ack.json 回执（读后删）</div>
+  <div class="features" style="margin-top: 30px;">
+    <div class="feat reveal"><div class="ico">🧩</div><h4>P1：building_count=0 修复</h4><p>GetBuildingList 返回二维 dict，Lua "#" 恒为 0 → 改 pairs 双层遍历计数。</p></div>
+    <div class="feat reveal"><div class="ico">📈</div><h4>P1：population=0 修复</h4><p>GetPopulation 必须传参 → 改用无参 GetDemilitarizedPopulation 总人口。</p></div>
+    <div class="feat reveal"><div class="ico">🛡️</div><h4>自愈四道防线</h4><p>连续失败 3 次降级 · 无指令 5 轮扩张 · 停滞 8 轮轮换 · 重复 4 次换型。</p></div>
+    <div class="feat reveal"><div class="ico">📊</div><h4>端到端验证</h4><p>sim-mode 24s：action 72 · 策略切换 11 · 死循环检出 2 · failures 0。</p></div>
+  </div>
+</section>
+
+<!-- TIMELINE -->
+<section class="wrap" style="background: linear-gradient(180deg, transparent, rgba(167,139,250,0.02), transparent);">
+  <h2 class="sec-title reveal">2026-09-07 <span>全天推进</span></h2>
+  <p class="sec-desc reveal">一天内完成从三次崩溃到可玩闭环的完整闭环。</p>
+  <div class="timeline">
+    <div class="tl-item reveal">
+      <div class="tl-date">日间</div>
+      <div class="tl-title">🔍 v3.5 审计交付</div>
+      <div class="tl-desc">8 模块修复完成，43 项断言全绿，崩溃监控器 v1.0 上线。</div>
+    </div>
+    <div class="tl-item crisis reveal">
+      <div class="tl-date">20:31 / 20:50</div>
+      <div class="tl-title">💥 第一、二次崩溃</div>
+      <div class="tl-desc">启动器启动后进场景即崩，监控器捕获同一 Lua 栈（CreateScene）。</div>
+    </div>
+    <div class="tl-item crisis reveal">
+      <div class="tl-date">21:44</div>
+      <div class="tl-title">💥 第三次崩溃</div>
+      <div class="tl-desc">minidump + Lua 栈，指向 scene.lua:61 Init → 存档上下文。</div>
+    </div>
+    <div class="tl-item reveal">
+      <div class="tl-date">22:04</div>
+      <div class="tl-title">🧪 决定性实验</div>
+      <div class="tl-desc">Steam 直接启动正常、启动器启动崩溃 → 根因锁定工作目录。</div>
+    </div>
+    <div class="tl-item reveal">
+      <div class="tl-date">深夜</div>
+      <div class="tl-title">🛠️ v3.6 落地</div>
+      <div class="tl-desc">启动改道 Steam（rungameid/2656540），目录按编号 + 拼音重组。</div>
+    </div>
+    <div class="tl-item reveal">
+      <div class="tl-date">23:48</div>
+      <div class="tl-title">🤖 v4.0 验证完成</div>
+      <div class="tl-desc">功能 / test-mode / sim-mode 端到端全过，P1 修复，桥接部署至游戏侧。</div>
+    </div>
+  </div>
+</section>
+
+<!-- TECH STACK -->
+<section class="wrap">
+  <h2 class="sec-title reveal">技术<span>栈一览</span></h2>
+  <p class="sec-desc reveal">五个版本沉淀的核心技术资产。</p>
+  <div class="tech reveal">
+    <span class="tech-pill">Python 3.14</span>
+    <span class="tech-pill">PySide6 6.11</span>
+    <span class="tech-pill">PyInstaller</span>
+    <span class="tech-pill">NSIS</span>
+    <span class="tech-pill">Lua (GBK)</span>
+    <span class="tech-pill">Goldberg Emulator</span>
+    <span class="tech-pill">version.dll 代理</span>
+    <span class="tech-pill">Steam rungameid</span>
+    <span class="tech-pill">JSON 桥接协议</span>
+    <span class="tech-pill">WAL 审计日志</span>
+    <span class="tech-pill">崩溃监控器</span>
+    <span class="tech-pill">存档修复 (TRANSLATE_V)</span>
+  </div>
+</section>
+
+<!-- NEXT -->
+<section class="wrap" style="background: linear-gradient(180deg, transparent, rgba(52,211,153,0.02), transparent);">
+  <h2 class="sec-title reveal">沉淀与<span>下一步</span></h2>
+  <p class="sec-desc reveal">先让游戏可启动，再让游戏稳定，最后让游戏可自动。</p>
+  <div class="features">
+    <div class="feat reveal"><div class="ico">📦</div><h4>离线可部署</h4><p>GBK 散文件 + Goldberg 模拟器，不依赖网络即可运行。</p></div>
+    <div class="feat reveal"><div class="ico">⚙️</div><h4>启动协议</h4><p>Steam 启动绕开工作目录陷阱，从根上消除崩溃。</p></div>
+    <div class="feat reveal"><div class="ico">🔁</div><h4>双向可控桥接</h4><p>Python 决策 ↔ Lua 执行，命令 / 状态 / 回执全链路。</p></div>
+    <div class="feat reveal"><div class="ico">🗂️</div><h4>可审计可交接</h4><p>WAL 日志 + 项目记忆 + 交接文档，跨会话可延续。</p></div>
+    <div class="feat reveal"><div class="ico">✅</div><h4>真机验收</h4><p>重启游戏后验证 4.0 Agent：状态非 0、ACK 成功。</p></div>
+    <div class="feat reveal"><div class="ico">📦</div><h4>打包分发</h4><p>PyInstaller + NSIS 安装包，交付普通用户。</p></div>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer>
+  <div class="wrap">
+    <div class="logo">woldvein 项目全景复盘</div>
+    <p>东方：平野孤鸿（BalladsOfHongye / woldvein）· D:\pingye_pack</p>
+    <p style="margin-top: 12px; font-size: 11px; opacity: 0.5;">2026-09-08 · 一条主线：让游戏可启动、可控、可自动</p>
+  </div>
+</footer>
+
+<script>
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach(e => { if (e.isIntersecting) { e.target.classList.add('visible'); observer.unobserve(e.target); } });
+  }, { threshold: 0.1 });
+  document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
+</script>
+</body>
+</html>

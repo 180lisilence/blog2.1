@@ -1,0 +1,305 @@
+<!DOCTYPE html>
+<html lang="zh-CN" class="scroll-smooth">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>极智云 · 测试</title>
+<script src="assets/lib/tailwind/tailwindcss.js"></script>
+<script>
+  tailwind.config = { darkMode: 'class', theme: { extend: { colors: { brand: { 500:'#3373ff' } } } } }
+</script>
+<script src="assets/lib/fontawesome/all.min.js"></script>
+<link rel="stylesheet" href="assets/css/style.css">
+<link rel="stylesheet" href="../enhance.css">
+<style>
+/* 全局主题切换小太阳（固定右上角，始终可见） */
+.global-sun-btn{position:fixed;top:16px;right:16px;z-index:999999;width:42px;height:42px;border-radius:50%;border:2px solid rgba(255,200,50,.7);background:linear-gradient(135deg,#ffd700,#ff8c00);color:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:18px;box-shadow:0 2px 12px rgba(255,165,0,.5);transition:all .3s;animation:globalSunSpin 6s linear infinite;backdrop-filter:blur(4px)}
+.global-sun-btn:hover{transform:scale(1.15) rotate(15deg);box-shadow:0 4px 20px rgba(255,165,0,.8);animation-play-state:paused}
+@keyframes globalSunSpin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}
+/* 浅色模式：清晰的浅背景 + 深文字（替代 filter 反转，保证对比度） */
+
+</style>
+</head>
+<body class="bg-slate-50 dark:bg-slate-900 text-slate-800 dark:text-slate-200">
+
+<button class="global-sun-btn" id="globalSunBtn" title="切换深色/浅色模式"><i class="fa-solid fa-sun"></i></button>
+
+<div id="globalLoader">
+  <div class="loader-logo">
+    <i class="fa-solid fa-cube"></i>
+    <span>极智云</span>
+  </div>
+  <div class="loader-progress-wrap">
+    <div class="loader-progress-bar">
+      <div class="loader-progress-fill" id="loaderFill"></div>
+    </div>
+    <div class="loader-progress-info">
+      <span style="color:rgba(255,255,255,.4);font-size:12px;">正在加载资源</span>
+      <span class="loader-percent" id="loaderPercent">0%</span>
+    </div>
+  </div>
+  <div class="loader-tip" id="loaderTip">正在初始化引擎...</div>
+  <div class="loader-theme-switcher">
+    <button class="loader-sun-btn" id="loaderSunBtn" title="切换浅色模式"><i class="fa-solid fa-sun"></i></button>
+    <span class="loader-theme-label">切换主题</span>
+    <button class="loader-theme-btn" id="loaderThemeBtn" title="切换背景色"><i class="fa-solid fa-palette"></i></button>
+    <div class="loader-theme-colors" id="loaderThemeColors">
+      <button class="loader-theme-color active" data-theme="deepspace" style="background:linear-gradient(135deg,#0f172a,#1e1b4b)" title="深空蓝"></button>
+      <button class="loader-theme-color" data-theme="aurora" style="background:linear-gradient(135deg,#064e3b,#134e4a)" title="极光绿"></button>
+      <button class="loader-theme-color" data-theme="sunset" style="background:linear-gradient(135deg,#7c2d12,#9a3412)" title="落日橙"></button>
+      <button class="loader-theme-color" data-theme="sakura" style="background:linear-gradient(135deg,#831843,#9d174d)" title="樱花粉"></button>
+      <button class="loader-theme-color" data-theme="royal" style="background:linear-gradient(135deg,#2e1065,#4c1d95)" title="皇家紫"></button>
+      <button class="loader-theme-color" data-theme="ocean" style="background:linear-gradient(135deg,#0c4a6e,#075985)" title="海洋蓝"></button>
+    </div>
+  </div>
+</div>
+
+<nav id="navbar" class="fixed top-0 left-0 right-0 z-50 bg-white dark:bg-slate-800 shadow-sm">
+  <div class="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between">
+    <a href="#/home" class="flex items-center gap-2 font-bold text-lg">
+      <i class="fa-solid fa-cube text-brand-500 text-2xl"></i>
+      <span id="navLogo">极智云</span>
+    </a>
+    <div id="navMenu" class="hidden md:flex items-center gap-1"></div>
+    <div class="flex items-center gap-2">
+      <div id="navUser"></div>
+    </div>
+  </div>
+  <div id="mobileMenu" class="md:hidden hidden bg-white dark:bg-slate-800 border-t border-slate-200 dark:border-slate-700">
+    <div class="px-4 py-3 space-y-1" id="mobileMenuList"></div>
+  </div>
+</nav>
+
+<main id="app" class="pt-16 min-h-screen"></main>
+<footer id="footer" class="bg-slate-900 text-slate-400 py-8"></footer>
+
+<script src="assets/js/config.js"></script>
+<script src="assets/js/utils.js"></script>
+<script src="assets/js/store.js"></script>
+<script src="assets/js/api.js"></script>
+<script src="assets/js/auth.js"></script>
+<script src="assets/js/components.js"></script>
+<script src="assets/js/router.js"></script>
+<script src="assets/js/pages/home.js"></script>
+<script src="assets/js/pages/user.js"></script>
+<script src="assets/js/pages/news.js"></script>
+<script src="assets/js/pages/shop.js"></script>
+<script src="assets/js/pages/admin.js"></script>
+
+<script>
+window.App = window.App || {};
+
+App.toggleTheme = function() {
+  var isDark = document.documentElement.classList.toggle('dark');
+  App.Store.set('darkMode', isDark);
+};
+
+App.setThemeColor = function(color) {
+  document.documentElement.style.setProperty('--brand-color', color);
+  App.Store.set('themeColor', color);
+};
+
+/* ===== 加载进度条控制器 ===== */
+(function() {
+  var fill = document.getElementById('loaderFill');
+  var percentEl = document.getElementById('loaderPercent');
+  var tipEl = document.getElementById('loaderTip');
+  var progress = 0;
+  var timer = null;
+  var tips = [
+    '正在初始化引擎...',
+    '正在加载核心模块...',
+    '正在连接数据服务...',
+    '正在渲染界面组件...',
+    '即将完成，请稍候...'
+  ];
+  var tipIndex = 0;
+
+  function setProgress(p) {
+    progress = Math.min(100, Math.max(0, p));
+    if (fill) fill.style.width = progress + '%';
+    if (percentEl) percentEl.textContent = Math.floor(progress) + '%';
+  }
+
+  function nextTip() {
+    tipIndex = (tipIndex + 1) % tips.length;
+    if (tipEl) {
+      tipEl.style.opacity = '0';
+      setTimeout(function() {
+        tipEl.textContent = tips[tipIndex];
+        tipEl.style.opacity = '1';
+      }, 300);
+    }
+  }
+
+  // 模拟进度增长（先快后慢，到 92% 等待真正完成）
+  function simulate() {
+    if (progress >= 92) return;
+    var increment;
+    if (progress < 30) increment = Math.random() * 8 + 4;
+    else if (progress < 60) increment = Math.random() * 5 + 2;
+    else increment = Math.random() * 2 + 0.5;
+    setProgress(progress + increment);
+    if (Math.floor(progress / 20) !== tipIndex && progress < 90) nextTip();
+    timer = setTimeout(simulate, 200 + Math.random() * 300);
+  }
+
+  // 页面加载完成后，进度冲到 100% 并淡出
+  window.__loaderComplete = function() {
+    if (timer) clearTimeout(timer);
+    setProgress(100);
+    if (tipEl) tipEl.textContent = '加载完成！';
+    setTimeout(function() {
+      var loader = document.getElementById('globalLoader');
+      if (loader) loader.classList.add('loader-hide');
+      setTimeout(function() { if (loader) loader.style.display = 'none'; }, 600);
+    }, 400);
+  };
+
+  // 兜底：最多 8 秒强制完成
+  setTimeout(function() { if (progress < 100) window.__loaderComplete(); }, 8000);
+
+  // 启动模拟
+  simulate();
+
+  /* ===== 颜色切换 ===== */
+  var themes = {
+    deepspace: 'linear-gradient(135deg,#0f172a 0%,#1e1b4b 50%,#0f172a 100%)',
+    aurora: 'linear-gradient(135deg,#064e3b 0%,#134e4a 50%,#064e3b 100%)',
+    sunset: 'linear-gradient(135deg,#7c2d12 0%,#9a3412 50%,#7c2d12 100%)',
+    sakura: 'linear-gradient(135deg,#831843 0%,#9d174d 50%,#831843 100%)',
+    royal: 'linear-gradient(135deg,#2e1065 0%,#4c1d95 50%,#2e1065 100%)',
+    ocean: 'linear-gradient(135deg,#0c4a6e 0%,#075985 50%,#0c4a6e 100%)'
+  };
+  var savedTheme = localStorage.getItem('loaderTheme') || 'deepspace';
+  var loaderEl = document.getElementById('globalLoader');
+  if (loaderEl && themes[savedTheme]) loaderEl.style.background = themes[savedTheme];
+
+  var themeBtn = document.getElementById('loaderThemeBtn');
+  var themeColors = document.getElementById('loaderThemeColors');
+  if (themeBtn && themeColors) {
+    themeBtn.addEventListener('click', function(e) { e.stopPropagation(); themeColors.classList.toggle('show'); });
+    document.addEventListener('click', function() { themeColors.classList.remove('show'); });
+    var colorBtns = themeColors.querySelectorAll('.loader-theme-color');
+    colorBtns.forEach(function(btn) {
+      if (btn.dataset.theme === savedTheme) btn.classList.add('active'); else btn.classList.remove('active');
+      btn.addEventListener('click', function(e) {
+        e.stopPropagation();
+        var t = btn.dataset.theme;
+        if (loaderEl && themes[t]) loaderEl.style.background = themes[t];
+        localStorage.setItem('loaderTheme', t);
+        colorBtns.forEach(function(b) { b.classList.remove('active'); });
+        btn.classList.add('active');
+      });
+    });
+  }
+})();
+
+try {
+  var isDark = App.Store.get('darkMode') === 'true';
+  if (isDark) document.documentElement.classList.add('dark');
+  var themeColor = App.Store.get('themeColor') || '#3373ff';
+  App.setThemeColor(themeColor);
+  
+  App.Components.renderNavbar();
+  App.Components.renderFooter();
+  App.Router.init();
+  
+  // 路由首次渲染完成后，标记加载完成
+  setTimeout(function() { if (window.__loaderComplete) window.__loaderComplete(); }, 800);
+} catch (e) {
+  document.getElementById('app').innerHTML = '<div style="padding:100px;text-align:center;color:red;"><h2>500 错误</h2><p>' + e.message + '</p><pre>' + e.stack + '</pre></div>';
+  if (window.__loaderComplete) window.__loaderComplete();
+}
+</script>
+<style>
+.back-to-blog{position:fixed;top:14px;left:14px;z-index:99999;background:rgba(26,26,46,.85);color:#fff;padding:7px 14px;border-radius:8px;text-decoration:none;font-size:12.5px;font-weight:600;font-family:-apple-system,'Segoe UI','Microsoft YaHei',sans-serif;backdrop-filter:blur(8px);box-shadow:0 4px 14px rgba(0,0,0,.3);transition:all .2s;display:inline-flex;align-items:center;gap:4px}
+.back-to-blog:hover{background:rgba(91,108,255,.92);transform:translateY(-1px);box-shadow:0 6px 18px rgba(91,108,255,.45)}
+
+/* ===== 炫酷加载引导页 ===== */
+#globalLoader{position:fixed;inset:0;z-[9999];display:flex;flex-direction:column;align-items:center;justify-content:center;background:linear-gradient(135deg,#0f172a 0%,#1e1b4b 50%,#0f172a 100%);overflow:hidden;transition:opacity .6s ease,visibility .6s ease}
+#globalLoader::before{content:'';position:absolute;width:600px;height:600px;border-radius:50%;background:radial-gradient(circle,rgba(51,115,255,.15) 0%,transparent 70%);top:50%;left:50%;transform:translate(-50%,-50%);animation:pulseGlow 3s ease-in-out infinite}
+#globalLoader::after{content:'';position:absolute;inset:0;background-image:linear-gradient(rgba(255,255,255,.03) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.03) 1px,transparent 1px);background-size:40px 40px;animation:gridMove 20s linear infinite}
+@keyframes pulseGlow{0%,100%{transform:translate(-50%,-50%) scale(1);opacity:.6}50%{transform:translate(-50%,-50%) scale(1.2);opacity:1}}
+@keyframes gridMove{0%{background-position:0 0}100%{background-position:40px 40px}}
+.loader-logo{position:relative;z-index:2;display:flex;align-items:center;gap:14px;margin-bottom:40px}
+.loader-logo i{font-size:48px;background:linear-gradient(135deg,#3373ff,#8b5cf6);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;animation:logoFloat 2s ease-in-out infinite}
+.loader-logo span{font-size:32px;font-weight:800;color:#fff;letter-spacing:2px}
+@keyframes logoFloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-8px)}}
+.loader-progress-wrap{position:relative;z-index:2;width:320px;max-width:80vw}
+.loader-progress-bar{width:100%;height:6px;background:rgba(255,255,255,.1);border-radius:99px;overflow:hidden;position:relative}
+.loader-progress-fill{height:100%;width:0%;background:linear-gradient(90deg,#3373ff,#8b5cf6,#ec4899);border-radius:99px;transition:width .3s ease;position:relative;box-shadow:0 0 20px rgba(51,115,255,.6)}
+.loader-progress-fill::after{content:'';position:absolute;inset:0;background:linear-gradient(90deg,transparent,rgba(255,255,255,.4),transparent);animation:shimmer 1.5s infinite}
+@keyframes shimmer{0%{transform:translateX(-100%)}100%{transform:translateX(100%)}}
+.loader-progress-info{display:flex;justify-content:space-between;align-items:center;margin-top:14px}
+.loader-percent{font-size:24px;font-weight:700;color:#fff;font-variant-numeric:tabular-nums}
+.loader-tip{font-size:13px;color:rgba(255,255,255,.5);margin-top:24px;text-align:center;z-index:2;position:relative;min-height:20px;transition:opacity .3s}
+.loader-hide{opacity:0!important;visibility:hidden!important;pointer-events:none}
+/* 颜色切换 */
+.loader-theme-switcher{position:absolute;bottom:40px;right:40px;z-index:10;display:flex;align-items:center;gap:10px}
+.loader-theme-btn{width:52px;height:52px;border-radius:50%;border:2px solid rgba(255,255,255,.4);background:linear-gradient(135deg,rgba(51,115,255,.3),rgba(139,92,246,.3));color:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .3s;backdrop-filter:blur(10px);font-size:20px;box-shadow:0 0 20px rgba(51,115,255,.4);animation:btnPulse 2s ease-in-out infinite}
+.loader-theme-btn:hover{background:linear-gradient(135deg,rgba(51,115,255,.5),rgba(139,92,246,.5));transform:scale(1.1);box-shadow:0 0 30px rgba(51,115,255,.6)}
+@keyframes btnPulse{0%,100%{box-shadow:0 0 20px rgba(51,115,255,.4)}50%{box-shadow:0 0 35px rgba(139,92,246,.7)}}
+.loader-theme-label{color:rgba(255,255,255,.7);font-size:13px;font-weight:500;letter-spacing:1px;animation:labelFade 2s ease-in-out infinite}
+@keyframes labelFade{0%,100%{opacity:.5}50%{opacity:1}}
+.loader-theme-colors{position:absolute;bottom:60px;right:0;display:flex;gap:8px;padding:10px;border-radius:12px;background:rgba(0,0,0,.5);backdrop-filter:blur(10px);border:1px solid rgba(255,255,255,.15);opacity:0;visibility:hidden;transform:translateY(10px);transition:all .3s}
+.loader-theme-colors.show{opacity:1;visibility:visible;transform:translateY(0)}
+.loader-theme-color{width:32px;height:32px;border-radius:50%;border:2px solid rgba(255,255,255,.3);cursor:pointer;transition:all .2s;padding:0}
+.loader-theme-color:hover{transform:scale(1.2);border-color:#fff}
+.loader-theme-color.active{border-color:#fff;box-shadow:0 0 12px rgba(255,255,255,.6)}
+.loader-sun-btn{width:44px;height:44px;border-radius:50%;border:2px solid rgba(255,200,50,.6);background:linear-gradient(135deg,#ffd700,#ff8c00);color:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .3s;font-size:18px;box-shadow:0 0 15px rgba(255,200,50,.5);animation:sunSpin 4s linear infinite}
+.loader-sun-btn:hover{transform:scale(1.15);box-shadow:0 0 25px rgba(255,200,50,.8)}
+@keyframes sunSpin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}
+.loader-sun-btn:hover{animation-play-state:paused}
+/* 浅色模式 */
+#globalLoader.light-mode{background:linear-gradient(135deg,#f0f4ff 0%,#e8e0ff 50%,#f0f4ff 100%)!important}
+#globalLoader.light-mode::before{background:radial-gradient(circle,rgba(51,115,255,.1) 0%,transparent 70%)!important}
+#globalLoader.light-mode::after{background-image:linear-gradient(rgba(0,0,0,.03) 1px,transparent 1px),linear-gradient(90deg,rgba(0,0,0,.03) 1px,transparent 1px)!important}
+#globalLoader.light-mode .loader-logo span{color:#1e293b!important}
+#globalLoader.light-mode .loader-logo-icon{box-shadow:0 8px 32px rgba(51,115,255,.3)!important}
+#globalLoader.light-mode .loader-percent{color:#1e293b!important}
+#globalLoader.light-mode .loader-tip{color:rgba(0,0,0,.5)!important}
+#globalLoader.light-mode .loader-progress-info span:first-child{color:rgba(0,0,0,.4)!important}
+#globalLoader.light-mode .loader-theme-label{color:rgba(0,0,0,.6)!important}
+#globalLoader.light-mode .loader-progress-bar{background:rgba(0,0,0,.08)!important}
+#globalLoader.light-mode .loader-theme-btn{background:linear-gradient(135deg,rgba(51,115,255,.2),rgba(139,92,246,.2))!important;color:#3b3f5c!important;border-color:rgba(0,0,0,.25)!important}
+#globalLoader.light-mode .loader-theme-colors{background:rgba(255,255,255,.92)!important;border-color:rgba(0,0,0,.12)!important}
+#globalLoader.light-mode .loader-theme-color{border-color:rgba(0,0,0,.35)!important}
+</style>
+<a href="../../index.html" class="back-to-blog">← 返回博客</a>
+<script>
+(function(){
+  var btn=document.getElementById("globalSunBtn");
+  if(btn)btn.addEventListener("click",function(e){
+    e.stopPropagation();
+    if(window.App && App.toggleTheme) App.toggleTheme();
+  });
+})();
+</script>
+<!-- sun-drag -->
+<style>
+.global-sun-btn{cursor:grab;touch-action:none;-webkit-user-select:none;user-select:none}
+.global-sun-btn.dragging{cursor:grabbing;transition:none!important;animation-play-state:paused!important;box-shadow:0 8px 24px rgba(255,165,0,.85)!important}
+</style>
+<script>
+(function(){
+  var btn=document.getElementById("globalSunBtn");
+  if(!btn)return;
+  btn.title="切换主题 · 按住可拖动位置";
+  var KEY="globalSunPos",x=null,y=null;
+  try{var s=localStorage.getItem(KEY);if(s){var p=JSON.parse(s);if(typeof p.x==="number"&&typeof p.y==="number"){x=p.x;y=p.y;}}}catch(e){}
+  function clamp(){var w=btn.offsetWidth||42,h=btn.offsetHeight||42;x=Math.max(0,Math.min(x,window.innerWidth-w));y=Math.max(0,Math.min(y,window.innerHeight-h));}
+  function render(noAnim){if(x===null||y===null)return;clamp();if(noAnim)btn.style.transition="none";btn.style.left=x+"px";btn.style.top=y+"px";btn.style.right="auto";btn.style.bottom="auto";if(noAnim)requestAnimationFrame(function(){btn.style.transition="";});}
+  render(true);
+  window.addEventListener("resize",function(){if(x!==null&&y!==null)render(false);});
+  var dragging=false,moved=false,sx=0,sy=0,ox=0,oy=0;
+  btn.addEventListener("pointerdown",function(e){dragging=true;moved=false;if(btn.setPointerCapture)btn.setPointerCapture(e.pointerId);btn.classList.add("dragging");sx=e.clientX;sy=e.clientY;var r=btn.getBoundingClientRect();ox=r.left;oy=r.top;x=ox;y=oy;});
+  btn.addEventListener("pointermove",function(e){if(!dragging)return;var dx=e.clientX-sx,dy=e.clientY-sy;if(Math.abs(dx)>4||Math.abs(dy)>4)moved=true;x=ox+dx;y=oy+dy;render(false);});
+  function end(){if(!dragging)return;dragging=false;btn.classList.remove("dragging");try{localStorage.setItem(KEY,JSON.stringify({x:x,y:y}));}catch(e){}}
+  btn.addEventListener("pointerup",end);
+  btn.addEventListener("pointercancel",end);
+  btn.addEventListener("click",function(e){if(moved){e.stopPropagation();e.preventDefault();moved=false;}},true);
+})();
+</script>
+</body>
+</html>

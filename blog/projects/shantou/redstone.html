@@ -1,0 +1,893 @@
+﻿<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>山头服红石机械大全</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Microsoft YaHei', Arial, sans-serif;
+            background: linear-gradient(135deg, #0a0a1a 0%, #1a1a3a 50%, #0a0a1a 100%);
+            color: #ffffff;
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        .particle-bg {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+            overflow: hidden;
+        }
+
+        .particle {
+            position: absolute;
+            width: 3px;
+            height: 3px;
+            background: #00ffff;
+            border-radius: 50%;
+            animation: float 15s infinite;
+            opacity: 0.6;
+        }
+
+        @keyframes float {
+            0%, 100% {
+                transform: translateY(100vh) rotate(0deg);
+                opacity: 0;
+            }
+            10% {
+                opacity: 0.6;
+            }
+            90% {
+                opacity: 0.6;
+            }
+            100% {
+                transform: translateY(-100vh) rotate(720deg);
+                opacity: 0;
+            }
+        }
+
+        .header {
+            text-align: center;
+            padding: 60px 20px 40px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .header::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 80%;
+            height: 2px;
+            background: linear-gradient(90deg, transparent, #00ffff, #ff00ff, #00ffff, transparent);
+            animation: glow 3s ease-in-out infinite;
+        }
+
+        @keyframes glow {
+            0%, 100% {
+                box-shadow: 0 0 20px #00ffff, 0 0 40px #00ffff;
+            }
+            50% {
+                box-shadow: 0 0 40px #ff00ff, 0 0 80px #ff00ff;
+            }
+        }
+
+        .back-link {
+            position: absolute;
+            top: 30px;
+            left: 30px;
+            color: #00ffff;
+            text-decoration: none;
+            font-size: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.3s ease;
+            z-index: 10;
+        }
+
+        .back-link:hover {
+            color: #ff00ff;
+            text-shadow: 0 0 10px #ff00ff;
+        }
+
+        .title {
+            font-size: 3.5rem;
+            font-weight: bold;
+            background: linear-gradient(90deg, #00ffff, #ff00ff, #ffff00, #00ffff);
+            background-size: 300% 100%;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            animation: gradient 5s ease infinite;
+            text-shadow: 0 0 30px rgba(0, 255, 255, 0.5);
+            margin-bottom: 20px;
+            letter-spacing: 8px;
+        }
+
+        @keyframes gradient {
+            0% {
+                background-position: 0% 50%;
+            }
+            50% {
+                background-position: 100% 50%;
+            }
+            100% {
+                background-position: 0% 50%;
+            }
+        }
+
+        .subtitle {
+            font-size: 1.3rem;
+            color: #00ffff;
+            text-shadow: 0 0 10px #00ffff;
+            letter-spacing: 3px;
+            opacity: 0.9;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .section {
+            margin-bottom: 60px;
+            opacity: 0;
+            transform: translateY(50px);
+            transition: all 0.8s ease;
+        }
+
+        .section.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .section-title {
+            font-size: 2rem;
+            color: #ff00ff;
+            text-align: center;
+            margin-bottom: 40px;
+            text-shadow: 0 0 20px #ff00ff;
+            position: relative;
+            display: inline-block;
+            left: 50%;
+            transform: translateX(-50%);
+        }
+
+        .section-title::before,
+        .section-title::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            width: 60px;
+            height: 2px;
+            background: linear-gradient(90deg, transparent, #00ffff);
+        }
+
+        .section-title::before {
+            left: -80px;
+        }
+
+        .section-title::after {
+            right: -80px;
+            background: linear-gradient(90deg, #00ffff, transparent);
+        }
+
+        .machines-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 30px;
+        }
+
+        .machine-card {
+            background: rgba(255, 255, 255, 0.05);
+            border: 2px solid rgba(0, 255, 255, 0.3);
+            border-radius: 20px;
+            overflow: hidden;
+            transition: all 0.3s ease;
+            backdrop-filter: blur(10px);
+            position: relative;
+        }
+
+        .machine-card::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: linear-gradient(45deg, transparent, rgba(0, 255, 255, 0.1), transparent);
+            transform: rotate(45deg);
+            transition: all 0.5s ease;
+        }
+
+        .machine-card:hover::before {
+            left: 100%;
+        }
+
+        .machine-card:hover {
+            border-color: #00ffff;
+            box-shadow: 0 0 40px rgba(0, 255, 255, 0.5);
+            transform: translateY(-10px) scale(1.02);
+        }
+
+        .machine-image {
+            width: 100%;
+            height: 180px;
+            background: linear-gradient(135deg, #1a1a3a, #2a2a5a);
+            border-bottom: 2px solid rgba(0, 255, 255, 0.3);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 3rem;
+            color: #00ffff;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .machine-image img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            transition: transform 0.5s ease;
+        }
+
+        .machine-card:hover .machine-image img {
+            transform: scale(1.1);
+        }
+
+        .machine-info {
+            padding: 25px;
+            position: relative;
+            z-index: 1;
+        }
+
+        .machine-name {
+            font-size: 1.3rem;
+            color: #ffff00;
+            margin-bottom: 12px;
+            text-shadow: 0 0 10px rgba(255, 255, 0, 0.5);
+        }
+
+        .machine-desc {
+            font-size: 1rem;
+            color: #c0c0c0;
+            line-height: 1.6;
+        }
+
+        .machine-stats {
+            display: flex;
+            gap: 15px;
+            margin-top: 15px;
+            flex-wrap: wrap;
+        }
+
+        .stat-tag {
+            background: rgba(0, 255, 255, 0.1);
+            border: 1px solid rgba(0, 255, 255, 0.3);
+            border-radius: 20px;
+            padding: 5px 12px;
+            font-size: 0.85rem;
+            color: #00ffff;
+        }
+
+        .footer {
+            text-align: center;
+            padding: 40px 20px;
+            background: rgba(0, 0, 0, 0.3);
+            border-top: 2px solid rgba(0, 255, 255, 0.3);
+            margin-top: 60px;
+        }
+
+        .footer-content {
+            color: #808080;
+            font-size: 0.9rem;
+            line-height: 1.8;
+        }
+
+        .footer-content a {
+            color: #00ffff;
+            text-decoration: none;
+            transition: color 0.3s ease;
+        }
+
+        .footer-content a:hover {
+            color: #ff00ff;
+        }
+
+        @media (max-width: 768px) {
+            .title {
+                font-size: 2.5rem;
+                letter-spacing: 5px;
+            }
+
+            .subtitle {
+                font-size: 1rem;
+            }
+
+            .section-title {
+                font-size: 1.5rem;
+            }
+
+            .section-title::before,
+            .section-title::after {
+                display: none;
+            }
+
+            .machines-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .back-link {
+                position: relative;
+                top: 0;
+                left: 0;
+                justify-content: center;
+                margin-bottom: 20px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .title {
+                font-size: 2rem;
+            }
+
+            .machine-card {
+                margin: 0 10px;
+            }
+        }
+
+        .scroll-indicator {
+            position: fixed;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            color: #00ffff;
+            font-size: 2rem;
+            animation: bounce 2s infinite;
+            z-index: 100;
+            cursor: pointer;
+        }
+
+        @keyframes bounce {
+            0%, 20%, 50%, 80%, 100% {
+                transform: translateX(-50%) translateY(0);
+            }
+            40% {
+                transform: translateX(-50%) translateY(-20px);
+            }
+            60% {
+                transform: translateX(-50%) translateY(-10px);
+            }
+        }
+
+        .scroll-indicator.hidden {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="particle-bg" id="particleBg"></div>
+
+    <header class="header">
+        <a href="index.html" class="back-link">← 返回山头服首页</a>
+        <h1 class="title">山头服红石机械大全</h1>
+        <p class="subtitle">高效 · 实用 · 科技</p>
+    </header>
+
+    <div class="container">
+        <section class="section" id="machinesSection">
+            <h2 class="section-title">红石机器图鉴</h2>
+            <div class="machines-grid">
+                <div class="machine-card">
+                    <div class="machine-image">
+                        <!-- 海晶灯农场图片 -->
+                        <!-- <img src="path/to/sea_lantern_farm.jpg" alt="海晶灯农场"> -->
+                        <span>💡</span>
+                    </div>
+                    <div class="machine-info">
+                        <div class="machine-name">海晶灯农场</div>
+                        <div class="machine-desc">5×5高效海晶灯生产装置，时产1000+</div>
+                        <div class="machine-stats">
+                            <span class="stat-tag">5×5</span>
+                            <span class="stat-tag">时产1000+</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="machine-card">
+                    <div class="machine-image">
+                        <!-- 熔炉组图片 -->
+                        <!-- <img src="path/to/furnace_array.jpg" alt="熔炉组"> -->
+                        <span>🔥</span>
+                    </div>
+                    <div class="machine-info">
+                        <div class="machine-name">熔炉组</div>
+                        <div class="machine-desc">11倍速高速熔炼系统，批量处理物品</div>
+                        <div class="machine-stats">
+                            <span class="stat-tag">11倍速</span>
+                            <span class="stat-tag">批量处理</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="machine-card">
+                    <div class="machine-image">
+                        <!-- 海带机+燃料机图片 -->
+                        <!-- <img src="path/to/kelp_fuel_farm.jpg" alt="海带机+燃料机"> -->
+                        <span>🌿</span>
+                    </div>
+                    <div class="machine-info">
+                        <div class="machine-name">海带机+燃料机</div>
+                        <div class="machine-desc">全自动海带生产与燃料转换一体化</div>
+                        <div class="machine-stats">
+                            <span class="stat-tag">全自动</span>
+                            <span class="stat-tag">燃料供应</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="machine-card">
+                    <div class="machine-image">
+                        <!-- 蛙鸣灯农场图片 -->
+                        <!-- <img src="path/to/froglight_farm.jpg" alt="蛙鸣灯农场"> -->
+                        <span>🐸</span>
+                    </div>
+                    <div class="machine-info">
+                        <div class="machine-name">蛙鸣灯农场</div>
+                        <div class="machine-desc">利用青蛙生产蛙鸣灯，装饰照明两用</div>
+                        <div class="machine-stats">
+                            <span class="stat-tag">装饰用</span>
+                            <span class="stat-tag">照明</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="machine-card">
+                    <div class="machine-image">
+                        <!-- 猪人塔图片 -->
+                        <!-- <img src="path/to/pigman_tower.jpg" alt="猪人塔"> -->
+                        <span>🐷</span>
+                    </div>
+                    <div class="machine-info">
+                        <div class="machine-name">猪人塔</div>
+                        <div class="machine-desc">高效金锭与经验获取装置</div>
+                        <div class="machine-stats">
+                            <span class="stat-tag">金锭</span>
+                            <span class="stat-tag">经验</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="machine-card">
+                    <div class="machine-image">
+                        <!-- 村民交易所图片 -->
+                        <!-- <img src="path/to/villager_trading.jpg" alt="村民交易所"> -->
+                        <span>💎</span>
+                    </div>
+                    <div class="machine-info">
+                        <div class="machine-name">村民交易所</div>
+                        <div class="machine-desc">集中式村民交易大厅，便捷交易各类物品</div>
+                        <div class="machine-stats">
+                            <span class="stat-tag">集中式</span>
+                            <span class="stat-tag">便捷交易</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="machine-card">
+                    <div class="machine-image">
+                        <!-- 刷铁机图片 -->
+                        <!-- <img src="path/to/iron_farm.jpg" alt="刷铁机"> -->
+                        <span>⚙️</span>
+                    </div>
+                    <div class="machine-info">
+                        <div class="machine-name">刷铁机</div>
+                        <div class="machine-desc">全自动铁锭生产装置，持续产出铁资源</div>
+                        <div class="machine-stats">
+                            <span class="stat-tag">全自动</span>
+                            <span class="stat-tag">铁锭</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="machine-card">
+                    <div class="machine-image">
+                        <!-- 村民繁殖机图片 -->
+                        <!-- <img src="path/to/villager_breeder.jpg" alt="村民繁殖机"> -->
+                        <span>👶</span>
+                    </div>
+                    <div class="machine-info">
+                        <div class="machine-name">村民繁殖机</div>
+                        <div class="machine-desc">自动村民繁殖系统，快速增加村民数量</div>
+                        <div class="machine-stats">
+                            <span class="stat-tag">自动繁殖</span>
+                            <span class="stat-tag">人口增长</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="machine-card">
+                    <div class="machine-image">
+                        <!-- 烈焰棒农场图片 -->
+                        <!-- <img src="path/to/blaze_farm.jpg" alt="烈焰棒农场"> -->
+                        <span>🔥</span>
+                    </div>
+                    <div class="machine-info">
+                        <div class="machine-name">烈焰棒农场</div>
+                        <div class="machine-desc">高效烈焰棒与经验获取装置</div>
+                        <div class="machine-stats">
+                            <span class="stat-tag">烈焰棒</span>
+                            <span class="stat-tag">经验</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="machine-card">
+                    <div class="machine-image">
+                        <!-- 蜘蛛刷怪笼图片 -->
+                        <!-- <img src="path/to/spawner.jpg" alt="蜘蛛刷怪笼"> -->
+                        <span>🕷️</span>
+                    </div>
+                    <div class="machine-info">
+                        <div class="machine-name">蜘蛛刷怪笼</div>
+                        <div class="machine-desc">改造后的蜘蛛刷怪笼，获取线与经验</div>
+                        <div class="machine-stats">
+                            <span class="stat-tag">线</span>
+                            <span class="stat-tag">经验</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="machine-card">
+                    <div class="machine-image">
+                        <!-- 犰狳经验机图片 -->
+                        <!-- <img src="path/to/armadillo_xp.jpg" alt="犰狳经验机"> -->
+                        <span>🦔</span>
+                    </div>
+                    <div class="machine-info">
+                        <div class="machine-name">犰狳经验机</div>
+                        <div class="machine-desc">利用犰狳获取经验值的创新装置</div>
+                        <div class="machine-stats">
+                            <span class="stat-tag">经验</span>
+                            <span class="stat-tag">创新</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="machine-card">
+                    <div class="machine-image">
+                        <!-- 女巫小屋图片 -->
+                        <!-- <img src="path/to/witch_hut.jpg" alt="女巫小屋"> -->
+                        <span>🧙</span>
+                    </div>
+                    <div class="machine-info">
+                        <div class="machine-name">女巫小屋</div>
+                        <div class="machine-desc">改造女巫小屋，获取各类药水材料</div>
+                        <div class="machine-stats">
+                            <span class="stat-tag">药水材料</span>
+                            <span class="stat-tag">红石</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="machine-card">
+                    <div class="machine-image">
+                        <!-- 热带鱼农场图片 -->
+                        <!-- <img src="path/to/tropical_fish_farm.jpg" alt="热带鱼农场"> -->
+                        <span>🐠</span>
+                    </div>
+                    <div class="machine-info">
+                        <div class="machine-name">热带鱼农场</div>
+                        <div class="machine-desc">自动收集热带鱼，用于装饰或食物</div>
+                        <div class="machine-stats">
+                            <span class="stat-tag">装饰</span>
+                            <span class="stat-tag">食物</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="machine-card">
+                    <div class="machine-image">
+                        <!-- 美西螈水族馆图片 -->
+                        <!-- <img src="path/to/axolotl_aquarium.jpg" alt="美西螈水族馆"> -->
+                        <span>🦎</span>
+                    </div>
+                    <div class="machine-info">
+                        <div class="machine-name">美西螈水族馆</div>
+                        <div class="machine-desc">美西螈养殖与展示系统</div>
+                        <div class="machine-stats">
+                            <span class="stat-tag">养殖</span>
+                            <span class="stat-tag">展示</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="machine-card">
+                    <div class="machine-image">
+                        <!-- 三叉戟农场图片 -->
+                        <!-- <img src="path/to/trident_farm.jpg" alt="三叉戟农场"> -->
+                        <span>🔱</span>
+                    </div>
+                    <div class="machine-info">
+                        <div class="machine-name">三叉戟农场（鱼塔）</div>
+                        <div class="machine-desc">高效获取三叉戟与鱼类资源</div>
+                        <div class="machine-stats">
+                            <span class="stat-tag">三叉戟</span>
+                            <span class="stat-tag">鱼类</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="machine-card">
+                    <div class="machine-image">
+                        <!-- 羊毛机图片 -->
+                        <!-- <img src="path/to/wool_farm.jpg" alt="羊毛机"> -->
+                        <span>🧶</span>
+                    </div>
+                    <div class="machine-info">
+                        <div class="machine-name">羊毛机</div>
+                        <div class="machine-desc">全自动羊毛剪切与收集系统</div>
+                        <div class="machine-stats">
+                            <span class="stat-tag">全自动</span>
+                            <span class="stat-tag">各色羊毛</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="machine-card">
+                    <div class="machine-image">
+                        <!-- 南瓜机图片 -->
+                        <!-- <img src="path/to/pumpkin_farm.jpg" alt="南瓜机"> -->
+                        <span>🎃</span>
+                    </div>
+                    <div class="machine-info">
+                        <div class="machine-name">南瓜机</div>
+                        <div class="machine-desc">高效南瓜种植与收割装置</div>
+                        <div class="machine-stats">
+                            <span class="stat-tag">南瓜</span>
+                            <span class="stat-tag">雕刻</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="machine-card">
+                    <div class="machine-image">
+                        <!-- 西瓜机图片 -->
+                        <!-- <img src="path/to/melon_farm.jpg" alt="西瓜机"> -->
+                        <span>🍉</span>
+                    </div>
+                    <div class="machine-info">
+                        <div class="machine-name">西瓜机</div>
+                        <div class="machine-desc">全自动西瓜种植与收集系统</div>
+                        <div class="machine-stats">
+                            <span class="stat-tag">西瓜</span>
+                            <span class="stat-tag">闪光片</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="machine-card">
+                    <div class="machine-image">
+                        <!-- 牛牛机图片 -->
+                        <!-- <img src="path/to/cow_farm.jpg" alt="牛牛机"> -->
+                        <span>🐄</span>
+                    </div>
+                    <div class="machine-info">
+                        <div class="machine-name">牛牛机</div>
+                        <div class="machine-desc">自动牛养殖与皮革牛肉获取装置</div>
+                        <div class="machine-stats">
+                            <span class="stat-tag">皮革</span>
+                            <span class="stat-tag">牛肉</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="machine-card">
+                    <div class="machine-image">
+                        <!-- 幻翼刷机图片 -->
+                        <!-- <img src="path/to/phantom_farm.jpg" alt="幻翼刷机"> -->
+                        <span>👻</span>
+                    </div>
+                    <div class="machine-info">
+                        <div class="machine-name">幻翼刷机</div>
+                        <div class="machine-desc">幻翼膜获取装置，用于鞘翅修复</div>
+                        <div class="machine-stats">
+                            <span class="stat-tag">幻翼膜</span>
+                            <span class="stat-tag">鞘翅修复</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="machine-card">
+                    <div class="machine-image">
+                        <!-- 甘蔗机图片 -->
+                        <!-- <img src="path/to/sugarcane_farm.jpg" alt="甘蔗机"> -->
+                        <span>🎋</span>
+                    </div>
+                    <div class="machine-info">
+                        <div class="machine-name">甘蔗机</div>
+                        <div class="machine-desc">全自动甘蔗种植与收割系统</div>
+                        <div class="machine-stats">
+                            <span class="stat-tag">甘蔗</span>
+                            <span class="stat-tag">纸张</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="machine-card">
+                    <div class="machine-image">
+                        <!-- 火药塔图片 -->
+                        <!-- <img src="path/to/gunpowder_farm.jpg" alt="火药塔"> -->
+                        <span>💣</span>
+                    </div>
+                    <div class="machine-info">
+                        <div class="machine-name">火药塔</div>
+                        <div class="machine-desc">苦力怕火药高效获取装置</div>
+                        <div class="machine-stats">
+                            <span class="stat-tag">火药</span>
+                            <span class="stat-tag">TNT</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="machine-card">
+                    <div class="machine-image">
+                        <!-- 猪灵交易图片 -->
+                        <!-- <img src="path/to/piglin_trading.jpg" alt="猪灵交易"> -->
+                        <span>🐽</span>
+                    </div>
+                    <div class="machine-info">
+                        <div class="machine-name">猪灵交易</div>
+                        <div class="machine-desc">自动猪灵物物交换系统，获取下界资源</div>
+                        <div class="machine-stats">
+                            <span class="stat-tag">下界资源</span>
+                            <span class="stat-tag">自动交换</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="machine-card">
+                    <div class="machine-image">
+                        <!-- 主城建设图片 -->
+                        <!-- <img src="path/to/main_city.jpg" alt="主城建设"> -->
+                        <span>🏰</span>
+                    </div>
+                    <div class="machine-info">
+                        <div class="machine-name">主城建设</div>
+                        <div class="machine-desc">服务器核心区域，包含各类功能设施</div>
+                        <div class="machine-stats">
+                            <span class="stat-tag">核心区域</span>
+                            <span class="stat-tag">功能齐全</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="machine-card">
+                    <div class="machine-image">
+                        <!-- 凋零农场图片 -->
+                        <!-- <img src="path/to/wither_farm.jpg" alt="凋零农场"> -->
+                        <span>💀</span>
+                    </div>
+                    <div class="machine-info">
+                        <div class="machine-name">凋零农场</div>
+                        <div class="machine-desc">凋零骷髅头与下界之星获取装置</div>
+                        <div class="machine-stats">
+                            <span class="stat-tag">凋零头</span>
+                            <span class="stat-tag">下界之星</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </div>
+
+    <footer class="footer">
+        <div class="footer-content">
+            <p>山头服红石机械大全 - 我们的山头服务器</p>
+            <p>版权所有 © 2024 Our Mountain Server</p>
+            <p><a href="index.html">返回首页</a> | <a href="#">联系我们</a></p>
+        </div>
+    </footer>
+
+    <div class="scroll-indicator" id="scrollIndicator">↓</div>
+
+    <script>
+        function createParticles() {
+            const particleBg = document.getElementById('particleBg');
+            const particleCount = 50;
+
+            for (let i = 0; i < particleCount; i++) {
+                const particle = document.createElement('div');
+                particle.className = 'particle';
+                particle.style.left = Math.random() * 100 + '%';
+                particle.style.animationDelay = Math.random() * 15 + 's';
+                particle.style.animationDuration = (Math.random() * 10 + 10) + 's';
+                
+                const colors = ['#00ffff', '#ff00ff', '#ffff00', '#00ff00'];
+                particle.style.background = colors[Math.floor(Math.random() * colors.length)];
+                
+                particleBg.appendChild(particle);
+            }
+        }
+
+        function handleScrollAnimation() {
+            const sections = document.querySelectorAll('.section');
+            const scrollIndicator = document.getElementById('scrollIndicator');
+
+            sections.forEach(section => {
+                const rect = section.getBoundingClientRect();
+                const isVisible = rect.top < window.innerHeight * 0.8;
+
+                if (isVisible) {
+                    section.classList.add('visible');
+                }
+            });
+
+            if (window.scrollY > 100) {
+                scrollIndicator.classList.add('hidden');
+            } else {
+                scrollIndicator.classList.remove('hidden');
+            }
+        }
+
+        function smoothScroll() {
+            const scrollIndicator = document.getElementById('scrollIndicator');
+            scrollIndicator.addEventListener('click', () => {
+                window.scrollTo({
+                    top: window.innerHeight,
+                    behavior: 'smooth'
+                });
+            });
+        }
+
+        function addHoverEffects() {
+            const cards = document.querySelectorAll('.machine-card');
+            
+            cards.forEach(card => {
+                card.addEventListener('mouseenter', function() {
+                    this.style.transform = 'translateY(-10px) scale(1.02)';
+                });
+                
+                card.addEventListener('mouseleave', function() {
+                    this.style.transform = 'translateY(0) scale(1)';
+                });
+            });
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            createParticles();
+            handleScrollAnimation();
+            smoothScroll();
+            addHoverEffects();
+
+            window.addEventListener('scroll', handleScrollAnimation);
+
+            const firstSection = document.querySelector('.section');
+            if (firstSection) {
+                setTimeout(() => {
+                    firstSection.classList.add('visible');
+                }, 500);
+            }
+        });
+    </script>
+<style>
+.back-to-blog{position:fixed;top:14px;left:14px;z-index:99999;background:rgba(26,26,46,.85);color:#fff;padding:7px 14px;border-radius:8px;text-decoration:none;font-size:12.5px;font-weight:600;font-family:-apple-system,'Segoe UI','Microsoft YaHei',sans-serif;backdrop-filter:blur(8px);box-shadow:0 4px 14px rgba(0,0,0,.3);transition:all .2s;display:inline-flex;align-items:center;gap:4px}
+.back-to-blog:hover{background:rgba(91,108,255,.92);transform:translateY(-1px);box-shadow:0 6px 18px rgba(91,108,255,.45)}
+</style>
+<a href="../../index.html" class="back-to-blog">← 返回博客</a>
+</body>
+</html>

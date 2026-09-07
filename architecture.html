@@ -1,0 +1,361 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Myself Blog 架构图 - Archify 风格</title>
+<style>
+  :root {
+    --bg: #0d1117;
+    --grid: #161b22;
+    --text: #e6edf3;
+    --text-muted: #8b949e;
+    --card-bg: #161b22;
+    --card-border: #30363d;
+    --frontend: #58a6ff;
+    --backend: #3fb950;
+    --database: #d29922;
+    --security: #f778ba;
+    --external: #a371f7;
+    --cloud: #39c5cf;
+    --edge: #30363d;
+    --edge-emphasis: #58a6ff;
+    --toolbar-bg: #161b22;
+    --toolbar-border: #30363d;
+  }
+  [data-theme="light"] {
+    --bg: #ffffff;
+    --grid: #f0f0f0;
+    --text: #1f2328;
+    --text-muted: #656d76;
+    --card-bg: #ffffff;
+    --card-border: #d0d7de;
+    --frontend: #0969da;
+    --backend: #1a7f37;
+    --database: #9a6700;
+    --security: #bf3989;
+    --external: #8250df;
+    --cloud: #0550ae;
+    --edge: #d0d7de;
+    --edge-emphasis: #0969da;
+    --toolbar-bg: #f6f8fa;
+    --toolbar-border: #d0d7de;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    overflow: hidden;
+    height: 100vh;
+  }
+  .toolbar {
+    position: fixed; top: 12px; left: 50%; transform: translateX(-50%);
+    display: flex; gap: 6px; padding: 8px 12px;
+    background: var(--toolbar-bg); border: 1px solid var(--toolbar-border);
+    border-radius: 10px; z-index: 100; backdrop-filter: blur(10px);
+  }
+  .toolbar button {
+    background: transparent; border: 1px solid var(--toolbar-border);
+    color: var(--text); padding: 6px 12px; border-radius: 6px;
+    cursor: pointer; font-size: 12px; font-weight: 600;
+  }
+  .toolbar button:hover { background: var(--card-border); }
+  .toolbar .title { font-size: 13px; font-weight: 700; padding: 6px 8px; color: var(--text-muted); }
+  #canvas { width: 100vw; height: 100vh; cursor: grab; }
+  #canvas:active { cursor: grabbing; }
+  .node { cursor: pointer; }
+  .node rect { transition: all 0.2s; }
+  .node:hover rect { filter: brightness(1.3); stroke-width: 2.5; }
+  .node.selected rect { stroke-width: 3; filter: brightness(1.4); }
+  .node text { pointer-events: none; user-select: none; }
+  .edge { transition: all 0.3s; }
+  .edge.highlight { stroke-width: 3; filter: brightness(1.5); }
+  .edge.dim { opacity: 0.15; }
+  .info-panel {
+    position: fixed; bottom: 20px; left: 20px;
+    background: var(--toolbar-bg); border: 1px solid var(--toolbar-border);
+    border-radius: 10px; padding: 16px; max-width: 320px;
+    font-size: 13px; z-index: 100; display: none;
+  }
+  .info-panel h3 { font-size: 15px; margin-bottom: 8px; }
+  .info-panel p { color: var(--text-muted); line-height: 1.6; margin-bottom: 4px; }
+  .info-panel .tag { display: inline-block; padding: 2px 8px; border-radius: 10px; font-size: 11px; font-weight: 600; margin-right: 4px; margin-top: 4px; }
+  .legend {
+    position: fixed; bottom: 20px; right: 20px;
+    background: var(--toolbar-bg); border: 1px solid var(--toolbar-border);
+    border-radius: 10px; padding: 12px 16px; font-size: 11px; z-index: 100;
+  }
+  .legend-item { display: flex; align-items: center; gap: 8px; margin: 4px 0; }
+  .legend-dot { width: 12px; height: 12px; border-radius: 3px; }
+  .hint { position: fixed; top: 70px; left: 50%; transform: translateX(-50%); font-size: 11px; color: var(--text-muted); z-index: 99; }
+</style>
+</head>
+<body>
+
+<div class="toolbar">
+  <span class="title">🏗️ Myself Blog 架构</span>
+  <button onclick="zoomIn()">放大 +</button>
+  <button onclick="zoomOut()">缩小 -</button>
+  <button onclick="resetView()">重置</button>
+  <button onclick="toggleTheme()">🌓 主题</button>
+  <button onclick="exportSVG()">导出 SVG</button>
+</div>
+<div class="hint">拖拽平移 · 滚轮缩放 · 点击节点查看详情 · 点击空白取消选中</div>
+
+<svg id="canvas">
+  <defs>
+    <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse">
+      <path d="M 40 0 L 0 0 0 40" fill="none" stroke="var(--grid)" stroke-width="0.5"/>
+    </pattern>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="var(--edge)"/>
+    </marker>
+    <marker id="arrow-emphasis" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="var(--edge-emphasis)"/>
+    </marker>
+  </defs>
+  <rect width="100%" height="100%" fill="url(#grid)"/>
+  <g id="viewport">
+    <!-- 区域边界 -->
+    <rect x="220" y="80" width="720" height="380" rx="12" fill="none" stroke="var(--card-border)" stroke-width="1" stroke-dasharray="6,4"/>
+    <text x="235" y="105" fill="var(--text-muted)" font-size="11" font-weight="600">Blog 应用层 (Express :3000)</text>
+
+    <rect x="720" y="100" width="220" height="340" rx="12" fill="none" stroke="var(--database)" stroke-width="1" stroke-dasharray="6,4" opacity="0.5"/>
+    <text x="735" y="125" fill="var(--database)" font-size="11" font-weight="600">数据 & 外部服务</text>
+
+    <!-- 连线 -->
+    <g id="edges">
+      <path class="edge" data-from="users" data-to="login" d="M 180 380 L 260 155" stroke="var(--edge)" stroke-width="1.5" fill="none" marker-end="url(#arrow)"/>
+      <text x="200" y="260" fill="var(--text-muted)" font-size="10">HTTP</text>
+
+      <path class="edge" data-from="login" data-to="express" d="M 400 155 L 500 310" stroke="var(--security)" stroke-width="1.8" fill="none" marker-end="url(#arrow-emphasis)"/>
+      <text x="420" y="230" fill="var(--security)" font-size="10">登录验证</text>
+
+      <path class="edge" data-from="express" data-to="mysql" d="M 660 300 L 760 180" stroke="var(--database)" stroke-width="1.5" fill="none" marker-end="url(#arrow)"/>
+      <text x="680" y="230" fill="var(--database)" font-size="10">SQL</text>
+
+      <path class="edge" data-from="login" data-to="blog" d="M 330 190 L 330 230" stroke="var(--edge-emphasis)" stroke-width="1.5" fill="none" marker-end="url(#arrow-emphasis)"/>
+      <text x="340" y="215" fill="var(--text-muted)" font-size="9">登录成功</text>
+
+      <path class="edge" data-from="blog" data-to="projects" d="M 330 290 L 330 330" stroke="var(--edge)" stroke-width="1.5" fill="none" marker-end="url(#arrow)"/>
+
+      <path class="edge" data-from="projects" data-to="express" d="M 400 360 L 500 350" stroke="var(--edge)" stroke-width="1.5" fill="none" marker-end="url(#arrow)"/>
+
+      <path class="edge" data-from="express" data-to="chatrecord" d="M 580 380 L 580 480" stroke="var(--backend)" stroke-width="1.8" fill="none" marker-end="url(#arrow-emphasis)"/>
+      <text x="590" y="430" fill="var(--backend)" font-size="10">REST API</text>
+
+      <path class="edge" data-from="chatrecord" data-to="ocr" d="M 680 540 L 760 380" stroke="var(--cloud)" stroke-width="1.5" fill="none" marker-end="url(#arrow)"/>
+      <text x="700" y="460" fill="var(--cloud)" font-size="10">OCR :8765</text>
+
+      <path class="edge" data-from="chatrecord" data-to="session" d="M 580 540 L 580 580 L 760 580 L 760 310" stroke="var(--database)" stroke-width="1.5" fill="none" marker-end="url(#arrow)"/>
+      <text x="600" y="575" fill="var(--database)" font-size="10">会话存储</text>
+
+      <path class="edge" data-from="projects" data-to="subapps" d="M 330 390 L 330 480" stroke="var(--edge)" stroke-width="1.5" fill="none" marker-end="url(#arrow)"/>
+    </g>
+
+    <!-- 节点 -->
+    <g id="nodes">
+      <!-- Users -->
+      <g class="node" data-id="users" data-kind="external" onclick="selectNode('users')" transform="translate(60,350)">
+        <rect width="120" height="60" rx="8" fill="var(--card-bg)" stroke="var(--external)" stroke-width="1.5"/>
+        <text x="60" y="28" text-anchor="middle" fill="var(--text)" font-size="13" font-weight="600">👤 用户</text>
+        <text x="60" y="46" text-anchor="middle" fill="var(--text-muted)" font-size="10">浏览器 / 手机</text>
+      </g>
+
+      <!-- 登录页 -->
+      <g class="node" data-id="login" data-kind="security" onclick="selectNode('login')" transform="translate(260,120)">
+        <rect width="140" height="70" rx="8" fill="var(--card-bg)" stroke="var(--security)" stroke-width="1.5"/>
+        <text x="70" y="28" text-anchor="middle" fill="var(--text)" font-size="13" font-weight="600">🔐 登录页</text>
+        <text x="70" y="46" text-anchor="middle" fill="var(--text-muted)" font-size="10">扫码 + 账号密码</text>
+        <text x="70" y="60" text-anchor="middle" fill="var(--security)" font-size="9">双模式登录</text>
+      </g>
+
+      <!-- 博客首页 -->
+      <g class="node" data-id="blog" data-kind="frontend" onclick="selectNode('blog')" transform="translate(260,230)">
+        <rect width="140" height="60" rx="8" fill="var(--card-bg)" stroke="var(--frontend)" stroke-width="1.5"/>
+        <text x="70" y="26" text-anchor="middle" fill="var(--text)" font-size="13" font-weight="600">📝 博客首页</text>
+        <text x="70" y="44" text-anchor="middle" fill="var(--text-muted)" font-size="10">文章 + 项目展示</text>
+      </g>
+
+      <!-- 项目中心 -->
+      <g class="node" data-id="projects" data-kind="frontend" onclick="selectNode('projects')" transform="translate(260,330)">
+        <rect width="140" height="60" rx="8" fill="var(--card-bg)" stroke="var(--frontend)" stroke-width="1.5"/>
+        <text x="70" y="26" text-anchor="middle" fill="var(--text)" font-size="13" font-weight="600">📂 项目中心</text>
+        <text x="70" y="44" text-anchor="middle" fill="var(--text-muted)" font-size="10">卡片式项目入口</text>
+      </g>
+
+      <!-- Express 后端 -->
+      <g class="node" data-id="express" data-kind="backend" onclick="selectNode('express')" transform="translate(500,280)">
+        <rect width="160" height="100" rx="8" fill="var(--card-bg)" stroke="var(--backend)" stroke-width="1.5"/>
+        <text x="80" y="26" text-anchor="middle" fill="var(--text)" font-size="13" font-weight="600">⚙️ Express 后端</text>
+        <text x="80" y="44" text-anchor="middle" fill="var(--text-muted)" font-size="10">端口 :3000</text>
+        <text x="80" y="62" text-anchor="middle" fill="var(--backend)" font-size="9">登录 API · 静态服务</text>
+        <text x="80" y="78" text-anchor="middle" fill="var(--backend)" font-size="9">ChatRecord API · 分享</text>
+        <text x="80" y="92" text-anchor="middle" fill="var(--backend)" font-size="9">OCR 代理</text>
+      </g>
+
+      <!-- MySQL -->
+      <g class="node" data-id="mysql" data-kind="database" onclick="selectNode('mysql')" transform="translate(760,150)">
+        <rect width="140" height="60" rx="8" fill="var(--card-bg)" stroke="var(--database)" stroke-width="1.5"/>
+        <text x="70" y="26" text-anchor="middle" fill="var(--text)" font-size="13" font-weight="600">🗄️ MySQL</text>
+        <text x="70" y="44" text-anchor="middle" fill="var(--text-muted)" font-size="10">用户数据持久化</text>
+      </g>
+
+      <!-- 会话存储 -->
+      <g class="node" data-id="session" data-kind="database" onclick="selectNode('session')" transform="translate(760,250)">
+        <rect width="140" height="60" rx="8" fill="var(--card-bg)" stroke="var(--database)" stroke-width="1.5"/>
+        <text x="70" y="26" text-anchor="middle" fill="var(--text)" font-size="13" font-weight="600">📁 会话存储</text>
+        <text x="70" y="44" text-anchor="middle" fill="var(--text-muted)" font-size="10">JSON 文件 · 聊天记录</text>
+      </g>
+
+      <!-- RapidOCR -->
+      <g class="node" data-id="ocr" data-kind="cloud" onclick="selectNode('ocr')" transform="translate(760,350)">
+        <rect width="140" height="60" rx="8" fill="var(--card-bg)" stroke="var(--cloud)" stroke-width="1.5"/>
+        <text x="70" y="26" text-anchor="middle" fill="var(--text)" font-size="13" font-weight="600">🔍 RapidOCR</text>
+        <text x="70" y="44" text-anchor="middle" fill="var(--text-muted)" font-size="10">Python · 端口 :8765</text>
+      </g>
+
+      <!-- ChatRecord -->
+      <g class="node" data-id="chatrecord" data-kind="backend" onclick="selectNode('chatrecord')" transform="translate(460,480)">
+        <rect width="180" height="60" rx="8" fill="var(--card-bg)" stroke="var(--backend)" stroke-width="2"/>
+        <text x="90" y="26" text-anchor="middle" fill="var(--text)" font-size="13" font-weight="700">💬 ChatRecord</text>
+        <text x="90" y="44" text-anchor="middle" fill="var(--text-muted)" font-size="10">会话时序实验室 · 8种图表</text>
+      </g>
+
+      <!-- 子项目组 -->
+      <g class="node" data-id="subapps" data-kind="frontend" onclick="selectNode('subapps')" transform="translate(60,480)">
+        <rect width="360" height="100" rx="8" fill="var(--card-bg)" stroke="var(--frontend)" stroke-width="1.5"/>
+        <text x="180" y="24" text-anchor="middle" fill="var(--text)" font-size="13" font-weight="600">🎮 6 个内置子项目</text>
+        <text x="180" y="44" text-anchor="middle" fill="var(--text-muted)" font-size="10">钢铁前线 · 极智云 · 我们的山头</text>
+        <text x="180" y="60" text-anchor="middle" fill="var(--text-muted)" font-size="10">餐厅管理 · Earth Online · 个人工作台</text>
+        <text x="180" y="82" text-anchor="middle" fill="var(--frontend)" font-size="9">纯静态 · 独立入口</text>
+      </g>
+    </g>
+  </g>
+</svg>
+
+<div class="info-panel" id="infoPanel">
+  <h3 id="infoTitle"></h3>
+  <div id="infoTags"></div>
+  <p id="infoDesc" style="margin-top:10px"></p>
+</div>
+
+<div class="legend">
+  <div style="font-weight:700;margin-bottom:6px">图例</div>
+  <div class="legend-item"><div class="legend-dot" style="background:var(--external)"></div>外部用户</div>
+  <div class="legend-item"><div class="legend-dot" style="background:var(--security)"></div>安全/登录</div>
+  <div class="legend-item"><div class="legend-dot" style="background:var(--frontend)"></div>前端页面</div>
+  <div class="legend-item"><div class="legend-dot" style="background:var(--backend)"></div>后端服务</div>
+  <div class="legend-item"><div class="legend-dot" style="background:var(--database)"></div>数据存储</div>
+  <div class="legend-item"><div class="legend-dot" style="background:var(--cloud)"></div>外部服务</div>
+</div>
+
+<script>
+  const svg = document.getElementById('canvas');
+  const viewport = document.getElementById('viewport');
+  let scale = 1, tx = 0, ty = 0;
+  let isDragging = false, startX, startY;
+
+  const nodeInfo = {
+    users: { title: '👤 用户', tags: ['外部', '浏览器/手机'], desc: '通过浏览器或手机访问博客系统。手机和电脑需在同一局域网下，通过局域网 IP 访问。' },
+    login: { title: '🔐 登录页', tags: ['安全', '扫码+密码'], desc: '双模式登录：手机扫码登录 + 电脑端账号密码登录。未登录访问任何页面都会跳转到此页。登录态 Cookie 有效期 7 天。' },
+    blog: { title: '📝 博客首页', tags: ['前端', '静态'], desc: '登录后进入的博客首页，展示文章列表和项目入口。纯静态页面，由 Express 提供静态文件服务。' },
+    projects: { title: '📂 项目中心', tags: ['前端', '静态'], desc: '卡片式展示所有内置项目，点击进入对应子项目。ChatRecord 以樱花 🌸 图标展示。' },
+    express: { title: '⚙️ Express 后端', tags: ['后端', ':3000', 'Node.js'], desc: '核心后端服务，端口 3000。提供登录 API、静态文件服务、ChatRecord REST API、分享链接、OCR 代理。自动预启动 Python OCR 服务。' },
+    mysql: { title: '🗄️ MySQL', tags: ['数据库', '可选'], desc: '用户数据持久化存储（账号、密码加盐哈希）。未配置时自动回退到内存缓存 + users.json 文件。' },
+    session: { title: '📁 会话存储', tags: ['文件', 'JSON'], desc: 'ChatRecord 的用户会话数据，以 JSON 文件存储在 qrcode-login/data/ 目录下。已 gitignore，不公开。' },
+    ocr: { title: '🔍 RapidOCR', tags: ['Python', ':8765', 'OCR'], desc: 'ChatRecord 的 OCR 增强识别服务，基于 PaddleOCR ONNX。博客服务启动时自动预拉起。未安装时回退浏览器端 Tesseract.js。' },
+    chatrecord: { title: '💬 ChatRecord', tags: ['核心项目', '8种图表', 'OCR'], desc: '会话时序实验室。支持文本/JSON/截图导入，生成时序波形、消息量分布、平均长度、日历热力图、发送者统计、复读指数、周×小时热力图。多会话管理、自动保存、分享链接。' },
+    subapps: { title: '🎮 内置子项目', tags: ['6个项目', '纯静态'], desc: '钢铁前线（FPS游戏）、极智云（企业门户）、我们的山头（Minecraft）、餐厅学生管理、Earth Online、个人工作台。均为纯静态页面，独立入口。' }
+  };
+
+  function updateTransform() {
+    viewport.setAttribute('transform', `translate(${tx},${ty}) scale(${scale})`);
+  }
+
+  svg.addEventListener('mousedown', e => {
+    if (e.target.closest('.node')) return;
+    isDragging = true;
+    startX = e.clientX - tx; startY = e.clientY - ty;
+  });
+  window.addEventListener('mousemove', e => {
+    if (!isDragging) return;
+    tx = e.clientX - startX; ty = e.clientY - startY;
+    updateTransform();
+  });
+  window.addEventListener('mouseup', () => isDragging = false);
+  svg.addEventListener('wheel', e => {
+    e.preventDefault();
+    const delta = e.deltaY > 0 ? 0.9 : 1.1;
+    scale *= delta;
+    scale = Math.max(0.3, Math.min(3, scale));
+    updateTransform();
+  }, { passive: false });
+
+  function zoomIn() { scale *= 1.2; updateTransform(); }
+  function zoomOut() { scale *= 0.8; updateTransform(); }
+  function resetView() { scale = 1; tx = 0; ty = 0; updateTransform(); }
+
+  function toggleTheme() {
+    const html = document.documentElement;
+    html.dataset.theme = html.dataset.theme === 'dark' ? 'light' : 'dark';
+  }
+
+  function selectNode(id) {
+    document.querySelectorAll('.node').forEach(n => n.classList.remove('selected'));
+    document.querySelectorAll('.edge').forEach(e => { e.classList.remove('highlight', 'dim'); });
+
+    const node = document.querySelector(`.node[data-id="${id}"]`);
+    node.classList.add('selected');
+
+    // 高亮相关连线
+    document.querySelectorAll('.edge').forEach(edge => {
+      const from = edge.dataset.from, to = edge.dataset.to;
+      if (from === id || to === id) {
+        edge.classList.add('highlight');
+      } else {
+        edge.classList.add('dim');
+      }
+    });
+
+    // 显示信息面板
+    const info = nodeInfo[id];
+    if (info) {
+      const panel = document.getElementById('infoPanel');
+      document.getElementById('infoTitle').textContent = info.title;
+      document.getElementById('infoTags').innerHTML = info.tags.map(t => `<span class="tag" style="background:var(--card-border);color:var(--text)">${t}</span>`).join('');
+      document.getElementById('infoDesc').textContent = info.desc;
+      panel.style.display = 'block';
+    }
+  }
+
+  svg.addEventListener('click', e => {
+    if (!e.target.closest('.node')) {
+      document.querySelectorAll('.node').forEach(n => n.classList.remove('selected'));
+      document.querySelectorAll('.edge').forEach(e => e.classList.remove('highlight', 'dim'));
+      document.getElementById('infoPanel').style.display = 'none';
+    }
+  });
+
+  function exportSVG() {
+    const svgData = new XMLSerializer().serializeToString(svg);
+    const blob = new Blob([svgData], { type: 'image/svg+xml' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = 'myself-blog-architecture.svg';
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
+  // 初始适配
+  window.addEventListener('load', () => {
+    const w = window.innerWidth, h = window.innerHeight;
+    scale = Math.min(w / 1050, h / 650, 1);
+    tx = (w - 1000 * scale) / 2;
+    ty = (h - 600 * scale) / 2;
+    updateTransform();
+  });
+</script>
+</body>
+</html>

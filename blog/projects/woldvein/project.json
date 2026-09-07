@@ -1,0 +1,10 @@
+{
+  "name": "woldvein 游戏 AI 项目",
+  "entry": "index.html",
+  "version": "4.0",
+  "description": "东方：平野孤鸿 的启动器家族与游戏 AI Agent。从启动器 2.0、八目录产品家族，到崩溃危机根因排查，再到 v3.5/v3.6 修复与 v4.0 AI Agent——让游戏可启动、可控、可自动。",
+  "icon": "🎮",
+  "color": "c5",
+  "author": "180lisilence",
+  "tags": ["启动器", "AI Agent", "Python", "Lua", "游戏模组"]
+}

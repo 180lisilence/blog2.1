@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>管理员后台</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="css/style.css">
+<link rel="stylesheet" href="css/fancy.css">
+    <script src="../../assets/js/blog-storage.js"></script>
+<script src="js/common.js"></script>
+    <script>tailwind.config={darkMode:'class'}</script>
+</head>
+<body class="bg-gray-100 dark:bg-gray-900 text-gray-800 dark:text-gray-200 p-4">
+<div class="flex justify-between items-center mb-5">
+    <h1 class="text-xl font-bold">⚙️ 管理员后台</h1>
+    <div>
+        <button onclick="toggleTheme()" class="mr-3"><i class="fa fa-adjust text-xl"></i></button>
+        <button onclick="logout()" class="text-red-500">退出登录</button>
+    </div>
+</div>
+
+<div class="grid grid-cols-2 gap-3 mb-6">
+    <button onclick="adminTab('admin-student')" class="bg-white dark:bg-gray-800 p-4 rounded text-center admin-menu-btn">学生管理</button>
+    <button onclick="adminTab('admin-loginlog')" class="bg-white dark:bg-gray-800 p-4 rounded text-center admin-menu-btn">登录记录</button>
+    <button onclick="adminTab('admin-food')" class="bg-white dark:bg-gray-800 p-4 rounded text-center admin-menu-btn">菜品管理</button>
+    <button onclick="adminTab('admin-order')" class="bg-white dark:bg-gray-800 p-4 rounded text-center admin-menu-btn">全部订单</button>
+    <button onclick="adminTab('admin-suggest')" class="bg-white dark:bg-gray-800 p-4 rounded text-center admin-menu-btn">建议管理</button>
+    <button onclick="location.href='kitchen.html'" class="bg-orange-500 text-white p-4 rounded text-center">进入厨房页面</button>
+</div>
+
+<!--学生管理（重置密码）-->
+<div id="admin-student" class="admin-content active">
+    <h3 class="font-bold text-lg mb-3">学生账号列表（可重置密码）</h3>
+    <div id="admin-student-list" class="space-y-3"></div>
+</div>
+
+<!--登录日志-->
+<div id="admin-loginlog" class="admin-content">
+    <h3 class="font-bold text-lg mb-3">用户登录历史记录</h3>
+    <div id="login-log-list" class="space-y-2"></div>
+</div>
+
+<!--菜品管理-->
+<div id="admin-food" class="admin-content">
+    <h3 class="font-bold text-lg mb-3">菜品管理</h3>
+    <div class="bg-white dark:bg-gray-800 p-3 rounded mb-4 space-y-3">
+        <input id="food-name" placeholder="菜品名称" class="w-full border dark:border-gray-600 rounded px-3 py-2 bg-transparent">
+        <input id="food-price" placeholder="价格" class="w-full border dark:border-gray-600 rounded px-3 py-2 bg-transparent">
+        <button onclick="addFood()" class="w-full bg-orange-500 text-white py-2 rounded">新增菜品</button>
+    </div>
+    <div id="admin-food-list" class="space-y-3"></div>
+</div>
+
+<!--全部订单-->
+<div id="admin-order" class="admin-content">
+    <h3 class="font-bold text-lg mb-3">全部订单</h3>
+    <div id="admin-order-list" class="space-y-3"></div>
+</div>
+
+<!--建议管理-->
+<div id="admin-suggest" class="admin-content">
+    <h3 class="font-bold text-lg mb-3">全部学生建议</h3>
+    <div id="admin-suggest-list" class="space-y-3"></div>
+</div>
+
+<script>
+let user = getCurrentUser();
+if(user !== ADMIN_ACCOUNT) location.href="index.html";
+
+window.onload = function(){
+    renderStudentList();
+    renderLoginLog();
+    renderAdminFood();
+    renderAllOrder();
+    renderAllSuggest();
+}
+
+function adminTab(id){
+    document.querySelectorAll(".admin-content").forEach(el=>el.classList.remove("active"));
+    document.getElementById(id).classList.add("active");
+    if(id==="admin-student") renderStudentList();
+    if(id==="admin-loginlog") renderLoginLog();
+    if(id==="admin-food") renderAdminFood();
+    if(id==="admin-order") renderAllOrder();
+    if(id==="admin-suggest") renderAllSuggest();
+}
+
+//学生列表 修改密码
+function renderStudentList(){
+    const users = getUserList();
+    let html = "";
+    users.forEach(u=>{
+        html += `
+        <div class="bg-white dark:bg-gray-800 p-3 rounded">
+            <p>账号：${u.username}</p>
+            <div class="flex gap-2 mt-2">
+                <input type="text" id="newpwd-${u.username}" placeholder="输入新密码" class="flex-1 border dark:border-gray-600 rounded px-2 py-1 bg-transparent">
+                <button onclick="resetPwd('${u.username}')" class="bg-orange-500 text-white px-2 py-1 rounded">重置密码</button>
+            </div>
+        </div>`;
+    })
+    document.getElementById("admin-student-list").innerHTML = html || "<p>暂无学生账号</p>";
+}
+function resetPwd(username){
+    const newPwd = document.getElementById(`newpwd-${username}`).value.trim();
+    if(!newPwd){
+        alert("请输入新密码");
+        return;
+    }
+    updateUserInfo(username, {password:newPwd});
+    alert("密码修改成功");
+    renderStudentList();
+}
+
+//登录日志
+function renderLoginLog(){
+    const logs = JSON.parse(BS.get("loginLogs"));
+    let html = "";
+    logs.slice().reverse().forEach(l=>{
+        html += `<div class="bg-white dark:bg-gray-800 p-2 rounded">账号：${l.username} 登录时间：${l.time}</div>`;
+    })
+    document.getElementById("login-log-list").innerHTML = html || "<p>暂无记录</p>";
+}
+
+//菜品管理
+function renderAdminFood(){
+    const foods = JSON.parse(BS.get("foods"));
+    let html = "";
+    foods.forEach(f=>{
+        html += `
+        <div class="bg-white dark:bg-gray-800 p-3 rounded flex justify-between items-center">
+            <p>${f.name} ¥${f.price}</p>
+            <button onclick="delFood(${f.id})" class="text-red-500">删除</button>
+        </div>`;
+    })
+    document.getElementById("admin-food-list").innerHTML = html;
+}
+function addFood(){
+    const name = document.getElementById("food-name").value.trim();
+    const price = parseFloat(document.getElementById("food-price").value);
+    if(!name || isNaN(price)){
+        alert("信息填写完整");
+        return;
+    }
+    const foods = JSON.parse(BS.get("foods"));
+    const newId = Math.max(...foods.map(x=>x.id))+1;
+    foods.push({id:newId,name,price,img:"images/food.jpg"});
+    BS.set("foods", JSON.stringify(foods));
+    renderAdminFood();
+    document.getElementById("food-name").value="";
+    document.getElementById("food-price").value="";
+    alert("新增成功");
+}
+function delFood(id){
+    let foods = JSON.parse(BS.get("foods")).filter(f=>f.id!==id);
+    BS.set("foods", JSON.stringify(foods));
+    renderAdminFood();
+}
+
+//全部订单
+function renderAllOrder(){
+    const orders = JSON.parse(BS.get("orders"));
+    let html = "";
+    orders.slice().reverse().forEach(o=>{
+        let goodsText = o.goods.map(g=>`${g.name}×${g.num}`).join(" ");
+        html += `
+        <div class="bg-white dark:bg-gray-800 p-3 rounded">
+            <p>下单人：${o.username}</p>
+            <p>订单号：${o.orderId}</p>
+            <p>商品：${goodsText}</p>
+            <p>金额：${o.money} ${o.payType}</p>
+            <p>状态：${o.status}</p>
+            <p>${o.createTime}</p>
+        </div>`;
+    })
+    document.getElementById("admin-order-list").innerHTML = html || "<p>暂无订单</p>";
+}
+
+//全部建议
+function renderAllSuggest(){
+    const suggests = JSON.parse(BS.get("suggests"));
+    let html = "";
+    suggests.slice().reverse().forEach(s=>{
+        html += `
+        <div class="bg-white dark:bg-gray-800 p-3 rounded">
+            <p>学生账号：${s.username}</p>
+            <p>内容：${s.content}</p>
+            <p class="text-xs">${s.time}</p>
+        </div>`;
+    })
+    document.getElementById("admin-suggest-list").innerHTML = html || "<p>暂无建议</p>";
+}
+</script>
+<style>
+.back-to-blog{position:fixed;top:14px;left:14px;z-index:99999;background:rgba(26,26,46,.85);color:#fff;padding:7px 14px;border-radius:8px;text-decoration:none;font-size:12.5px;font-weight:600;font-family:-apple-system,'Segoe UI','Microsoft YaHei',sans-serif;backdrop-filter:blur(8px);box-shadow:0 4px 14px rgba(0,0,0,.3);transition:all .2s;display:inline-flex;align-items:center;gap:4px}
+.back-to-blog:hover{background:rgba(91,108,255,.92);transform:translateY(-1px);box-shadow:0 6px 18px rgba(91,108,255,.45)}
+</style>
+<a href="../../index.html" class="back-to-blog">← 返回博客</a>
+</body>
+</html>

@@ -1,0 +1,155 @@
+﻿<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>管理员登录 - 我的山头</title>
+<style>
+/* ===== 全局重置 ===== */
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+  font-family: "Microsoft YaHei", "微软雅黑", sans-serif;
+  background: #0f172a;
+  color: #e2e8f0;
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  font-size: clamp(14px, 2vw, 18px);
+}
+/* ===== 登录卡片 ===== */
+.login-box {
+  background: #1e293b;
+  border: 1px solid #334155;
+  border-radius: 16px;
+  padding: clamp(30px, 5vw, 50px);
+  width: 100%;
+  max-width: 400px;
+  box-shadow: 0 10px 40px rgba(0,0,0,0.5);
+}
+.login-box h1 {
+  text-align: center;
+  color: #38bdf8;
+  font-size: clamp(22px, 4vw, 30px);
+  margin-bottom: 10px;
+}
+.subtitle {
+  text-align: center;
+  color: #64748b;
+  margin-bottom: 30px;
+  font-size: clamp(13px, 2vw, 15px);
+}
+.form-group { margin-bottom: 20px; }
+.form-group label {
+  display: block;
+  color: #cbd5e1;
+  margin-bottom: 8px;
+}
+.form-group input {
+  width: 100%;
+  padding: 12px 15px;
+  background: #0f172a;
+  border: 1px solid #334155;
+  border-radius: 8px;
+  color: #e2e8f0;
+  font-size: clamp(14px, 2vw, 16px);
+  font-family: inherit;
+  transition: border-color 0.3s;
+}
+.form-group input:focus {
+  outline: none;
+  border-color: #38bdf8;
+}
+/* ===== 登录按钮（hover变色） ===== */
+.btn-login {
+  width: 100%;
+  padding: 14px;
+  background: #38bdf8;
+  color: #0f172a;
+  border: none;
+  border-radius: 8px;
+  font-size: clamp(15px, 2.5vw, 18px);
+  font-weight: bold;
+  font-family: inherit;
+  cursor: pointer;
+  transition: background 0.3s, transform 0.2s;
+}
+.btn-login:hover {
+  background: #0ea5e9;
+  transform: translateY(-2px);
+}
+.error-msg {
+  color: #ef4444;
+  text-align: center;
+  margin-top: 15px;
+  min-height: 20px;
+  font-size: clamp(13px, 2vw, 15px);
+}
+.back-link {
+  display: block;
+  text-align: center;
+  margin-top: 20px;
+  color: #64748b;
+  text-decoration: none;
+  font-size: clamp(13px, 2vw, 15px);
+  transition: color 0.3s;
+}
+.back-link:hover { color: #38bdf8; }
+</style>
+</head>
+<body>
+
+<div class="login-box">
+  <h1>管理员登录</h1>
+  <p class="subtitle">我的山头服务器后台管理系统</p>
+
+  <!-- 登录表单 -->
+  <form id="loginForm" onsubmit="return doLogin(event)">
+    <div class="form-group">
+      <label for="username">账号</label>
+      <input type="text" id="username" placeholder="请输入账号" required autocomplete="off">
+    </div>
+    <div class="form-group">
+      <label for="password">密码</label>
+      <input type="password" id="password" placeholder="请输入密码" required autocomplete="off">
+    </div>
+    <button type="submit" class="btn-login">登 录</button>
+    <div class="error-msg" id="errorMsg"></div>
+  </form>
+
+  <a href="index.html" class="back-link">← 返回首页</a>
+</div>
+
+<script>
+/* ===================================================================
+ * 登录验证
+ * 默认账号 admin，密码 123456，可在下方修改。
+ * 验证成功后写入 sessionStorage 会话标记，再跳转后台配置页。
+ * =================================================================== */
+const ADMIN_USER = "admin";    // 【预留】默认账号
+const ADMIN_PASS = "123456";   // 【预留】默认密码
+
+function doLogin(e) {
+  e.preventDefault();
+  const u = document.getElementById("username").value.trim();
+  const p = document.getElementById("password").value.trim();
+  const err = document.getElementById("errorMsg");
+
+  if (u === ADMIN_USER && p === ADMIN_PASS) {
+    /* 登录成功：写入会话标记并跳转 */
+    sessionStorage.setItem("mc_admin_logged", "1");
+    window.location.href = "admin-index.html";
+  } else {
+    err.textContent = "账号或密码错误，请重试！";
+  }
+  return false;
+}
+</script>
+<style>
+.back-to-blog{position:fixed;top:14px;left:14px;z-index:99999;background:rgba(26,26,46,.85);color:#fff;padding:7px 14px;border-radius:8px;text-decoration:none;font-size:12.5px;font-weight:600;font-family:-apple-system,'Segoe UI','Microsoft YaHei',sans-serif;backdrop-filter:blur(8px);box-shadow:0 4px 14px rgba(0,0,0,.3);transition:all .2s;display:inline-flex;align-items:center;gap:4px}
+.back-to-blog:hover{background:rgba(91,108,255,.92);transform:translateY(-1px);box-shadow:0 6px 18px rgba(91,108,255,.45)}
+</style>
+<a href="../../index.html" class="back-to-blog">← 返回博客</a>
+</body>
+</html>

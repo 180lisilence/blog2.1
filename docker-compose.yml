@@ -1,0 +1,64 @@
+# ============================================
+# Docker Compose 部署配置
+# 用法：
+#   1. 复制 qrcode-login/.env.example 为 qrcode-login/.env
+#   2. 修改 .env 中的数据库密码等配置
+#   3. 启动：docker-compose up -d
+#   4. 查看日志：docker-compose logs -f
+#   5. 停止：docker-compose down
+# ============================================
+
+version: "3.8"
+
+services:
+  # 项目中心服务（Node.js + Express）
+  blog:
+    build: .
+    container_name: myself-blog
+    ports:
+      - "3000:3000"
+    env_file:
+      - ./qrcode-login/.env
+    environment:
+      - MYSQL_HOST=mysql
+      - MYSQL_PORT=3306
+    depends_on:
+      mysql:
+        condition: service_healthy
+    restart: unless-stopped
+    networks:
+      - blog-network
+    volumes:
+      # 持久化 ChatRecord 会话数据
+      - chatrecord-data:/app/qrcode-login/data
+
+  # MySQL 数据库
+  mysql:
+    image: mysql:8.0
+    container_name: myself-blog-mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_PASSWORD:-123456}
+      MYSQL_DATABASE: ${MYSQL_DATABASE:-myself_blog2}
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql-data:/var/lib/mysql
+    restart: unless-stopped
+    networks:
+      - blog-network
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p${MYSQL_PASSWORD:-123456}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+volumes:
+  mysql-data:
+    driver: local
+  chatrecord-data:
+    driver: local
+
+networks:
+  blog-network:
+    driver: bridge
