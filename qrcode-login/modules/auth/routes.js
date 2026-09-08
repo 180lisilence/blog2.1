@@ -113,6 +113,13 @@ router.post("/login", loginLockCheck, (req, res) => {
   ok(res, { webToken, username: u });
 });
 
+// 直接登录（个人免密入口：本机个人使用，一键进入系统）
+router.post("/direct-login", (req, res) => {
+  const webToken = sessionMgr.createWebSession("local");
+  logger.info("auth-route", "直接登录（个人免密）");
+  ok(res, { webToken, username: "local" });
+});
+
 // 登出
 router.post("/logout", (req, res) => {
   const token = getTokenFromReq(req);

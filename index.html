@@ -263,6 +263,36 @@
       color: #667eea; border-color: #667eea; background: #f5f7ff;
     }
 
+    /* 其他登录方式切换 */
+    .alt-login {
+      margin-top: 22px;
+      text-align: center;
+    }
+    .alt-toggle {
+      width: 100%;
+      padding: 10px;
+      border: none;
+      background: transparent;
+      color: #9ca3af;
+      font-size: 13px;
+      cursor: pointer;
+      transition: color .2s;
+    }
+    .alt-toggle:hover { color: #667eea; }
+    .alt-panel {
+      margin-top: 10px;
+      padding: 14px;
+      border: 1px dashed #d1d5db;
+      border-radius: 10px;
+      background: #fafbff;
+    }
+    .alt-note {
+      margin-top: 8px;
+      font-size: 12px;
+      color: #9ca3af;
+      line-height: 1.6;
+    }
+
     /* 已登录提示 */
     .logged-in-bar {
       margin-bottom: 24px;
@@ -456,6 +486,17 @@
       </div>
     </div>
 
+    <!-- 其他方式登录 -->
+    <div class="alt-login">
+      <button class="alt-toggle" onclick="toggleAltLogin()" id="altToggle">切换其他方式登录 ▾</button>
+      <div id="altPanel" class="alt-panel" style="display:none">
+        <button class="guest-btn" onclick="directLogin()" title="个人免密，一键直接进入系统">
+          🔓 直接登录（个人免密）
+        </button>
+        <div class="alt-note">适合个人本机使用：无需账号密码，一键进入项目中心，不再被登录页挡住。</div>
+      </div>
+    </div>
+
     <!-- 访客入口 -->
     <div class="guest-entry">
       <button class="guest-btn" onclick="guestEnter()" title="无法启动后台服务时，跳过登录直接进入博客">
@@ -594,6 +635,38 @@
   function guestEnter() {
     try { document.cookie = "web_guest=1; path=/; max-age=604800; SameSite=Lax"; } catch (e) {}
     location.href = "blog/index.html";
+  }
+
+  // ========== 其他方式登录：直接登录（个人免密） ==========
+  function toggleAltLogin() {
+    const p = document.getElementById("altPanel");
+    const t = document.getElementById("altToggle");
+    const show = p.style.display === "none";
+    p.style.display = show ? "block" : "none";
+    t.textContent = show ? "收起其他方式 ▲" : "切换其他方式登录 ▾";
+  }
+  async function directLogin() {
+    const btn = document.querySelector('#altPanel .guest-btn');
+    if (btn) { btn.disabled = true; btn.textContent = "正在进入..."; }
+    try {
+      const r = await apiFetch("/api/direct-login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: "{}"
+      });
+      const d = await r.json();
+      if (d.ok && d.webToken) {
+        document.cookie = "web_token=" + encodeURIComponent(d.webToken) + "; path=/; max-age=604800; SameSite=Lax";
+        if (btn) btn.textContent = "✅ 已进入";
+        setTimeout(() => { location.href = "/blog/"; }, 300);
+      } else {
+        if (btn) { btn.disabled = false; btn.textContent = "🔓 直接登录（个人免密）"; }
+        alert(d.msg || "直接登录失败");
+      }
+    } catch (e) {
+      if (btn) { btn.disabled = false; btn.textContent = "🔓 直接登录（个人免密）"; }
+      alert("直接登录失败：请确认本地服务已启动（node server.js）");
+    }
   }
 
   // 账号密码登录

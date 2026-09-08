@@ -41,11 +41,11 @@ function createAuthGate(webSessions) {
       req.username = ws.username;
       return next();
     }
-    // 未登录：API 返回 401，页面跳转登录页
+    // 未登录：API 返回 401，页面跳转登录页（根目录登录页是 index.html）
     if (req.path.startsWith("/api/")) {
       return res.status(401).json({ ok: false, msg: "请先登录" });
     }
-    return res.redirect("/login.html");
+    return res.redirect("/");
   };
 }
 
