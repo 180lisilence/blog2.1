@@ -21,6 +21,7 @@ const BUILTIN_PROJECTS = [
   { id: "builtin-restaurant", name: "餐厅学生管理系统", desc: "面向餐厅场景的学生管理系统", url: "/blog/projects/restaurant/index.html", icon: "🍽️", color: "c5", builtin: true },
   { id: "builtin-earth", name: "Earth Online", desc: "交互式地球轨道设计器", url: "/blog/projects/earth-online/index.html", icon: "🌍", color: "c6", builtin: true },
   { id: "builtin-chatrecord", name: "ChatRecord 会话时序实验室", desc: "导入聊天记录生成时序分析图表", url: "/blog/projects/chatrecord/index.html", icon: "🌸", color: "c2", builtin: true },
+  { id: "builtin-woldvein", name: "woldvein 游戏 AI 项目", desc: "《东方：平野孤鸿》启动器家族与游戏 AI Agent：v2.0 启动器 → v3.0 产品矩阵 → 崩溃修复 → v4.0 AI Agent → 存档修复", url: "/blog/projects/woldvein/index.html", icon: "🎮", color: "c5", builtin: true },
   { id: "builtin-blog", name: "博客首页", desc: "回到博客首页", url: "/blog/", icon: "📖", color: "c1", builtin: true }
 ];
 
