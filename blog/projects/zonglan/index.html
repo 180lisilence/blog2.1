@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>woldvein 项目总览</title>
+<meta name="description" content="woldvein 项目工具链总览——存档破解、离线修改器、创造模式启动器、二进制补丁、pakv4 解包、崩溃监控、自主 AI Agent 与博客部署。">
+<link rel="preconnect" href="https://miaoda.feishu.cn">
+<link rel="stylesheet" href="https://miaoda.feishu.cn/fonts/css2?family=Ma+Shan+Zheng&family=Noto+Serif+SC:wght@400;600;700;900&display=swap">
+<link rel="stylesheet" href="css/style.css">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='8' fill='%23a91616' stroke='%23eec23f' stroke-width='3'/%3E%3Ctext x='32' y='44' font-size='34' text-anchor='middle' fill='%23eec23f' font-family='KaiTi,serif' font-weight='bold'%3E鸿%3C/text%3E%3C/svg%3E">
+</head>
+<body>
+<aside class="side-nav" id="sideNav" aria-label="侧边导航">
+  <a class="side-brand" href="index.html">
+    <svg class="side-mark" viewBox="0 0 64 64" aria-hidden="true">
+      <rect x="2" y="2" width="60" height="60" rx="9" fill="none" stroke="#eec23f" stroke-width="3"/>
+      <rect x="10" y="10" width="44" height="44" rx="6" fill="none" stroke="#eec23f" stroke-width="1.2" opacity=".6"/>
+      <text x="32" y="43" font-size="30" text-anchor="middle" fill="#ffe9ab" font-family="KaiTi,serif" font-weight="bold">鸿</text>
+    </svg>
+    <span class="side-name plaque">woldvein 总览</span>
+    <span class="side-sub">项目工具链 · 总览</span>
+  </a>
+  <nav class="side-links">
+    <a href="index.html">首页</a>
+    <a href="versions.html">版本演进</a>
+    <a href="tech.html">核心技术</a>
+    <a href="archive.html">存档破解</a>
+    <a href="trainer.html">内置修改器</a>
+    <a href="pitfalls.html">踩坑记录</a>
+    <a href="toolchain.html">工具链</a>
+    <a href="stats.html">数据统计</a>
+  </nav>
+  <p class="side-foot">匠心独运 · 鸿业长青</p>
+</aside>
+<div class="side-mask" id="sideMask"></div>
+<header class="site-header">
+  <div class="header-inner">
+    <a class="brand" href="index.html">
+      <svg class="brand-mark" viewBox="0 0 64 64" aria-hidden="true">
+        <rect x="2" y="2" width="60" height="60" rx="9" fill="none" stroke="#eec23f" stroke-width="3"/>
+        <rect x="10" y="10" width="44" height="44" rx="6" fill="none" stroke="#eec23f" stroke-width="1.2" opacity=".6"/>
+        <text x="32" y="43" font-size="30" text-anchor="middle" fill="#ffe9ab" font-family="KaiTi,serif" font-weight="bold">鸿</text>
+      </svg>
+      <span>
+        <span class="brand-name plaque">woldvein 总览</span>
+        <span class="brand-sub">项目工具链 · 总览</span>
+      </span>
+    </a>
+    <button class="nav-toggle" aria-label="打开导航">☰</button>
+  </div>
+</header>
+<main>
+  <!-- ============ 英雄区 ============ -->
+  <section class="hero">
+    <div class="hero-bg"></div>
+    <aside class="couplet couplet-left" aria-hidden="true">存档破解启鸿蒙</aside>
+    <aside class="couplet couplet-right" aria-hidden="true">工具链成定乾坤</aside>
+    <div class="hero-inner">
+      <div class="hero-badge">woldvein 项目工具链总览</div>
+      <h1 class="hero-title plaque">woldvein</h1>
+      <p class="hero-sub">项目工具链 · 九段传承</p>
+      <p class="hero-couple">存档破解 · 离线修改 · 创造模式启动 · 二进制补丁 · pakv4 解包 · 自主 AI Agent · 博客部署</p>
+      <div class="hero-meta">
+        <span class="tag">Steam AppID 2656540</span>
+        <span class="tag">9 个阶段迭代</span>
+        <span class="tag">8 个 Lua 散文件</span>
+        <span class="tag">64 项存档 CID 字典</span>
+      </div>
+    </div>
+    <div class="hero-scroll">向下览卷</div>
+  </section>
+
+  <div class="page-wrap">
+
+    <!-- ============ 项目概述 ============ -->
+    <section class="section" id="overview">
+      <div class="section-head reveal">
+        <span class="section-no">壹</span>
+        <h2 class="section-title plaque">项目概述</h2>
+        <span class="section-title-line"></span>
+      </div>
+      <div class="panel reveal">
+        <span class="corner corner-tl"></span><span class="corner corner-tr"></span>
+        <span class="corner corner-bl"></span><span class="corner corner-br"></span>
+        <p class="lead">woldvein 项目围绕一款策略游戏展开，从最初的<strong>存档破解</strong>与<strong>离线修改器</strong>，逐步发展到<strong>创造模式启动器</strong>、<strong>游戏内置修改器</strong>、<strong>二进制补丁</strong>、<strong>pakv4 解包</strong>、<strong>崩溃监控</strong>、<strong>自主 AI Agent</strong> 与<strong>博客部署</strong>的完整工具链。</p>
+        <p>项目起源：用户开了一场"六方 AI 代码大赛"（1 豆包 / 2 DeepSeek / 3 千问 / 4 百度搭子 / 5 扣子 / 6 夸克），核心议题是破解存档资源 ID 映射，靠差分法 + 多档存档实测收敛。</p>
+        <div class="rule" aria-hidden="true"><span class="rule-diamond"></span></div>
+        <ul class="clean">
+          <li>项目根目录：<span class="code">D:\pingye_pack\</span></li>
+          <li>Steam AppID：<span class="code">2656540</span></li>
+          <li>游戏目录：<span class="code">D:\steam\steamapps\common\BalladsOfHongye_CN\</span></li>
+          <li>存档目录：<span class="code">storage\8f1804a7b75e845bc4571c7972039\</span>（.boh=SQLite，index.json=UUID 数组）</li>
+          <li>引擎：<span class="code">KG3DEngineDX11EX64.dll</span>，Lua 5.1（<span class="code">Engine_Lua5X64.dll</span>）</li>
+          <li>交接文档：<span class="code">woldvein项目总交接文档_v2.0_完整版.md</span>（生成于 2026-09-08）</li>
+        </ul>
+      </div>
+    </section>
+
+    <!-- ============ 版本演进 ============ -->
+    <section class="section" id="versions">
+      <div class="section-head reveal">
+        <span class="section-no">贰</span>
+        <h2 class="section-title plaque">版本演进</h2>
+        <span class="section-title-line"></span>
+      </div>
+      <div class="timeline reveal">
+        <div class="tl-item">
+          <span class="tl-dot"></span>
+          <div class="tl-head"><span class="tl-ver plaque">2.0</span><span class="tl-role">存档破解 + 多方案探索</span></div>
+          <div class="tl-body">存档破解、eastfamily.exe、trainer_v15.dll（DLL 注入）、二进制补丁 exe、pakv4 解包工具，A/B/C 三方案并行。</div>
+        </div>
+        <div class="tl-item">
+          <span class="tl-dot"></span>
+          <div class="tl-head"><span class="tl-ver plaque">project1-7</span><span class="tl-role">七项目并行探索（历史）</span></div>
+          <div class="tl-body">A/B/C 三方案、自制 Steam 代理 DLL、离线启动器、EastBlooding 全能启动器，奠定各方向地基。</div>
+        </div>
+        <div class="tl-item">
+          <span class="tl-dot"></span>
+          <div class="tl-head"><span class="tl-ver plaque">Project 7</span><span class="tl-role">简化版 GUI 启动器 v3.0</span></div>
+          <div class="tl-body">轻量启动器 game_launcher_v3.py 与存档修复工具 fix_saves.py，功能少而轻。</div>
+        </div>
+        <div class="tl-item">
+          <span class="tl-dot"></span>
+          <div class="tl-head"><span class="tl-ver plaque">3.0</span><span class="tl-role">完整版启动器 2.0（PCL2 风格）</span></div>
+          <div class="tl-body">PySide6 GUI 启动器（4 页面）、独立部署器、网页版启动器，并产出 exe 与安装包。</div>
+        </div>
+        <div class="tl-item">
+          <span class="tl-dot"></span>
+          <div class="tl-head"><span class="tl-ver plaque">3.5</span><span class="tl-role">3.0 + 存档修复 + 崩溃监控</span></div>
+          <div class="tl-body">合并 Project 7 存档修复，新增 crash_monitor.py 崩溃监控器与散文件兼容性修复。</div>
+        </div>
+        <div class="tl-item">
+          <span class="tl-dot"></span>
+          <div class="tl-head"><span class="tl-ver plaque">3.6</span><span class="tl-role">启动修复 + 打包发布</span></div>
+          <div class="tl-body">Steam 唤醒启动（steam://rungameid）、目录重组，完成 exe / 绿色版 / 安装包全套打包。</div>
+        </div>
+        <div class="tl-item">
+          <span class="tl-dot"></span>
+          <div class="tl-head"><span class="tl-ver plaque">4.0</span><span class="tl-role">自主 AI Agent</span></div>
+          <div class="tl-body">Python 侧 10 模块 + Lua 桥接、4 策略轮换、自愈机制与双日志，让游戏"自己玩自己"。</div>
+        </div>
+        <div class="tl-item">
+          <span class="tl-dot"></span>
+          <div class="tl-head"><span class="tl-ver plaque">blog2.1</span><span class="tl-role">博客部署（项目展示）</span></div>
+          <div class="tl-body">woldvein 项目卡片 + 展示页 + PPT 在线播放，GitHub + Gitee 双远程部署。</div>
+        </div>
+      </div>
+      <p class="center"><a class="gold-solid" href="versions.html">进入版本演进详情 →</a></p>
+    </section>
+
+    <!-- ============ 数据亮点 ============ -->
+    <section class="section" id="stats">
+      <div class="section-head reveal">
+        <span class="section-no">叁</span>
+        <h2 class="section-title plaque">数据亮点</h2>
+        <span class="section-title-line"></span>
+      </div>
+      <div class="stats-band reveal">
+        <div class="stat"><span class="stat-num plaque" data-num="9">0</span><span class="stat-label">阶段数量</span></div>
+        <div class="stat"><span class="stat-num plaque" data-num="8">0</span><span class="stat-label">Lua 散文件</span></div>
+        <div class="stat"><span class="stat-num plaque" data-num="64">0</span><span class="stat-label">CID 存档字典</span></div>
+        <div class="stat"><span class="stat-num plaque" data-num="11">0</span><span class="stat-label">资源 ID</span></div>
+        <div class="stat"><span class="stat-num plaque" data-num="6">0</span><span class="stat-label">游戏内热键</span></div>
+        <div class="stat"><span class="stat-num plaque" data-num="10">0</span><span class="stat-label">Agent 模块</span></div>
+        <div class="stat"><span class="stat-num plaque" data-num="4">0</span><span class="stat-label">AI 策略</span></div>
+        <div class="stat"><span class="stat-num plaque" data-num="3.2" data-decimals="1" data-suffix=" MB">0</span><span class="stat-label">离线修改器</span></div>
+      </div>
+    </section>
+
+    <!-- ============ 核心技术 ============ -->
+    <section class="section" id="tech">
+      <div class="section-head reveal">
+        <span class="section-no">肆</span>
+        <h2 class="section-title plaque">核心技术</h2>
+        <span class="section-title-line"></span>
+      </div>
+      <div class="card-grid reveal">
+        <a class="entry" href="archive.html">
+          <span class="entry-mark plaque">档</span>
+          <span class="entry-name plaque">存档破解</span>
+          <span class="entry-desc">.boh 即 SQLite；解码 ROL3 + 16 字节倒序；编码 ROR3 回写；64 项 CID 完整字典</span>
+        </a>
+        <a class="entry" href="trainer.html">
+          <span class="entry-mark plaque">器</span>
+          <span class="entry-name plaque">内置修改器</span>
+          <span class="entry-desc">DLL 注入 + Lua Hook，ImGui 游戏内面板，F5-F10 六键热改资源</span>
+        </a>
+        <a class="entry" href="tech.html">
+          <span class="entry-mark plaque">启</span>
+          <span class="entry-name plaque">创造模式</span>
+          <span class="entry-desc">Goldberg 模拟器 + 8 散文件 + version.dll 代理，离线畅玩，资源无限</span>
+        </a>
+        <a class="entry" href="tech.html">
+          <span class="entry-mark plaque">智</span>
+          <span class="entry-name plaque">自主 Agent</span>
+          <span class="entry-desc">10 模块 Python 侧 + Lua 桥接，4 策略轮换，自愈机制，双日志兜底</span>
+        </a>
+      </div>
+    </section>
+
+    <!-- ============ 全站导航 ============ -->
+    <section class="section" id="map">
+      <div class="section-head reveal">
+        <span class="section-no">伍</span>
+        <h2 class="section-title plaque">全站索引</h2>
+        <span class="section-title-line"></span>
+      </div>
+      <div class="entry-grid reveal">
+        <a class="entry" href="versions.html">
+          <span class="entry-mark plaque">卷</span>
+          <span class="entry-name plaque">版本演进</span>
+          <span class="entry-desc">2.0 至 blog2.1 九大阶段的定位、核心产出与完整目录结构</span>
+        </a>
+        <a class="entry" href="tech.html">
+          <span class="entry-mark plaque">术</span>
+          <span class="entry-name plaque">核心技术</span>
+          <span class="entry-desc">创造模式部署、破解算法、二进制补丁、pakv4 解包、Steam 唤醒、崩溃监控</span>
+        </a>
+        <a class="entry" href="archive.html">
+          <span class="entry-mark plaque">码</span>
+          <span class="entry-name plaque">存档破解</span>
+          <span class="entry-desc">破解算法、资源双存储、CID 字典与资源 ID 映射、卡 3/4 修复</span>
+        </a>
+        <a class="entry" href="trainer.html">
+          <span class="entry-mark plaque">刃</span>
+          <span class="entry-name plaque">内置修改器</span>
+          <span class="entry-desc">A 方案 DLL 注入、B 方案代理、C 方案二进制补丁、ImGui 面板与热键</span>
+        </a>
+        <a class="entry" href="pitfalls.html">
+          <span class="entry-mark plaque">鉴</span>
+          <span class="entry-name plaque">踩坑记录</span>
+          <span class="entry-desc">七大类已知问题：启动、创造模式、存档、打包、bat、环境与死路</span>
+        </a>
+        <a class="entry" href="toolchain.html">
+          <span class="entry-mark plaque">械</span>
+          <span class="entry-name plaque">工具链</span>
+          <span class="entry-desc">开发工具、常用命令、验证方法及关键文件位置索引</span>
+        </a>
+        <a class="entry" href="stats.html">
+          <span class="entry-mark plaque">数</span>
+          <span class="entry-name plaque">数据统计</span>
+          <span class="entry-desc">项目规模指标全览：版本、源码、散文件、体积、备份</span>
+        </a>
+      </div>
+    </section>
+
+</main>
+<footer class="site-footer">
+  <p class="footer-couple plaque">匠心独运 · 鸿业长青</p>
+  <p class="footer-meta">woldvein 项目总览 · 依据《woldvein项目总交接文档_v2.0_完整版》编制 · 2026-09-08</p>
+</footer>
+
+<button class="to-top" aria-label="返回顶部">↑</button>
+<script src="js/main.js"></script>
+</body>
+</html>

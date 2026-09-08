@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>数据统计 · woldvein 总览</title>
+<meta name="description" content="woldvein 项目数据统计：阶段数量、源码规模、散文件、CID 字典、资源 ID、热键、Agent 模块、产物体积、解包统计与备份规模。">
+<link rel="preconnect" href="https://miaoda.feishu.cn">
+<link rel="stylesheet" href="https://miaoda.feishu.cn/fonts/css2?family=Ma+Shan+Zheng&family=Noto+Serif+SC:wght@400;600;700;900&display=swap">
+<link rel="stylesheet" href="css/style.css">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='8' fill='%23a91616' stroke='%23eec23f' stroke-width='3'/%3E%3Ctext x='32' y='44' font-size='34' text-anchor='middle' fill='%23eec23f' font-family='KaiTi,serif' font-weight='bold'%3E鸿%3C/text%3E%3C/svg%3E">
+</head>
+<body>
+<aside class="side-nav" id="sideNav" aria-label="侧边导航">
+  <a class="side-brand" href="index.html">
+    <svg class="side-mark" viewBox="0 0 64 64" aria-hidden="true">
+      <rect x="2" y="2" width="60" height="60" rx="9" fill="none" stroke="#eec23f" stroke-width="3"/>
+      <rect x="10" y="10" width="44" height="44" rx="6" fill="none" stroke="#eec23f" stroke-width="1.2" opacity=".6"/>
+      <text x="32" y="43" font-size="30" text-anchor="middle" fill="#ffe9ab" font-family="KaiTi,serif" font-weight="bold">鸿</text>
+    </svg>
+    <span class="side-name plaque">woldvein 总览</span>
+    <span class="side-sub">项目工具链 · 总览</span>
+  </a>
+  <nav class="side-links">
+    <a href="index.html">首页</a>
+    <a href="versions.html">版本演进</a>
+    <a href="tech.html">核心技术</a>
+    <a href="archive.html">存档破解</a>
+    <a href="trainer.html">内置修改器</a>
+    <a href="pitfalls.html">踩坑记录</a>
+    <a href="toolchain.html">工具链</a>
+    <a href="stats.html">数据统计</a>
+  </nav>
+  <p class="side-foot">匠心独运 · 鸿业长青</p>
+</aside>
+<div class="side-mask" id="sideMask"></div>
+<header class="site-header">
+  <div class="header-inner">
+    <a class="brand" href="index.html">
+      <svg class="brand-mark" viewBox="0 0 64 64" aria-hidden="true">
+        <rect x="2" y="2" width="60" height="60" rx="9" fill="none" stroke="#eec23f" stroke-width="3"/>
+        <rect x="10" y="10" width="44" height="44" rx="6" fill="none" stroke="#eec23f" stroke-width="1.2" opacity=".6"/>
+        <text x="32" y="43" font-size="30" text-anchor="middle" fill="#ffe9ab" font-family="KaiTi,serif" font-weight="bold">鸿</text>
+      </svg>
+      <span>
+        <span class="brand-name plaque">woldvein 总览</span>
+        <span class="brand-sub">项目工具链 · 总览</span>
+      </span>
+    </a>
+    <button class="nav-toggle" aria-label="打开导航">☰</button>
+  </div>
+</header>
+<main>
+  <div class="page-wrap">
+    <div class="page-head">
+      <h1 class="page-title plaque">数据统计</h1>
+      <p class="page-sub">规模全览 · 一目了然</p>
+      <div class="rule" aria-hidden="true"><span class="rule-diamond"></span></div>
+    </div>
+
+    <!-- ============ 壹 核心指标 ============ -->
+    <section class="section">
+      <div class="section-head reveal">
+        <span class="section-no">壹</span>
+        <h2 class="section-title plaque">核心指标</h2>
+        <span class="section-title-line"></span>
+      </div>
+      <div class="stats-band reveal">
+        <div class="stat"><span class="stat-num plaque" data-num="9">0</span><span class="stat-label">阶段数量</span></div>
+        <div class="stat"><span class="stat-num plaque" data-num="8">0</span><span class="stat-label">启动器 py 源码</span></div>
+        <div class="stat"><span class="stat-num plaque" data-num="8">0</span><span class="stat-label">创造模式散文件</span></div>
+        <div class="stat"><span class="stat-num plaque" data-num="64">0</span><span class="stat-label">CID 存档字典</span></div>
+        <div class="stat"><span class="stat-num plaque" data-num="11">0</span><span class="stat-label">资源 ID</span></div>
+        <div class="stat"><span class="stat-num plaque" data-num="6">0</span><span class="stat-label">游戏内热键</span></div>
+        <div class="stat"><span class="stat-num plaque" data-num="10">0</span><span class="stat-label">Agent 模块</span></div>
+        <div class="stat"><span class="stat-num plaque" data-num="1052">0</span><span class="stat-label">解包 Lua 文件</span></div>
+      </div>
+    </section>
+
+    <!-- ============ 贰 指标全表 ============ -->
+    <section class="section">
+      <div class="section-head reveal">
+        <span class="section-no">贰</span>
+        <h2 class="section-title plaque">指标全表</h2>
+        <span class="section-title-line"></span>
+      </div>
+      <div class="tbl-wrap reveal">
+        <table class="tbl">
+          <thead><tr><th>指标</th><th>数值</th></tr></thead>
+          <tbody>
+            <tr><td>阶段数量</td><td>9 个（2.0 / project1-7 / 3.0 / 3.5 / 3.6 / 4.0 / blog2.1）</td></tr>
+            <tr><td>启动器 Python 源码</td><td>8 个 .py 文件（main/config/game_core/ui_main/ui_pages/ui_widgets/utils + fix_saves）</td></tr>
+            <tr><td>创造模式散文件</td><td>8 个 Lua 脚本</td></tr>
+            <tr><td>存档 CID 字典</td><td>64 种对象类型（编号 1~75，5 个预留 8/14/48/54/70 不存在）</td></tr>
+            <tr><td>资源 ID</td><td>11 项（金钱/木料/矿产/衣服/食物/水/盐/酒/精华储备/人口当前/人口上限）</td></tr>
+            <tr><td>游戏内置修改器热键</td><td>6 个（F5-F10）</td></tr>
+            <tr><td>游戏内置修改器面板版本</td><td>v11 → v15.1（大面板全自定义版）</td></tr>
+            <tr><td>DLL 注入修改器版本</td><td>v17 路径自适应版（trainer_v15.dll，59.8KB）</td></tr>
+            <tr><td>C 方案二进制补丁版本</td><td>v9（IAT 寻址，最终成功）</td></tr>
+            <tr><td>pakv4 ZSTD 块（前 100MB）</td><td>3997 个（解压成功 3996 个，99.97%）</td></tr>
+            <tr><td>pakv4 解包 Lua 文件</td><td>1052 个（前 100MB）</td></tr>
+            <tr><td>4.0 Agent Python 模块</td><td>10 个</td></tr>
+            <tr><td>4.0 Agent 策略</td><td>4 套（保守扩张 / 基建补全 / 产业升级 / 文化繁荣）</td></tr>
+            <tr><td>4.0 Agent 动作指纹 LRU 缓存</td><td>50 条</td></tr>
+            <tr><td>离线修改器体积</td><td>3.2MB（C# WinForms）</td></tr>
+            <tr><td>启动器单文件 exe</td><td>47MB（含 PySide6 + 数据文件）</td></tr>
+            <tr><td>启动器安装包</td><td>约 33MB</td></tr>
+            <tr><td>启动器绿色版</td><td>48MB</td></tr>
+            <tr><td>Steam 离线启动器</td><td>633KB（OfflineLauncher.exe）</td></tr>
+            <tr><td>EastBlooding 全能启动器</td><td>656KB（eastblooding_launcher.exe）</td></tr>
+            <tr><td>自制 Steam 代理 DLL</td><td>371KB（1019 个 stub 函数，测试无效）</td></tr>
+            <tr><td>000.dat 大小</td><td>381MB（ZSTD 压缩，无加密）</td></tr>
+            <tr><td>3.0 游戏目录备份</td><td>5.8GB（08_游戏目录撤回备份）</td></tr>
+            <tr><td>注册表备份</td><td>328MB（HKLM_SOFTWARE.reg）</td></tr>
+            <tr><td>blog2.1 项目卡片</td><td>11 个（含 woldvein）</td></tr>
+            <tr><td>woldvein PPT 页数</td><td>39 页</td></tr>
+            <tr><td>woldvein PPT 动画数</td><td>447 个 fade 动画（自动播放）+ fade 页面转场</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- ============ 叁 图表 ============ -->
+    <section class="section">
+      <div class="section-head reveal">
+        <span class="section-no">叁</span>
+        <h2 class="section-title plaque">体积对比（MB）</h2>
+        <span class="section-title-line"></span>
+      </div>
+      <div class="panel reveal">
+        <span class="corner corner-tl"></span><span class="corner corner-tr"></span>
+        <span class="corner corner-bl"></span><span class="corner corner-br"></span>
+        <div id="chart-size" class="chart" style="height:340px;"></div>
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="section-head reveal">
+        <span class="section-no">肆</span>
+        <h2 class="section-title plaque">pakv4 盲解包构成（前 100MB）</h2>
+        <span class="section-title-line"></span>
+      </div>
+      <div class="panel reveal">
+        <span class="corner corner-tl"></span><span class="corner corner-tr"></span>
+        <span class="corner corner-bl"></span><span class="corner corner-br"></span>
+        <div id="chart-pack" class="chart" style="height:340px;"></div>
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="section-head reveal">
+        <span class="section-no">伍</span>
+        <h2 class="section-title plaque">资源标签</h2>
+        <span class="section-title-line"></span>
+      </div>
+      <div class="panel reveal">
+        <span class="corner corner-tl"></span><span class="corner corner-tr"></span>
+        <span class="corner corner-bl"></span><span class="corner corner-br"></span>
+        <div class="tag-cloud">
+          <span class="tag">存档破解</span><span class="tag">离线修改器</span><span class="tag">创造模式</span><span class="tag">内置修改器</span>
+          <span class="tag">二进制补丁</span><span class="tag">pakv4 解包</span><span class="tag">ZSTD</span><span class="tag">崩溃监控</span>
+          <span class="tag">自主 Agent</span><span class="tag">Lua 桥接</span><span class="tag">Goldberg</span><span class="tag">Steam 唤醒</span>
+          <span class="tag">博客部署</span><span class="tag">GitHub</span><span class="tag">Gitee</span>
+        </div>
+      </div>
+    </section>
+
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/echarts@5.5.0/dist/echarts.min.js"></script>
+  <script>
+  (function () {
+    if (typeof echarts === "undefined") return;
+    var base = "#2a1500";
+    var gold = { type: "linear", x: 0, y: 0, x2: 0, y2: 1, colorStops: [
+      { offset: 0, color: "#fff3c9" }, { offset: 1, color: "#f2c94c" } ] };
+    var size = echarts.init(document.getElementById("chart-size"));
+    size.setOption({
+      backgroundColor: "transparent",
+      tooltip: { trigger: "axis", axisPointer: { type: "shadow" }, backgroundColor: "#330404", borderColor: "#eec23f", textStyle: { color: "#ffe9ab", fontFamily: "KaiTi" } },
+      grid: { left: 70, right: 30, top: 30, bottom: 40 },
+      xAxis: { type: "category", data: ["离线修改器", "单文件 exe", "安装包", "绿色版", "OfflineLauncher", "EastBlooding", "Steam 代理", "000.dat"], axisLabel: { color: "#ffe9ab", fontFamily: "KaiTi", rotate: 18 }, axisLine: { lineStyle: { color: "#cf9c2c" } } },
+      yAxis: { type: "log", name: "MB（对数）", nameTextStyle: { color: "#ffe9ab", fontFamily: "KaiTi" }, axisLabel: { color: "#ffe9ab", fontFamily: "KaiTi" }, splitLine: { lineStyle: { color: "rgba(207,156,44,0.18)" } } },
+      series: [{ type: "bar", data: [3.2, 47, 33, 48, 0.633, 0.656, 0.371, 381], itemStyle: { color: gold, borderRadius: [4, 4, 0, 0], borderColor: base, borderWidth: 1 }, label: { show: true, position: "top", color: "#ffe9ab", fontFamily: "KaiTi", formatter: function (p) { return p.value + " MB"; } } }]
+    });
+    var pack = echarts.init(document.getElementById("chart-pack"));
+    pack.setOption({
+      backgroundColor: "transparent",
+      tooltip: { trigger: "item", backgroundColor: "#330404", borderColor: "#eec23f", textStyle: { color: "#ffe9ab", fontFamily: "KaiTi" } },
+      series: [{
+        type: "pie", radius: ["42%", "72%"], center: ["50%", "52%"],
+        itemStyle: { borderColor: "#330404", borderWidth: 2 },
+        label: { color: "#ffe9ab", fontFamily: "KaiTi" },
+        labelLine: { lineStyle: { color: "#cf9c2c" } },
+        data: [
+          { value: 1052, name: "Lua 文件", itemStyle: { color: "#f2c94c" } },
+          { value: 557, name: "JSON 文件", itemStyle: { color: "#d83a2e" } },
+          { value: 2387, name: "未知类型（图片/模型/音效等）", itemStyle: { color: "#9a7220" } }
+        ]
+      }]
+    });
+    window.addEventListener("resize", function () { size.resize(); pack.resize(); });
+  })();
+  </script>
+
+</main>
+<footer class="site-footer">
+  <p class="footer-couple plaque">匠心独运 · 鸿业长青</p>
+  <p class="footer-meta">woldvein 项目总览 · 依据《woldvein项目总交接文档_v2.0_完整版》编制 · 2026-09-08</p>
+</footer>
+
+<button class="to-top" aria-label="返回顶部">↑</button>
+<script src="js/main.js"></script>
+</body>
+</html>

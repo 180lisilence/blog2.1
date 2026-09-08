@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>存档破解 · woldvein 总览</title>
+<meta name="description" content="woldvein 项目存档破解：.boh 格式算法、游戏识别四要素、64 项 CID 完整字典、资源 ID 映射、离线修改器 eastfamily、一键解析工具与卡 3/4 修复。">
+<link rel="preconnect" href="https://miaoda.feishu.cn">
+<link rel="stylesheet" href="https://miaoda.feishu.cn/fonts/css2?family=Ma+Shan+Zheng&family=Noto+Serif+SC:wght@400;600;700;900&display=swap">
+<link rel="stylesheet" href="css/style.css">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='8' fill='%23a91616' stroke='%23eec23f' stroke-width='3'/%3E%3Ctext x='32' y='44' font-size='34' text-anchor='middle' fill='%23eec23f' font-family='KaiTi,serif' font-weight='bold'%3E鸿%3C/text%3E%3C/svg%3E">
+</head>
+<body>
+<aside class="side-nav" id="sideNav" aria-label="侧边导航">
+  <a class="side-brand" href="index.html">
+    <svg class="side-mark" viewBox="0 0 64 64" aria-hidden="true">
+      <rect x="2" y="2" width="60" height="60" rx="9" fill="none" stroke="#eec23f" stroke-width="3"/>
+      <rect x="10" y="10" width="44" height="44" rx="6" fill="none" stroke="#eec23f" stroke-width="1.2" opacity=".6"/>
+      <text x="32" y="43" font-size="30" text-anchor="middle" fill="#ffe9ab" font-family="KaiTi,serif" font-weight="bold">鸿</text>
+    </svg>
+    <span class="side-name plaque">woldvein 总览</span>
+    <span class="side-sub">项目工具链 · 总览</span>
+  </a>
+  <nav class="side-links">
+    <a href="index.html">首页</a>
+    <a href="versions.html">版本演进</a>
+    <a href="tech.html">核心技术</a>
+    <a href="archive.html">存档破解</a>
+    <a href="trainer.html">内置修改器</a>
+    <a href="pitfalls.html">踩坑记录</a>
+    <a href="toolchain.html">工具链</a>
+    <a href="stats.html">数据统计</a>
+  </nav>
+  <p class="side-foot">匠心独运 · 鸿业长青</p>
+</aside>
+<div class="side-mask" id="sideMask"></div>
+<header class="site-header">
+  <div class="header-inner">
+    <a class="brand" href="index.html">
+      <svg class="brand-mark" viewBox="0 0 64 64" aria-hidden="true">
+        <rect x="2" y="2" width="60" height="60" rx="9" fill="none" stroke="#eec23f" stroke-width="3"/>
+        <rect x="10" y="10" width="44" height="44" rx="6" fill="none" stroke="#eec23f" stroke-width="1.2" opacity=".6"/>
+        <text x="32" y="43" font-size="30" text-anchor="middle" fill="#ffe9ab" font-family="KaiTi,serif" font-weight="bold">鸿</text>
+      </svg>
+      <span>
+        <span class="brand-name plaque">woldvein 总览</span>
+        <span class="brand-sub">项目工具链 · 总览</span>
+      </span>
+    </a>
+    <button class="nav-toggle" aria-label="打开导航">☰</button>
+  </div>
+</header>
+<main>
+  <div class="page-wrap">
+    <div class="page-head">
+      <h1 class="page-title plaque">存档破解</h1>
+      <p class="page-sub">差分收敛 · 字典全解</p>
+      <div class="rule" aria-hidden="true"><span class="rule-diamond"></span></div>
+    </div>
+
+    <!-- ============ 壹 破解算法 ============ -->
+    <section class="section">
+      <div class="section-head reveal">
+        <span class="section-no">壹</span>
+        <h2 class="section-title plaque">破解算法</h2>
+        <span class="section-title-line"></span>
+      </div>
+      <div class="panel reveal">
+        <span class="corner corner-tl"></span><span class="corner corner-tr"></span>
+        <span class="corner corner-bl"></span><span class="corner corner-br"></span>
+        <p class="lead">存档格式 <span class="code">.boh</span> 本质是 SQLite 数据库，正文藏在 <span class="code">userdata</span> 表非 <span class="code">.meta</span> 行的最长 buffer 中，经过"组内倒序 + 循环移位 + GBK 编码"三重加工。</p>
+        <div class="grid-2">
+          <div class="card">
+            <h3 class="card-title plaque">解码（读取）</h3>
+            <ul class="clean">
+              <li>blob → 每 16 字节组内倒序</li>
+              <li>逐字节 ROL3：<span class="code">((b&lt;&lt;3)|(b&gt;&gt;5))&amp;0xFF</span></li>
+              <li>GBK 解码（errors=replace 容错）</li>
+              <li>尾部 <span class="code">raw.rfind(',"CID":')</span> 截断，补 <span class="code">',"CID":9}]}}'</span></li>
+            </ul>
+          </div>
+          <div class="card">
+            <h3 class="card-title plaque">编码（保存）</h3>
+            <ul class="clean">
+              <li>JSON 紧凑序列化</li>
+              <li>GBK 编码（逐字节容错）</li>
+              <li>ROR3 循环移位</li>
+              <li>每 16 字节组内倒序 → blob</li>
+            </ul>
+          </div>
+        </div>
+        <div class="note">
+          <p class="note-title">关键约束</p>
+          <p>解码/编码步骤顺序不能颠倒；保存必须 VACUUM（否则文件翻倍）；必须更新内部 path（否则游戏识别不到）；CID=9 是固定填充值（普通玩家存档适配）；存档大部分 GBK，但功能名/谋士名/UI 文本是 UTF-8 字节混存。</p>
+        </div>
+        <div class="rule" aria-hidden="true"><span class="rule-diamond"></span></div>
+        <p class="strong">游戏识别存档四要素（必须全一致）</p>
+        <ul class="clean">
+          <li>文件名 <span class="code">{uuid}.boh</span></li>
+          <li>主数据行 <span class="code">path=/{uuid}</span></li>
+          <li>meta 行 <span class="code">path=/{uuid}.meta</span></li>
+          <li><span class="code">index.json</span> 纯字符串数组注册</li>
+        </ul>
+        <div class="rule" aria-hidden="true"><span class="rule-diamond"></span></div>
+        <p class="strong">存档结构</p>
+        <ul class="clean">
+          <li>顶层 <span class="code">data['Serialization']</span>：<span class="code">tbVersionInfo</span>（tbVersionPostfix + tbVersion:[9,2,1]）+ <span class="code">tbObjInfos</span>（3442 个对象，每个 {CID, tbData}）</li>
+          <li>CID=64 对象（49 个，只有第一个含 tbBoomData 是主存档）：m_tbSource 资源数组（索引 0=ID1 金钱…索引 24=ID25 精华）、m_nPassedDays 已过天数、prosperity 繁荣度得分、prosperityLevel 繁荣等级、boomLevel 鸿业品阶、tbBankData 银行数据</li>
+          <li>CID=11 对象（1 个）：时间信息（m_nYear / m_nDay / m_nSeason / m_nHour）</li>
+        </ul>
+      </div>
+    </section>
+
+    <!-- ============ 贰 CID 字典 ============ -->
+    <section class="section">
+      <div class="section-head reveal">
+        <span class="section-no">贰</span>
+        <h2 class="section-title plaque">64 个 CID 完整字典（存档层）</h2>
+        <span class="section-title-line"></span>
+      </div>
+      <div class="panel reveal">
+        <span class="corner corner-tl"></span><span class="corner corner-tr"></span>
+        <span class="corner corner-bl"></span><span class="corner corner-br"></span>
+        <p class="lead">CID 与资源 ID 是两套完全独立编号：<strong>CID</strong> = 存档对象类型编号（如 CID=19 是建筑记录）；<strong>资源 ID</strong> = <span class="code">m_tbSource</span> 槽位号（如 ID19=盐）。</p>
+        <div class="tbl-wrap"><table class="tbl" id="tbl-cid">
+          <thead><tr><th>CID</th><th>内容</th></tr></thead>
+          <tbody>
+            <tr><td><span class="code">7</span></td><td>功能全解锁（16 按钮 × 3 组，unlock 是存档 JSON 里的字段名[数组]）</td></tr>
+            <tr><td><span class="code">21</span></td><td>产业链全解锁（46 条中文名，tbConnectChain + tbFullIndustryChainRecord 双字段同步）</td></tr>
+            <tr><td><span class="code">20</span></td><td>城镇任务（9 链 finishNumber=99）</td></tr>
+            <tr><td><span class="code">52</span></td><td>谋士满级（15 名 Level=15 / Exp=99999 / TotalAbility=999 / Power=999）</td></tr>
+            <tr><td><span class="code">33</span></td><td>谋士管理 + 蓝图研究（含 _nBlueprintProgress 对象 13 字段）</td></tr>
+            <tr><td><span class="code">65</span></td><td>玩家城市（资源 / 品阶 / 贷款 / 17 灾害）</td></tr>
+            <tr><td><span class="code">60</span></td><td>民房 150 座（cityType=民居等级，cityReputation=民居声誉值）</td></tr>
+            <tr><td><span class="code">19</span></td><td>建筑记录（577 栋建筑，可改等级 / 状态）</td></tr>
+            <tr><td><span class="code">16</span></td><td>市场（m_daysLeft 开市倒计时可改）</td></tr>
+            <tr><td><span class="code">11</span></td><td>时间</td></tr>
+            <tr><td><span class="code">55</span></td><td>天赋</td></tr>
+            <tr><td><span class="code">68</span></td><td>节日</td></tr>
+            <tr><td><span class="code">63</span></td><td>奇观</td></tr>
+            <tr><td><span class="code">57</span></td><td>港口</td></tr>
+            <tr><td><span class="code">49</span></td><td>全年天气</td></tr>
+          </tbody>
+        </table></div>
+        <div class="rule" aria-hidden="true"><span class="rule-diamond"></span></div>
+        <p class="strong">资源 ID 映射（存档层 &amp; Lua 层一致）</p>
+        <div class="tbl-wrap"><table class="tbl">
+          <thead><tr><th>资源 ID</th><th>名称</th><th>备注</th></tr></thead>
+          <tbody>
+            <tr><td><span class="code">1</span></td><td>金钱</td><td>—</td></tr>
+            <tr><td><span class="code">2</span></td><td>木料</td><td>民房升级不含此项</td></tr>
+            <tr><td><span class="code">3</span></td><td>矿产</td><td>民房升级耗材</td></tr>
+            <tr><td><span class="code">4</span></td><td>衣服（布匹）</td><td>民房升级耗材</td></tr>
+            <tr><td><span class="code">5</span></td><td>食物</td><td>民房升级耗材</td></tr>
+            <tr><td><span class="code">6</span></td><td>水</td><td>民房升级耗材</td></tr>
+            <tr><td><span class="code">7</span></td><td>人口当前</td><td>Lua 层额外；改人口用 API</td></tr>
+            <tr><td><span class="code">8</span></td><td>人口上限</td><td>Lua 层额外；改人口用 API</td></tr>
+            <tr><td><span class="code">19</span></td><td>盐</td><td>—</td></tr>
+            <tr><td><span class="code">20</span></td><td>酒</td><td>—</td></tr>
+            <tr><td><span class="code">25</span></td><td>精华储备</td><td>—</td></tr>
+          </tbody>
+        </table></div>
+        <div class="note">
+          <p class="note-title">资源双存储必须双写</p>
+          <p>CID=65 <span class="code">tbBaseData.m_tbSource</span>（26 槽数组，下标=ID-1）+ CID=17 <span class="code">m_unstorage</span>（dict 字符串键）。民房升级耗材 = 资源 ID 3(矿产)+4(衣服)+5(食物)+6(水)，不含资源 ID 2(木料)。</p>
+        </div>
+        <p class="mb0">相关字典文档：<span class="code">2.0/PROJECT_MEMORY/cs/docs/</span> 下的 字段对照字典.txt、id大全.txt、dump_all_cids.txt、规划数据.txt</p>
+      </div>
+    </section>
+
+    <!-- ============ 叁 eastfamily ============ -->
+    <section class="section">
+      <div class="section-head reveal">
+        <span class="section-no">叁</span>
+        <h2 class="section-title plaque">离线修改器 eastfamily</h2>
+        <span class="section-title-line"></span>
+      </div>
+      <div class="panel reveal">
+        <span class="corner corner-tl"></span><span class="corner corner-tr"></span>
+        <span class="corner corner-bl"></span><span class="corner corner-br"></span>
+        <ul class="clean">
+          <li>产物：<span class="code">eastfamily.exe</span>（44.5KB）+ <span class="code">sqlite3.dll</span>（3.2MB），合计约 3.2MB</li>
+          <li>源码：<span class="code">2.0/PROJECT_MEMORY/cs/src/</span>（Program/MainForm/SaveModel/Sqlite/Codec/JsonSeg/Json/SaveArchive）</li>
+          <li>编译：<span class="code">C:\Windows\Microsoft.NET\Framework64\v4.0.30319\csc.exe</span>（.NET Framework 4.8）</li>
+          <li>功能：资源 8 项编辑 / 一键 999999999 / 品阶一键升 7 阶 / 蓝图研究 13 字段 / 功能全解锁 / 产业链全解锁 / 城镇任务全完成 / 谋士一键满级 / 日期季节存档名 / 保存新文件（自动 UUID + VACUUM）</li>
+        </ul>
+        <div class="rule" aria-hidden="true"><span class="rule-diamond"></span></div>
+        <p class="strong">体积对比</p>
+        <div class="tbl-wrap"><table class="tbl">
+          <thead><tr><th>方案</th><th>体积</th></tr></thead>
+          <tbody>
+            <tr><td>C# WinForms</td><td>3.2MB ✅ 最小</td></tr>
+            <tr><td>tkinter</td><td>12MB</td></tr>
+            <tr><td>PyQt5</td><td>45MB</td></tr>
+            <tr><td>Java</td><td>47MB</td></tr>
+          </tbody>
+        </table></div>
+        <div class="note">
+          <p class="note-title">JsonSeg 迭代式分段解析</p>
+          <p>175 万字符 JSON 不能用整体递归解析（递归深度栈溢出），必须用迭代式分段解析。</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ 肆 save_parser ============ -->
+    <section class="section">
+      <div class="section-head reveal">
+        <span class="section-no">肆</span>
+        <h2 class="section-title plaque">一键解析存档工具（save_parser）</h2>
+        <span class="section-title-line"></span>
+      </div>
+      <div class="panel reveal">
+        <span class="corner corner-tl"></span><span class="corner corner-tr"></span>
+        <span class="corner corner-bl"></span><span class="corner corner-br"></span>
+        <ul class="clean">
+          <li>位置：<span class="code">D:\pingye_pack\save_parser\</span>（一键解析存档.bat 双击启动、save_parser.py 核心脚本、README.txt）</li>
+          <li>功能：解码 .boh 存档文件，显示关键信息（天数、品阶、繁荣度、资源、人口等），导出完整 JSON（同目录 &lt;文件名&gt;_decoded.json）</li>
+          <li>解码流程：.boh=SQLite → userdata 表最长 buffer → 16 字节倒序 → ROL3 → GBK → JSON</li>
+          <li>关键信息提取：CID=64 对象（tbBaseData 资源/天数，tbBoomData 繁荣度/鸿业）+ CID=11 对象（时间）</li>
+          <li>使用方法：双击 bat 选择文件/扫描目录；或拖入 .boh 文件到 bat；或命令行 save_parser.py &lt;文件路径&gt;</li>
+        </ul>
+      </div>
+    </section>
+
+    <!-- ============ 伍 卡 3/4 ============ -->
+    <section class="section">
+      <div class="section-head reveal">
+        <span class="section-no">伍</span>
+        <h2 class="section-title plaque">存档卡 3/4 修复（TRANSLATE_V）</h2>
+        <span class="section-title-line"></span>
+      </div>
+      <div class="panel reveal">
+        <span class="corner corner-tl"></span><span class="corner corner-tr"></span>
+        <span class="corner corner-bl"></span><span class="corner corner-br"></span>
+        <ul class="clean">
+          <li>现象：新建存档后加载卡 3/4（"存档打不开"）</li>
+          <li>根因：新建存档时游戏漏写 <span class="code">/TRANSLATE_V</span> 标记。缺该标记的存档下次加载卡 3/4。不是创造模式的问题！原版下新建存档同样缺（证据：38700564 是原版下新建的，同样缺）</li>
+          <li>判定：正常大存档主体 2112KB+ / 2171KB+；坏存档主体 670432B 且缺 /TRANSLATE_V</li>
+        </ul>
+        <p class="strong">修复 SQL</p>
+        <pre class="code-block">INSERT OR IGNORE INTO userdata (path,size,buffer,time)
+VALUES ('/TRANSLATE_V',5,b'9.2.1','YYYY-MM-DD HH:MM:SS')</pre>
+        <ul class="clean">
+          <li>脚本：fix_all_translate.py（补标记）、restore_all_saves.py（恢复+index+补标记）、diag_saves.py / classify_saves.py / organize_saves.py</li>
+          <li>处理存档铁律：先备份 → 补 TRANSLATE_V；<strong>不要删 .boh</strong>（会触发 Steam 云同步冲突 → 启动崩溃）</li>
+          <li>崩溃教训：手动删除存档 .boh → Steam 云存档同步冲突 → 游戏启动崩溃（ExceptionNotCapture30748.dat）；解法：restore_all_saves.py 一键"恢复存档 + index.json + 补 TRANSLATE_V" → 游戏恢复</li>
+        </ul>
+      </div>
+    </section>
+
+  </div>
+
+</main>
+<footer class="site-footer">
+  <p class="footer-couple plaque">匠心独运 · 鸿业长青</p>
+  <p class="footer-meta">woldvein 项目总览 · 依据《woldvein项目总交接文档_v2.0_完整版》编制 · 2026-09-08</p>
+</footer>
+
+<button class="to-top" aria-label="返回顶部">↑</button>
+<script src="js/main.js"></script>
+</body>
+</html>

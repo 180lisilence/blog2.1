@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>工具链 · woldvein 总览</title>
+<meta name="description" content="woldvein 项目工具链：开发工具、常用命令、验证方法、关键文件位置索引（各版本核心文件、共享资源、游戏目录、project1-7）与用户偏好约束。">
+<link rel="preconnect" href="https://miaoda.feishu.cn">
+<link rel="stylesheet" href="https://miaoda.feishu.cn/fonts/css2?family=Ma+Shan+Zheng&family=Noto+Serif+SC:wght@400;600;700;900&display=swap">
+<link rel="stylesheet" href="css/style.css">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='8' fill='%23a91616' stroke='%23eec23f' stroke-width='3'/%3E%3Ctext x='32' y='44' font-size='34' text-anchor='middle' fill='%23eec23f' font-family='KaiTi,serif' font-weight='bold'%3E鸿%3C/text%3E%3C/svg%3E">
+</head>
+<body>
+<aside class="side-nav" id="sideNav" aria-label="侧边导航">
+  <a class="side-brand" href="index.html">
+    <svg class="side-mark" viewBox="0 0 64 64" aria-hidden="true">
+      <rect x="2" y="2" width="60" height="60" rx="9" fill="none" stroke="#eec23f" stroke-width="3"/>
+      <rect x="10" y="10" width="44" height="44" rx="6" fill="none" stroke="#eec23f" stroke-width="1.2" opacity=".6"/>
+      <text x="32" y="43" font-size="30" text-anchor="middle" fill="#ffe9ab" font-family="KaiTi,serif" font-weight="bold">鸿</text>
+    </svg>
+    <span class="side-name plaque">woldvein 总览</span>
+    <span class="side-sub">项目工具链 · 总览</span>
+  </a>
+  <nav class="side-links">
+    <a href="index.html">首页</a>
+    <a href="versions.html">版本演进</a>
+    <a href="tech.html">核心技术</a>
+    <a href="archive.html">存档破解</a>
+    <a href="trainer.html">内置修改器</a>
+    <a href="pitfalls.html">踩坑记录</a>
+    <a href="toolchain.html">工具链</a>
+    <a href="stats.html">数据统计</a>
+  </nav>
+  <p class="side-foot">匠心独运 · 鸿业长青</p>
+</aside>
+<div class="side-mask" id="sideMask"></div>
+<header class="site-header">
+  <div class="header-inner">
+    <a class="brand" href="index.html">
+      <svg class="brand-mark" viewBox="0 0 64 64" aria-hidden="true">
+        <rect x="2" y="2" width="60" height="60" rx="9" fill="none" stroke="#eec23f" stroke-width="3"/>
+        <rect x="10" y="10" width="44" height="44" rx="6" fill="none" stroke="#eec23f" stroke-width="1.2" opacity=".6"/>
+        <text x="32" y="43" font-size="30" text-anchor="middle" fill="#ffe9ab" font-family="KaiTi,serif" font-weight="bold">鸿</text>
+      </svg>
+      <span>
+        <span class="brand-name plaque">woldvein 总览</span>
+        <span class="brand-sub">项目工具链 · 总览</span>
+      </span>
+    </a>
+    <button class="nav-toggle" aria-label="打开导航">☰</button>
+  </div>
+</header>
+<main>
+  <div class="page-wrap">
+    <div class="page-head">
+      <h1 class="page-title plaque">工具链</h1>
+      <p class="page-sub">器利其工 · 事半而功倍</p>
+      <div class="rule" aria-hidden="true"><span class="rule-diamond"></span></div>
+    </div>
+
+    <!-- ============ 壹 开发工具 ============ -->
+    <section class="section">
+      <div class="section-head reveal">
+        <span class="section-no">壹</span>
+        <h2 class="section-title plaque">开发工具</h2>
+        <span class="section-title-line"></span>
+      </div>
+      <div class="tbl-wrap reveal">
+        <table class="tbl">
+          <thead><tr><th>工具</th><th>路径 / 版本</th><th>用途</th></tr></thead>
+          <tbody>
+            <tr><td>Python</td><td>3.14.4（pythoncore-3.14-64）</td><td>启动器 / Agent / 脚本开发</td></tr>
+            <tr><td>PySide6</td><td>6.11.2</td><td>GUI 框架</td></tr>
+            <tr><td>PyInstaller</td><td>6.20.0</td><td>exe 打包（onedir / onefile）</td></tr>
+            <tr><td>Inno Setup</td><td>6.7.3（C:\InnoSetup6\）</td><td>安装包编译</td></tr>
+            <tr><td>mingw64</td><td>D:\mingw64\</td><td>DLL / EXE 编译（gcc / g++）</td></tr>
+            <tr><td>C# 编译器</td><td>.NET Framework 4.8（csc.exe）</td><td>离线修改器编译</td></tr>
+            <tr><td>SQLite3</td><td>sqlite3.dll</td><td>存档数据库操作</td></tr>
+            <tr><td>PowerPoint</td><td>Office 16（POWERPNT.EXE）</td><td>PPT 动画注入（COM AddEffect）</td></tr>
+            <tr><td>zstandard</td><td>Python 库</td><td>pakv4 ZSTD 解压 / 重打包</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- ============ 贰 常用命令 ============ -->
+    <section class="section">
+      <div class="section-head reveal">
+        <span class="section-no">贰</span>
+        <h2 class="section-title plaque">常用命令</h2>
+        <span class="section-title-line"></span>
+      </div>
+      <div class="panel reveal">
+        <span class="corner corner-tl"></span><span class="corner corner-tr"></span>
+        <span class="corner corner-bl"></span><span class="corner corner-br"></span>
+        <p class="strong">启动器运行（源码模式）</p>
+        <pre class="code-block">cd <版本>/源码
+python main.py</pre>
+        <p class="strong">PyInstaller onedir 打包</p>
+        <pre class="code-block">python -m PyInstaller --noconfirm --onedir --windowed --name woldvein_launcher \
+  --distpath <输出dist> --workpath <输出work> --specpath <输出> main.py</pre>
+        <p class="strong">PyInstaller onefile 打包（含数据文件）</p>
+        <pre class="code-block">python -m PyInstaller --noconfirm --onefile --windowed --name woldvein_launcher \
+  --add-data "<数据目录>;02_shuju" \
+  --distpath <输出> --workpath <输出> --specpath <输出> main.py</pre>
+        <p class="strong">Inno Setup 编译安装包</p>
+        <pre class="code-block">C:\InnoSetup6\ISCC.exe <脚本.iss></pre>
+        <p class="strong">DLL 编译（普通 / 延迟初始化版）</p>
+        <pre class="code-block">D:\mingw64\mingw64\bin\gcc.exe -shared -o trainer.dll trainer.c -luser32
+D:\mingw64\mingw64\bin\gcc.exe -shared -o trainer_delayed.dll trainer_delayed.c -luser32</pre>
+        <p class="strong">启动器 EXE 编译（C++ 静态）</p>
+        <pre class="code-block">D:\mingw64\mingw64\bin\g++.exe -static -static-libgcc -static-libstdc++ -o Launcher.exe Launcher.cpp -lpsapi</pre>
+        <p class="strong">C# 离线修改器编译</p>
+        <pre class="code-block">C:\Windows\Microsoft.NET\Framework64\v4.0.30319\csc.exe /out:eastfamily.exe /target:winexe <源码.cs></pre>
+        <p class="strong">Steam API 代理 DLL 生成</p>
+        <pre class="code-block">python generate_proxy.py  # 生成C和def文件
+gcc -shared -o steam_api64.dll steam_api_proxy.c steam_api_proxy.def -luser32</pre>
+      </div>
+    </section>
+
+    <!-- ============ 叁 验证方法 ============ -->
+    <section class="section">
+      <div class="section-head reveal">
+        <span class="section-no">叁</span>
+        <h2 class="section-title plaque">验证方法</h2>
+        <span class="section-title-line"></span>
+      </div>
+      <div class="tbl-wrap reveal">
+        <table class="tbl">
+          <thead><tr><th>验证项</th><th>方法</th></tr></thead>
+          <tbody>
+            <tr><td>Python 语法</td><td>python -m py_compile *.py</td></tr>
+            <tr><td>启动器 GUI 启动</td><td>offscreen 模式运行 main.py 6 秒，检查无崩溃</td></tr>
+            <tr><td>onedir exe 启动</td><td>运行 exe，等待 8 秒，检查进程存活</td></tr>
+            <tr><td>onefile exe 启动</td><td>运行 exe，等待 12 秒，检查进程存活</td></tr>
+            <tr><td>安装包安装</td><td>静默安装到测试目录，检查文件完整</td></tr>
+            <tr><td>散文件部署</td><td>检查 sim_common/script/ 下 8 个文件存在且含标记</td></tr>
+            <tr><td>模式检测</td><td>检查 steam_api64.dll 文件大小判断模式</td></tr>
+            <tr><td>Steam 唤醒</td><td>dry-run 检查 steam://rungameid/2656540 URL 构造正确</td></tr>
+            <tr><td>存档修复</td><td>检查存档文件含 /TRANSLATE_V 标记</td></tr>
+            <tr><td>DLL 注入</td><td>检查游戏进程模块列表含 trainer.dll</td></tr>
+            <tr><td>pakv4 解压</td><td>检查 ZSTD 块解压成功，输出明文 Lua</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- ============ 肆 关键文件位置索引 ============ -->
+    <section class="section">
+      <div class="section-head reveal">
+        <span class="section-no">肆</span>
+        <h2 class="section-title plaque">关键文件位置索引</h2>
+        <span class="section-title-line"></span>
+      </div>
+      <div class="panel reveal">
+        <span class="corner corner-tl"></span><span class="corner corner-tr"></span>
+        <span class="corner corner-bl"></span><span class="corner corner-br"></span>
+        <p class="strong">各版本核心文件</p>
+        <div class="tbl-wrap"><table class="tbl">
+          <thead><tr><th>版本</th><th>启动器入口</th><th>数据目录</th><th>项目文档</th></tr></thead>
+          <tbody>
+            <tr><td><span class="code">2.0</span></td><td>2.0/cs/src/（C# 离线修改器）、2.0/PROJECT_MEMORY/plan_a_dll/（DLL 注入）</td><td>—</td><td>PROJECT_MEMORY.txt / _FULL.txt / _TECH.txt、HANDOVER_20260904.txt</td></tr>
+            <tr><td><span class="code">Project 7</span></td><td>project7/game_launcher_v3.py</td><td>project7/data/</td><td>project7/PROJECT_MEMORY.txt、补丁说明_存档卡34修复.txt</td></tr>
+            <tr><td><span class="code">3.0</span></td><td>3.0/01_启动器2.0/源码/main.py</td><td>3.0/07_整合包/integrated_v4/</td><td>3.0/04_项目文档/（交接文档 v4.0-v7.0）</td></tr>
+            <tr><td><span class="code">3.5</span></td><td>3.5/源码/main.py</td><td>3.5/数据/</td><td>3.5/README.md</td></tr>
+            <tr><td><span class="code">3.6</span></td><td>3.6/01_qidongqi/yuanma/main.py</td><td>3.6/02_shuju/</td><td>3.6/03_wendang/（交接文档 v8.0）</td></tr>
+            <tr><td><span class="code">4.0</span></td><td>4.0/src/main.py</td><td>—（桥接部署到游戏目录）</td><td>4.0/交接文档_v4.0_实机接入阶段.md、README.md</td></tr>
+            <tr><td><span class="code">blog2.1</span></td><td>blog2.1/index.html</td><td>blog2.1/blog/projects/woldvein/</td><td>blog2.1/README.md</td></tr>
+          </tbody>
+        </table></div>
+        <div class="rule" aria-hidden="true"><span class="rule-diamond"></span></div>
+        <p class="strong">共享资源</p>
+        <div class="tbl-wrap"><table class="tbl">
+          <thead><tr><th>资源</th><th>位置</th><th>说明</th></tr></thead>
+          <tbody>
+            <tr><td>散文件（8 个 Lua）</td><td>各版本数据目录下 scatter_files/</td><td>创造模式核心修改</td></tr>
+            <tr><td>Goldberg 模拟器</td><td>各版本数据目录下 steam_api64.dll</td><td>3132.5KB，绕过 Steam</td></tr>
+            <tr><td>version.dll 代理</td><td>各版本数据目录下 version.dll</td><td>53.9KB</td></tr>
+            <tr><td>steam_settings</td><td>各版本数据目录下 steam_settings/</td><td>Goldberg 配置（6 文件）</td></tr>
+            <tr><td>存档破解算法</td><td>2.0/cs/src/Codec/</td><td>C# 实现，解码/编码</td></tr>
+            <tr><td>离线修改器</td><td>eastfamily_csharp/eastfamily.exe</td><td>3.2MB，C# WinForms</td></tr>
+            <tr><td>DLL 注入修改器</td><td>2.0/PROJECT_MEMORY/plan_a_dll/trainer_v15.dll</td><td>游戏内置 ImGui 面板，v17 路径自适应版</td></tr>
+            <tr><td>存档修复工具</td><td>project7/fix_saves.py、3.5/源码/fix_saves.py</td><td>修复卡 3/4（TRANSLATE_V）</td></tr>
+            <tr><td>崩溃监控器</td><td>3.5/crash_monitor.py</td><td>监控 + 分析崩溃</td></tr>
+            <tr><td>C 方案二进制补丁</td><td>project3/BalladsOfHongye_patched_v9_final.exe</td><td>v9 IAT 寻址版</td></tr>
+            <tr><td>pakv4 解包工具</td><td>project3/PakV4Extract.exe</td><td>C++ MinGW 静态编译</td></tr>
+            <tr><td>自制 Steam 代理 DLL</td><td>project5/steam_api64.dll</td><td>1019 个 stub 函数（测试无效）</td></tr>
+            <tr><td>Steam 离线启动器</td><td>project6/OfflineLauncher.exe</td><td>633KB，静态编译</td></tr>
+            <tr><td>EastBlooding 启动器</td><td>project7历史/eastblooding_launcher.exe</td><td>656KB，v3.0 全能启动器</td></tr>
+            <tr><td>Inno Setup</td><td>C:\InnoSetup6\ISCC.exe</td><td>6.7.3，安装包编译</td></tr>
+            <tr><td>mingw64</td><td>D:\mingw64\mingw64\bin\gcc.exe / g++.exe</td><td>DLL / EXE 编译</td></tr>
+            <tr><td>Python</td><td>pythoncore-3.14-64\python.exe</td><td>3.14.4，PySide6 6.11.2，PyInstaller 6.20.0</td></tr>
+            <tr><td>PowerPoint</td><td>POWERPNT.EXE</td><td>PPT 动画注入（COM AddEffect）</td></tr>
+            <tr><td>C# 编译器</td><td>v4.0.30319\csc.exe</td><td>.NET Framework 4.8</td></tr>
+          </tbody>
+        </table></div>
+        <div class="rule" aria-hidden="true"><span class="rule-diamond"></span></div>
+        <p class="strong">游戏目录关键位置</p>
+        <div class="tbl-wrap"><table class="tbl">
+          <thead><tr><th>位置</th><th>说明</th></tr></thead>
+          <tbody>
+            <tr><td><span class="code">bin64/BalladsOfHongye.exe</span></td><td>游戏可执行文件</td></tr>
+            <tr><td><span class="code">bin64/steam_api64.dll</span></td><td>Steam API（原版 259KB / Goldberg 3132KB）</td></tr>
+            <tr><td><span class="code">bin64/version.dll</span></td><td>version.dll 代理（创造模式）</td></tr>
+            <tr><td><span class="code">bin64/steam_settings/</span></td><td>Goldberg 配置</td></tr>
+            <tr><td><span class="code">bin64/steam_appid.txt</span></td><td>Steam AppID（2656540）</td></tr>
+            <tr><td><span class="code">bin64/minidump/</span></td><td>崩溃转储</td></tr>
+            <tr><td><span class="code">bin64/000.dat</span></td><td>pakv4 数据文件（381MB，ZSTD 压缩）</td></tr>
+            <tr><td><span class="code">bin64/Trunk.dir</span></td><td>pakv4 目录文件（魔数"DIRFILE"）</td></tr>
+            <tr><td><span class="code">bin64/Engine_Lua5X64.dll</span></td><td>Lua 5.1 引擎</td></tr>
+            <tr><td><span class="code">bin64/KGPK4_FileSystemX64.dll</span></td><td>pakv4 文件系统</td></tr>
+            <tr><td><span class="code">sim_common/script/</span></td><td>Lua 脚本目录（散文件覆盖目标）</td></tr>
+            <tr><td><span class="code">sim_common/script/gameplay/gameworld/game_world.lua</span></td><td>游戏世界（4.0 桥接补丁）</td></tr>
+            <tr><td><span class="code">sim_common/script/agent_bridge/</span></td><td>4.0 Agent 桥接目录</td></tr>
+            <tr><td><span class="code">storage/&lt;userFolder&gt;/</span></td><td>存档目录（.boh=SQLite，index.json=UUID 数组）</td></tr>
+            <tr><td><span class="code">CachedShaders/ zsCache/</span></td><td>游戏缓存（3.0 已禁用自动清理）</td></tr>
+          </tbody>
+        </table></div>
+        <div class="rule" aria-hidden="true"><span class="rule-diamond"></span></div>
+        <p class="strong">2.0 阶段 project1-7 目录（历史）</p>
+        <div class="tbl-wrap"><table class="tbl">
+          <thead><tr><th>项目</th><th>目录</th><th>内容</th></tr></thead>
+          <tbody>
+            <tr><td><span class="code">project1</span></td><td>D:\pingye_pack\project1\</td><td>A 方案 DLL 注入修改器（trainer_v15.dll、Launcher.exe、builtin_trainer_v15.lua、monitor_panel.py）</td></tr>
+            <tr><td><span class="code">project2</span></td><td>D:\pingye_pack\project2\</td><td>B 方案 DLL 劫持代理 version.dll（未实施）</td></tr>
+            <tr><td><span class="code">project3</span></td><td>D:\pingye_pack\project3\</td><td>C 方案散文件部署中心 + 存档诊断/修复中心 + pakv4 解包工具 + 二进制补丁 exe</td></tr>
+            <tr><td><span class="code">project4</span></td><td>D:\pingye_pack\project4\</td><td>A+C 合并版 trainer_v15_delayed.dll</td></tr>
+            <tr><td><span class="code">project5</span></td><td>D:\pingye_pack\project5\</td><td>自制 Steam API 代理 DLL（测试无效）</td></tr>
+            <tr><td><span class="code">project6</span></td><td>D:\pingye_pack\project6\</td><td>Steam 离线启动器 OfflineLauncher.exe</td></tr>
+            <tr><td><span class="code">project7</span></td><td>D:\pingye_pack\project7\</td><td>v3 启动器 game_launcher_v3.py（GUI 原版/创造模式切换）</td></tr>
+            <tr><td><span class="code">save_parser</span></td><td>D:\pingye_pack\save_parser\</td><td>一键解析存档工具</td></tr>
+            <tr><td><span class="code">memory</span></td><td>D:\pingye_pack\memory\</td><td>最全总记忆（_FULL.txt、_TECH.txt、_SIMPLE.txt）</td></tr>
+          </tbody>
+        </table></div>
+      </div>
+    </section>
+
+    <!-- ============ 伍 用户偏好约束 ============ -->
+    <section class="section">
+      <div class="section-head reveal">
+        <span class="section-no">伍</span>
+        <h2 class="section-title plaque">用户偏好约束（必须遵守）</h2>
+        <span class="section-title-line"></span>
+      </div>
+      <div class="panel reveal">
+        <span class="corner corner-tl"></span><span class="corner corner-tr"></span>
+        <span class="corner corner-bl"></span><span class="corner corner-br"></span>
+        <ol class="clean">
+          <li>D 盘无中文路径，C 盘不乱动；游戏 storage 目录只读，写文件到指定目录</li>
+          <li>每次大改动必须压缩包备份，命名 = YYYYMMDD_HHMMSS_项目改动.zip</li>
+          <li>用户是代码小白，注释要清晰易懂；先讲原理再写代码</li>
+          <li>工具名 eastfamily；存档时间按北京时间写</li>
+          <li>对照表"不要带推理，1 比 1 对应，像小学生查字典"</li>
+          <li>执行模式 = 按需确认：普通命令直接运行；删除/覆盖等高风险操作需人工确认</li>
+          <li>修改器界面必须内置在游戏画面里（游戏内置 ImGui 面板），不是桌面外部小窗口</li>
+          <li>远程投屏时游戏窗口要前台跑 Lua 才执行命令</li>
+          <li>bat 脚本用纯英文，避免中文编码问题</li>
+          <li>用户对需要手动操作的脚本不满意，要求 AI 自己写脚本、自己运行、自己看结果</li>
+          <li>处理存档务必先备份，不要轻易删 .boh 文件</li>
+        </ol>
+      </div>
+    </section>
+
+  </div>
+
+</main>
+<footer class="site-footer">
+  <p class="footer-couple plaque">匠心独运 · 鸿业长青</p>
+  <p class="footer-meta">woldvein 项目总览 · 依据《woldvein项目总交接文档_v2.0_完整版》编制 · 2026-09-08</p>
+</footer>
+
+<button class="to-top" aria-label="返回顶部">↑</button>
+<script src="js/main.js"></script>
+</body>
+</html>

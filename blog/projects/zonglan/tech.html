@@ -1,0 +1,313 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>核心技术 · woldvein 总览</title>
+<meta name="description" content="woldvein 项目核心技术：创造模式部署（散文件覆盖）、存档破解算法、游戏内置修改器、二进制补丁、pakv4 解包重打包、Steam 唤醒启动、崩溃监控与存档卡 3/4 修复。">
+<link rel="preconnect" href="https://miaoda.feishu.cn">
+<link rel="stylesheet" href="https://miaoda.feishu.cn/fonts/css2?family=Ma+Shan+Zheng&family=Noto+Serif+SC:wght@400;600;700;900&display=swap">
+<link rel="stylesheet" href="css/style.css">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='8' fill='%23a91616' stroke='%23eec23f' stroke-width='3'/%3E%3Ctext x='32' y='44' font-size='34' text-anchor='middle' fill='%23eec23f' font-family='KaiTi,serif' font-weight='bold'%3E鸿%3C/text%3E%3C/svg%3E">
+</head>
+<body>
+<aside class="side-nav" id="sideNav" aria-label="侧边导航">
+  <a class="side-brand" href="index.html">
+    <svg class="side-mark" viewBox="0 0 64 64" aria-hidden="true">
+      <rect x="2" y="2" width="60" height="60" rx="9" fill="none" stroke="#eec23f" stroke-width="3"/>
+      <rect x="10" y="10" width="44" height="44" rx="6" fill="none" stroke="#eec23f" stroke-width="1.2" opacity=".6"/>
+      <text x="32" y="43" font-size="30" text-anchor="middle" fill="#ffe9ab" font-family="KaiTi,serif" font-weight="bold">鸿</text>
+    </svg>
+    <span class="side-name plaque">woldvein 总览</span>
+    <span class="side-sub">项目工具链 · 总览</span>
+  </a>
+  <nav class="side-links">
+    <a href="index.html">首页</a>
+    <a href="versions.html">版本演进</a>
+    <a href="tech.html">核心技术</a>
+    <a href="archive.html">存档破解</a>
+    <a href="trainer.html">内置修改器</a>
+    <a href="pitfalls.html">踩坑记录</a>
+    <a href="toolchain.html">工具链</a>
+    <a href="stats.html">数据统计</a>
+  </nav>
+  <p class="side-foot">匠心独运 · 鸿业长青</p>
+</aside>
+<div class="side-mask" id="sideMask"></div>
+<header class="site-header">
+  <div class="header-inner">
+    <a class="brand" href="index.html">
+      <svg class="brand-mark" viewBox="0 0 64 64" aria-hidden="true">
+        <rect x="2" y="2" width="60" height="60" rx="9" fill="none" stroke="#eec23f" stroke-width="3"/>
+        <rect x="10" y="10" width="44" height="44" rx="6" fill="none" stroke="#eec23f" stroke-width="1.2" opacity=".6"/>
+        <text x="32" y="43" font-size="30" text-anchor="middle" fill="#ffe9ab" font-family="KaiTi,serif" font-weight="bold">鸿</text>
+      </svg>
+      <span>
+        <span class="brand-name plaque">woldvein 总览</span>
+        <span class="brand-sub">项目工具链 · 总览</span>
+      </span>
+    </a>
+    <button class="nav-toggle" aria-label="打开导航">☰</button>
+  </div>
+</header>
+<main>
+  <div class="page-wrap">
+    <div class="page-head">
+      <h1 class="page-title plaque">核心技术</h1>
+      <p class="page-sub">八方基石 · 环环相扣</p>
+      <div class="rule" aria-hidden="true"><span class="rule-diamond"></span></div>
+    </div>
+
+    <!-- ============ 壹 创造模式部署 ============ -->
+    <section class="section">
+      <div class="section-head reveal">
+        <span class="section-no">壹</span>
+        <h2 class="section-title plaque">创造模式部署（散文件覆盖方案，最终生效方案）</h2>
+        <span class="section-title-line"></span>
+      </div>
+      <div class="panel reveal">
+        <span class="corner corner-tl"></span><span class="corner corner-tr"></span>
+        <span class="corner corner-bl"></span><span class="corner corner-br"></span>
+        <p class="lead">原理：游戏支持"磁盘散文件优先于 pak"加载。游戏根目录 <span class="code">sim_common\</span> 下放对应路径 Lua 即覆盖 pak 内文件，绕过 Trunk.dir hash 校验。</p>
+        <div class="steps">
+          <div class="step"><span class="step-no">壹 · Goldberg 模拟器</span><p>替换 <span class="code">bin64/steam_api64.dll</span>（原版 259KB → Goldberg 3132KB），绕过 Steam 验证，离线运行</p></div>
+          <div class="step"><span class="step-no">贰 · steam_settings</span><p>Goldberg 配置 6 文件：account_name、configs.main.ini、disable_networking、disable_overlay、language、user_steam_id</p></div>
+          <div class="step"><span class="step-no">叁 · steam_appid.txt</span><p>Steam AppID（2656540）</p></div>
+          <div class="step"><span class="step-no">肆 · version.dll 代理</span><p>代理 version.dll 实现特定 Hook（version_org.dll 为原版备份；早期 INT3/Inline Hook 版物理引擎初始化失败，已弃用）</p></div>
+          <div class="step"><span class="step-no">伍 · 散文件覆盖</span><p>早期 5 个创造版 Lua（game_world/block/building/building_mgr/camp_boom），完整版 8 个（增加 archive_mgr.lua TRANSLATE_V 补丁、ui_global_style.lua、xgagent_manager.lua），覆盖到 sim_common/script/</p></div>
+        </div>
+        <div class="note">
+          <p class="note-title">部署后效果与回滚</p>
+          <p>OnSceneCreate=1、open failed=0、LUA ERROR=0、稳定 ~1766MB。回滚 = 删游戏根 <span class="code">sim_common\</span>（散文件方案要求 pak 保持原版）。</p>
+        </div>
+      </div>
+      <div class="card-grid reveal">
+        <div class="card">
+          <h3 class="card-title plaque">模式检测</h3>
+          <p>通过 <span class="code">bin64/steam_api64.dll</span> 文件大小判断</p>
+          <ul class="clean">
+            <li>&gt; 1MB（3132.5KB）= Goldberg = 创造模式</li>
+            <li>&lt; 1MB（259.3KB）= 原版 = 原版模式</li>
+          </ul>
+        </div>
+        <div class="card">
+          <h3 class="card-title plaque">创造模式标记</h3>
+          <p>用于检测散文件是否已部署</p>
+          <ul class="clean">
+            <li>game_world.lua 含 <span class="code">999999999</span> / <span class="code">woldvein</span> / <span class="code">CREATIVE MODE KEEPER (woldvein project)</span></li>
+            <li>building.lua 含 <span class="code">-- woldvein creative mod (building)</span>（GBK 编码注释）</li>
+            <li>早期用 <span class="code">return;</span> 做标记，但它是标准 Lua 语句会误判，已弃用</li>
+          </ul>
+        </div>
+      </div>
+      <div class="panel reveal">
+        <span class="corner corner-tl"></span><span class="corner corner-tr"></span>
+        <span class="corner corner-bl"></span><span class="corner corner-br"></span>
+        <h3 class="panel-title plaque">散文件兼容性修复（游戏更新后）</h3>
+        <p>AgentBridgeGameTick 与 g_PublicityManager 在新版本中不存在，若直接调用会每帧报 Lua 错误、拖累游戏性能。修复方式：加存在性判断——</p>
+        <pre class="code-block"><span class="cm">-- 修复前（新版本每帧报错）</span>
+AgentBridgeGameTick()
+if g_PublicityManager then ...
+
+<span class="cm">-- 修复后（存在性判断）</span>
+if AgentBridgeGameTick then
+    AgentBridgeGameTick()
+end
+if g_PublicityManager then
+<span class="cm">-- 原有逻辑</span>
+end</pre>
+      </div>
+    </section>
+
+    <!-- ============ 贰 存档破解算法 ============ -->
+    <section class="section">
+      <div class="section-head reveal">
+        <span class="section-no">贰</span>
+        <h2 class="section-title plaque">存档破解算法</h2>
+        <span class="section-title-line"></span>
+      </div>
+      <div class="panel reveal">
+        <span class="corner corner-tl"></span><span class="corner corner-tr"></span>
+        <span class="corner corner-bl"></span><span class="corner corner-br"></span>
+        <p class="lead">存档格式 <span class="code">.boh</span> 本质是 SQLite 数据库，正文藏在 <span class="code">userdata</span> 表非 <span class="code">.meta</span> 行的最长 buffer 中，经过"组内倒序 + 循环移位 + GBK 编码"三重加工。</p>
+        <div class="grid-2">
+          <div class="card">
+            <h3 class="card-title plaque">解码（读取）</h3>
+            <ul class="clean">
+              <li>blob → 每 16 字节组内倒序</li>
+              <li>逐字节 ROL3：<span class="code">((b&lt;&lt;3)|(b&gt;&gt;5))&amp;0xFF</span></li>
+              <li>GBK 解码（errors=replace）</li>
+              <li>尾部 <span class="code">raw.rfind(',"CID":')</span> 截断，补 <span class="code">',"CID":9}]}}'</span></li>
+            </ul>
+          </div>
+          <div class="card">
+            <h3 class="card-title plaque">编码（保存）</h3>
+            <ul class="clean">
+              <li>JSON 紧凑序列化</li>
+              <li>GBK 编码（逐字节容错）</li>
+              <li>ROR3 循环移位</li>
+              <li>每 16 字节组内倒序 → blob</li>
+            </ul>
+          </div>
+        </div>
+        <div class="note">
+          <p class="note-title">关键约束</p>
+          <p>解码/编码步骤顺序不能颠倒；保存必须 VACUUM（否则文件翻倍）；必须更新内部 path（否则游戏识别不到）；CID=9 是固定填充值；存档大部分 GBK，但功能名/谋士名/UI 文本是 UTF-8 字节混存。</p>
+        </div>
+        <p class="mb0"><a class="gold-solid" href="archive.html">进入存档破解详情 →</a></p>
+      </div>
+    </section>
+
+    <!-- ============ 叁 游戏内置修改器 ============ -->
+    <section class="section">
+      <div class="section-head reveal">
+        <span class="section-no">叁</span>
+        <h2 class="section-title plaque">游戏内置修改器（DLL 注入 + Lua Hook + ImGui）</h2>
+        <span class="section-title-line"></span>
+      </div>
+      <div class="panel reveal">
+        <span class="corner corner-tl"></span><span class="corner corner-tr"></span>
+        <span class="corner corner-bl"></span><span class="corner corner-br"></span>
+        <ul class="clean">
+          <li>原理三层：DLL 注入（远程 LoadLibraryA）→ IAT Hook（lua_pcall 导入槽）→ 捕获 lua_State L → 执行 Lua 代码</li>
+          <li>ImGui 游戏画面内面板（窗口大小必须 ImVec2(360,430) 早期 / ImVec2(620,900) v13 大面板）</li>
+          <li>线程安全：热键线程只入队，Lua 执行在主线程（my_lua_pcall 钩子）</li>
+          <li>命令文件机制：写 lua_cmd.txt 下发任意 Lua 代码，DLL 每 50ms 轮询消费后删除</li>
+          <li>热键 F5-F10（记录 / 恢复 / 加人口 / 加钱 / 加木 / 全资源）</li>
+          <li>资源修改用 <span class="code">g_camp:ModifySourceValue(ID, 增量)</span> 或直接改 <span class="code">g_camp.m_tbSource[ID]</span>；人口修改必须用 API（<span class="code">g_camp:ModifyPopulation</span>），不能直接改表</li>
+          <li>三大修改真相：资源字符串键 bug（tonumber）、知名度双存储、繁荣度得分真相（UpdateBoom）</li>
+          <li>v17 路径自适应版：整个文件夹可任意移动 / 改名 / 拷贝</li>
+        </ul>
+        <p class="mb0"><a class="gold-solid" href="trainer.html">进入内置修改器详情 →</a></p>
+      </div>
+    </section>
+
+    <!-- ============ 肆 C 方案二进制补丁 ============ -->
+    <section class="section">
+      <div class="section-head reveal">
+        <span class="section-no">肆</span>
+        <h2 class="section-title plaque">C 方案二进制补丁 exe</h2>
+        <span class="section-title-line"></span>
+      </div>
+      <div class="panel reveal">
+        <span class="corner corner-tl"></span><span class="corner corner-tr"></span>
+        <span class="corner corner-bl"></span><span class="corner corner-br"></span>
+        <p class="lead">直接修改游戏 exe 入口点，插入 shellcode 加载修改器 DLL，然后执行原指令跳回。最终版本 v9（IAT 寻址获取 LoadLibraryA，完全不受 ASLR 影响）。</p>
+        <ul class="clean">
+          <li>关键技术突破：ASLR 相对跳转（E8/E9）、代码洞穴映射（修改 .text virtual_size 0x60BE8E→0x60C000）、IAT 寻址 LoadLibraryA（IAT 条目 RVA=0x0060D258）、延迟初始化（Sleep3 秒→检测 Lua5X64.dll→Sleep2 秒→Hook）</li>
+          <li>PE 结构关键参数：入口点 RVA=0x0049D28C、代码洞穴 RVA=0x0060CE90（368 字节）、ImageBase=0x140000000</li>
+          <li>A+C 合并版：trainer_v15_delayed.dll（延迟初始化 + 自动加载面板与监控）</li>
+          <li>测试结果：游戏正常启动，运行 15 秒+ 无崩溃，DLL 成功加载，热键线程启动</li>
+        </ul>
+      </div>
+    </section>
+
+    <!-- ============ 伍 pakv4 解包与重打包 ============ -->
+    <section class="section">
+      <div class="section-head reveal">
+        <span class="section-no">伍</span>
+        <h2 class="section-title plaque">pakv4 解包与重打包（ZSTD）</h2>
+        <span class="section-title-line"></span>
+      </div>
+      <div class="panel reveal">
+        <span class="corner corner-tl"></span><span class="corner corner-tr"></span>
+        <span class="corner corner-bl"></span><span class="corner corner-br"></span>
+        <p class="lead">000.dat 无加密，纯 ZSTD 压缩（标准 ZSTD 魔数 0x28B52FFD 小端），重打包 100% 可行。</p>
+        <ul class="clean">
+          <li>重打包流程：解析 Trunk.dir → 提取 ZSTD 块 → 解压 → 修改 → 重新压缩（级别 15+）→ 写回（覆盖或追加 + 更新目录条目）</li>
+          <li>压缩级别测试：级别 15+ 压缩后大小 &lt;= 原大小，可以直接覆盖（级别 22 最佳 6.60:1）</li>
+          <li>盲解包统计（前 100MB）：3997 个 ZSTD 块（99.97% 成功）、1052 个 Lua 文件、557 个 JSON 文件、2387 个未知类型</li>
+          <li>已验证推翻：❌"Lua 脚本加密存储"→ 实际 ZSTD 压缩；❌"重打包不可行"→ 实际完全可行</li>
+        </ul>
+      </div>
+    </section>
+
+    <!-- ============ 陆 Steam 唤醒启动 ============ -->
+    <section class="section">
+      <div class="section-head reveal">
+        <span class="section-no">陆</span>
+        <h2 class="section-title plaque">Steam 唤醒启动</h2>
+        <span class="section-title-line"></span>
+      </div>
+      <div class="panel reveal">
+        <span class="corner corner-tl"></span><span class="corner corner-tr"></span>
+        <span class="corner corner-bl"></span><span class="corner corner-br"></span>
+        <div class="note">
+          <p class="note-title">问题</p>
+          <p>直接启动游戏 exe（任何方式，包括 subprocess / Popen / Task Scheduler）都会导致游戏崩溃或退出。</p>
+        </div>
+        <div class="note">
+          <p class="note-title">根因</p>
+          <p>游戏存档路径 = <span class="code">FS.GetCwd()/storage/&lt;userFolder&gt;</span>（archive_mgr.lua L206）。工作目录必须为游戏根目录，存档系统才能找到 storage/offlineuser；直接以 bin64 或其他工作目录启动 → 无存档上下文 → 进游戏场景时 CreateScene 崩溃。</p>
+        </div>
+        <div class="note">
+          <p class="note-title">解决方案</p>
+          <p>用 <span class="code">steam://rungameid/&lt;appid&gt;</span> 协议唤醒 Steam 启动游戏；Steam 以游戏根目录为工作目录拉起游戏，存档路径正确；启动前自动做 Steam 云同步（可恢复被删除的存档）；散文件/模拟器模式在 Steam 启动下行为与手动从 Steam 库启动完全一致。所有模式（原版/创造/离线）统一走此路径。</p>
+        </div>
+        <pre class="code-block">def launch_game_process():
+    # 1. 确保 Steam 运行（ensure_steam_running）
+    # 2. 读取 AppID（_read_game_appid，从 steam_appid.txt）
+    # 3. os.startfile(f"steam://rungameid/{appid}")
+    # 4. 轮询游戏进程（30秒超时）
+    # 5. 返回 (ok, msg, pid)</pre>
+      </div>
+    </section>
+
+    <!-- ============ 柒 崩溃监控 ============ -->
+    <section class="section">
+      <div class="section-head reveal">
+        <span class="section-no">柒</span>
+        <h2 class="section-title plaque">崩溃监控</h2>
+        <span class="section-title-line"></span>
+      </div>
+      <div class="panel reveal">
+        <span class="corner corner-tl"></span><span class="corner corner-tr"></span>
+        <span class="corner corner-bl"></span><span class="corner corner-br"></span>
+        <ul class="clean">
+          <li>监控游戏进程存活</li>
+          <li>崩溃时读取游戏日志（Lua 调用栈）</li>
+          <li>分析崩溃阶段（启动 / 加载 / 进场景）和原因</li>
+          <li>输出涉及文件 / 函数和建议操作</li>
+          <li>自动检测崩溃指示器（minidump 非空）</li>
+        </ul>
+      </div>
+    </section>
+
+    <!-- ============ 捌 存档卡 3/4 ============ -->
+    <section class="section">
+      <div class="section-head reveal">
+        <span class="section-no">捌</span>
+        <h2 class="section-title plaque">存档卡 3/4 修复（TRANSLATE_V）</h2>
+        <span class="section-title-line"></span>
+      </div>
+      <div class="panel reveal">
+        <span class="corner corner-tl"></span><span class="corner corner-tr"></span>
+        <span class="corner corner-bl"></span><span class="corner corner-br"></span>
+        <ul class="clean">
+          <li>现象：新建存档后加载卡 3/4（"存档打不开"）</li>
+          <li>根因：新建存档时游戏漏写 <span class="code">/TRANSLATE_V</span> 标记。缺该标记的存档下次加载卡 3/4。不是创造模式的问题！原版下新建存档同样缺</li>
+          <li>判定：正常大存档主体 2112KB+ / 2171KB+；坏存档主体 670432B 且缺 /TRANSLATE_V</li>
+        </ul>
+        <p class="strong">修复 SQL</p>
+        <pre class="code-block">INSERT OR IGNORE INTO userdata (path,size,buffer,time)
+VALUES ('/TRANSLATE_V',5,b'9.2.1','YYYY-MM-DD HH:MM:SS')</pre>
+        <ul class="clean">
+          <li>脚本：fix_all_translate.py（补标记）、restore_all_saves.py（恢复+index+补标记）、diag_saves.py / classify_saves.py / organize_saves.py</li>
+          <li>处理存档铁律：先备份 → 补 TRANSLATE_V；<strong>不要删 .boh</strong>（会触发 Steam 云同步冲突 → 启动崩溃）</li>
+          <li>崩溃教训：手动删除存档 .boh → Steam 云存档同步冲突 → 游戏启动崩溃（ExceptionNotCapture30748.dat）；解法：restore_all_saves.py 一键"恢复存档 + index.json + 补 TRANSLATE_V"</li>
+        </ul>
+      </div>
+    </section>
+
+  </div>
+
+</main>
+<footer class="site-footer">
+  <p class="footer-couple plaque">匠心独运 · 鸿业长青</p>
+  <p class="footer-meta">woldvein 项目总览 · 依据《woldvein项目总交接文档_v2.0_完整版》编制 · 2026-09-08</p>
+</footer>
+
+<button class="to-top" aria-label="返回顶部">↑</button>
+<script src="js/main.js"></script>
+</body>
+</html>

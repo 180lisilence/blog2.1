@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>内置修改器 · woldvein 总览</title>
+<meta name="description" content="woldvein 项目游戏内置修改器：A 方案 DLL 注入 + Lua Hook、B 方案 version.dll 代理、C 方案二进制补丁 exe、ImGui 面板、热键表与 Lua API。">
+<link rel="preconnect" href="https://miaoda.feishu.cn">
+<link rel="stylesheet" href="https://miaoda.feishu.cn/fonts/css2?family=Ma+Shan+Zheng&family=Noto+Serif+SC:wght@400;600;700;900&display=swap">
+<link rel="stylesheet" href="css/style.css">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='8' fill='%23a91616' stroke='%23eec23f' stroke-width='3'/%3E%3Ctext x='32' y='44' font-size='34' text-anchor='middle' fill='%23eec23f' font-family='KaiTi,serif' font-weight='bold'%3E鸿%3C/text%3E%3C/svg%3E">
+</head>
+<body>
+<aside class="side-nav" id="sideNav" aria-label="侧边导航">
+  <a class="side-brand" href="index.html">
+    <svg class="side-mark" viewBox="0 0 64 64" aria-hidden="true">
+      <rect x="2" y="2" width="60" height="60" rx="9" fill="none" stroke="#eec23f" stroke-width="3"/>
+      <rect x="10" y="10" width="44" height="44" rx="6" fill="none" stroke="#eec23f" stroke-width="1.2" opacity=".6"/>
+      <text x="32" y="43" font-size="30" text-anchor="middle" fill="#ffe9ab" font-family="KaiTi,serif" font-weight="bold">鸿</text>
+    </svg>
+    <span class="side-name plaque">woldvein 总览</span>
+    <span class="side-sub">项目工具链 · 总览</span>
+  </a>
+  <nav class="side-links">
+    <a href="index.html">首页</a>
+    <a href="versions.html">版本演进</a>
+    <a href="tech.html">核心技术</a>
+    <a href="archive.html">存档破解</a>
+    <a href="trainer.html">内置修改器</a>
+    <a href="pitfalls.html">踩坑记录</a>
+    <a href="toolchain.html">工具链</a>
+    <a href="stats.html">数据统计</a>
+  </nav>
+  <p class="side-foot">匠心独运 · 鸿业长青</p>
+</aside>
+<div class="side-mask" id="sideMask"></div>
+<header class="site-header">
+  <div class="header-inner">
+    <a class="brand" href="index.html">
+      <svg class="brand-mark" viewBox="0 0 64 64" aria-hidden="true">
+        <rect x="2" y="2" width="60" height="60" rx="9" fill="none" stroke="#eec23f" stroke-width="3"/>
+        <rect x="10" y="10" width="44" height="44" rx="6" fill="none" stroke="#eec23f" stroke-width="1.2" opacity=".6"/>
+        <text x="32" y="43" font-size="30" text-anchor="middle" fill="#ffe9ab" font-family="KaiTi,serif" font-weight="bold">鸿</text>
+      </svg>
+      <span>
+        <span class="brand-name plaque">woldvein 总览</span>
+        <span class="brand-sub">项目工具链 · 总览</span>
+      </span>
+    </a>
+    <button class="nav-toggle" aria-label="打开导航">☰</button>
+  </div>
+</header>
+<main>
+  <div class="page-wrap">
+    <div class="page-head">
+      <h1 class="page-title plaque">内置修改器</h1>
+      <p class="page-sub">三案并进 · 入局即改</p>
+      <div class="rule" aria-hidden="true"><span class="rule-diamond"></span></div>
+    </div>
+
+    <!-- ============ 壹 A 方案 ============ -->
+    <section class="section">
+      <div class="section-head reveal">
+        <span class="section-no">壹</span>
+        <h2 class="section-title plaque">A 方案：DLL 注入 + Lua Hook（project1，主力，v17 路径自适应版）</h2>
+        <span class="section-title-line"></span>
+      </div>
+      <div class="panel reveal">
+        <span class="corner corner-tl"></span><span class="corner corner-tr"></span>
+        <span class="corner corner-bl"></span><span class="corner corner-br"></span>
+        <p class="lead">原理三层：DLL 注入（远程 LoadLibraryA）→ IAT Hook（lua_pcall 导入槽）→ 捕获 lua_State L → 执行 Lua 代码。</p>
+        <ul class="clean">
+          <li>Lua 版本 5.1；lua_pcall 导出偏移 = Lua5X64.dll base + 0x25E0</li>
+          <li>资源读写：<span class="code">g_camp.m_tbSource[ID]=数量</span>；用 <span class="code">ModifySourceValue</span> 才正确同步 UI；人口必须用 <span class="code">g_camp:ModifyPopulation</span> API</li>
+          <li>命令后门：<span class="code">lua_cmd.txt</span> 写任意 Lua 代码，DLL 每 50ms 轮询消费后删除</li>
+          <li>当前 DLL：<span class="code">trainer_v15.dll</span>（v17 路径自适应版，59.8KB）</li>
+        </ul>
+        <div class="rule" aria-hidden="true"><span class="rule-diamond"></span></div>
+        <p class="strong">v17 全部路径自适应化（2026-09-03，用户要求"跟随变化"）</p>
+        <ul class="clean">
+          <li>不再写死任何绝对路径，整个文件夹可任意移动 / 改名 / 拷贝</li>
+          <li>DLL 加载时用 GetModuleFileName 自动识别自身所在目录</li>
+          <li>首次 hook 时设置 Lua 全局 <span class="code">_TRAINER_DIR = 工作目录</span>（正斜杠）</li>
+          <li>C 层路径用 ANSI(CP_ACP) 编码，中文目录也能用</li>
+          <li>Launcher.exe（2865KB 静态编译）支持相对 DllPath + 默认 v15</li>
+        </ul>
+        <div class="rule" aria-hidden="true"><span class="rule-diamond"></span></div>
+        <p class="strong">热键（游戏内直接按）</p>
+        <div class="tbl-wrap"><table class="tbl">
+          <thead><tr><th>热键</th><th>功能</th></tr></thead>
+          <tbody>
+            <tr><td><span class="code">F5</span></td><td>记录当前数量为基准</td></tr>
+            <tr><td><span class="code">F6</span></td><td>恢复基准（撤回所有修改）</td></tr>
+            <tr><td><span class="code">F7</span></td><td>人口 +100</td></tr>
+            <tr><td><span class="code">F8</span></td><td>金钱 +100000</td></tr>
+            <tr><td><span class="code">F9</span></td><td>木料 +100000</td></tr>
+            <tr><td><span class="code">F10</span></td><td>全部常见资源 +100000（1-6、19、20、25，不含人口）</td></tr>
+          </tbody>
+        </table></div>
+        <div class="rule" aria-hidden="true"><span class="rule-diamond"></span></div>
+        <p class="strong">三大修改真相（别再踩坑）</p>
+        <ul class="clean">
+          <li>资源字符串键 bug：<span class="code">_trainer_parse</span> 返回的 id 是字符串，但 <span class="code">m_tbSource</span> 用数字索引，修复 = <span class="code">tonumber(id)</span></li>
+          <li>知名度双存储：UI 显示 = <span class="code">g_CityRankManager.playerInfo.cityReputation</span>；必须同时改 <span class="code">g_LReputationMgr.reputation</span> 和 playerInfo.cityReputation</li>
+          <li>繁荣度得分真相：<span class="code">GetProsperityScore()</span> = <span class="code">g_camp.boom.tbProsperityList</span> 所有值总和，不是 prosperity 缓存字段！SetProsperityScore 后调用 <span class="code">boom:UpdateBoom()</span>，得分拉满自动带动繁荣等级满</li>
+        </ul>
+        <div class="rule" aria-hidden="true"><span class="rule-diamond"></span></div>
+        <p class="strong">面板迭代（v11→v15.1）</p>
+        <ul class="clean">
+          <li>v13：大面板全自定义版（620×900，6 区域直接排列）</li>
+          <li>v14：策略点 + 谋士四属性 + 无薪不抱怨 + 不跳槽（31 位名士）</li>
+          <li>v15：产业建筑一键满级 + 产业链全解锁 + 市场价格全改 + 蓝图合成秒完成</li>
+          <li>v15.1：繁荣度修复（UpdateBoom）+ 精华储备（ID25）+ Tab 重构；面板文件 builtin_trainer_v15.lua</li>
+        </ul>
+        <div class="rule" aria-hidden="true"><span class="rule-diamond"></span></div>
+        <p class="strong">其他系统破译</p>
+        <ul class="clean">
+          <li>天赋系统：<span class="code">g_TalentManager</span>，UnlockAllTalent() + UpMaxAllTalent() + GM_TalentPoint200_Add() = 满天赋</li>
+          <li>流民系统：<span class="code">LRefugeeDisaster</span>，防止流民伤害 = 清零未接纳流民 + 关闭灾害 + 平息暴动</li>
+          <li>产业建筑：<span class="code">g_BuildingWorldModule.BuildingMgr.m_tbBuildingList[块ID][uuid]</span>，bld:UpgradeToTop() 一键满级</li>
+          <li>产业链：<span class="code">g_BuildingIndustryChain.m_tbActiveChainList</span>，全解锁 = 所有 false 改 true</li>
+          <li>市场：<span class="code">g_LMarketManager</span>，m_prices[资源ID1-50][1..5] 价格数组</li>
+          <li>蓝图：<span class="code">g_LBlueprintManager</span>，秒完成 = 设建筑 status=3 + ClearBlueprintSynthesisStatus</li>
+        </ul>
+      </div>
+    </section>
+
+    <!-- ============ 贰 配套工具 ============ -->
+    <section class="section">
+      <div class="section-head reveal">
+        <span class="section-no">贰</span>
+        <h2 class="section-title plaque">启动配套与监控</h2>
+        <span class="section-title-line"></span>
+      </div>
+      <div class="card-grid reveal">
+        <div class="card">
+          <h3 class="card-title plaque">Launcher.exe v2.0</h3>
+          <p>双击 → 自动启动游戏 → 注入修改器 DLL</p>
+          <ul class="clean">
+            <li>设置控制台 UTF-8 编码、修正游戏路径</li>
+            <li>游戏进程检测、创建 steam_appid.txt</li>
+            <li>延迟注入模式（InjectMode=1，默认：先启动游戏，等窗口出现后注入）</li>
+            <li>配置 config.ini（GamePath / DllPath / WaitTime / InjectMode）</li>
+          </ul>
+        </div>
+        <div class="card">
+          <h3 class="card-title plaque">一键注入工具</h3>
+          <p>双击即用</p>
+          <ul class="clean">
+            <li>一键注入.bat：自动找游戏主窗口进程 → 注入 DLL → 加载面板 → 加载监控 → 启动监控面板</li>
+            <li>auto_start.py：核心脚本，自动识别主进程（多进程时认准带窗口的那个）</li>
+            <li>多进程坑：游戏可能有多个进程，必须注入带窗口的主进程；辅助进程 OpenProcess 会被拒（err=5）</li>
+          </ul>
+        </div>
+        <div class="card">
+          <h3 class="card-title plaque">游戏外监控面板</h3>
+          <p>游戏侧 ↔ 外部面板联动</p>
+          <ul class="clean">
+            <li>游戏侧 monitor_lua.lua 写 monitor_state.json</li>
+            <li>外部 monitor_panel.py（tkinter）每 2.5 秒读 JSON 显示</li>
+            <li>局限：游戏窗口须前台 Lua 才执行 dump；面板窗口前台时游戏后台 → 数据冻结</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ 叁 ImGui 与线程安全 ============ -->
+    <section class="section">
+      <div class="section-head reveal">
+        <span class="section-no">叁</span>
+        <h2 class="section-title plaque">ImGui 关键技巧 &amp; 线程安全</h2>
+        <span class="section-title-line"></span>
+      </div>
+      <div class="panel reveal">
+        <span class="corner corner-tl"></span><span class="corner corner-tr"></span>
+        <span class="corner corner-bl"></span><span class="corner corner-br"></span>
+        <ul class="clean">
+          <li>窗口大小必须设 <span class="code">ImVec2(360,430)</span>（早期）/ <span class="code">ImVec2(620,900)</span>（v13 大面板），否则游戏限制只能显示 2 行</li>
+          <li>InputText 需要 KLString 缓冲 + 第 3 参数 maxLen=128</li>
+          <li>运行时 <span class="code">SetWindowSize(ImVec2(620,1000))</span> 会导致游戏崩溃！改默认尺寸要改代码里的 SetNextWindowSize 再重载 lua</li>
+          <li>绘制 hook 必须用 <span class="code">g_LUiPageManager.GameDraw</span>，不能用猜的全局 <span class="code">_G.GameDrawUI</span></li>
+          <li>线程安全（v9 起修复崩溃）：之前热键线程（外部线程）直接调用 Lua API，与游戏主线程并发操作同一个 Lua 状态导致崩溃；修复：热键线程只"收命令入队"，真正执行 Lua 放到游戏主线程的 my_lua_pcall 钩子里</li>
+        </ul>
+      </div>
+    </section>
+
+    <!-- ============ 肆 B 方案 ============ -->
+    <section class="section">
+      <div class="section-head reveal">
+        <span class="section-no">肆</span>
+        <h2 class="section-title plaque">B 方案：DLL 劫持代理 version.dll（project2，未实施）</h2>
+        <span class="section-title-line"></span>
+      </div>
+      <div class="panel reveal">
+        <span class="corner corner-tl"></span><span class="corner corner-tr"></span>
+        <span class="corner corner-bl"></span><span class="corner corner-br"></span>
+        <ul class="clean">
+          <li>目标：制作代理 version.dll 放游戏 bin64 目录，游戏启动时自动加载，DllMain 里初始化修改器</li>
+          <li>优点：双击游戏 exe 直接玩，完全隐形，不修改游戏本体，卸载简单（删 DLL）</li>
+          <li>原理：游戏依赖系统 version.dll，做同名 DLL 放游戏目录，Windows 优先搜索当前目录</li>
+          <li>延迟初始化（关键，参考方案 C）：DllMain 只创建线程，线程等待 3 秒 → 检测 Lua5X64.dll → 再等 2 秒 → 执行 Hook</li>
+          <li>状态：未实施，最终被散文件覆盖方案取代</li>
+        </ul>
+      </div>
+    </section>
+
+    <!-- ============ 伍 C 方案 ============ -->
+    <section class="section">
+      <div class="section-head reveal">
+        <span class="section-no">伍</span>
+        <h2 class="section-title plaque">C 方案：二进制补丁 exe（project3，最终成功，v9 IAT 寻址）</h2>
+        <span class="section-title-line"></span>
+      </div>
+      <div class="panel reveal">
+        <span class="corner corner-tl"></span><span class="corner corner-tr"></span>
+        <span class="corner corner-bl"></span><span class="corner corner-br"></span>
+        <p class="lead">目标：直接修改游戏 exe 入口点，插入 shellcode 加载修改器 DLL，然后执行原指令跳回。</p>
+        <ul class="clean">
+          <li>最终版本：v9（IAT 寻址获取 LoadLibraryA，完全不受 ASLR 影响）</li>
+          <li>测试结果：游戏正常启动，运行 15 秒+ 无崩溃，DLL 成功加载，延迟初始化正常，IAT Hook 成功，热键线程启动</li>
+        </ul>
+        <div class="rule" aria-hidden="true"><span class="rule-diamond"></span></div>
+        <p class="strong">关键技术突破（按解决顺序）</p>
+        <ul class="clean">
+          <li>ASLR 问题：游戏启用 DYNAMIC_BASE，shellcode 不能用绝对地址 → 用相对跳转（E8/E9）</li>
+          <li>代码洞穴映射问题：代码洞穴在 .text 节区 virtual_size 之外不被映射 → 修改 virtual_size 从 0x60BE8E 改为 0x60C000</li>
+          <li>LoadLibraryA 地址获取：不能硬编码（ASLR）、PEB 遍历太复杂 → 通过游戏导入表（IAT）条目获取，IAT 条目 RVA=0x0060D258，完全不受 ASLR 影响</li>
+          <li>DLL 加载时机：DLL 在游戏入口点加载时核心子系统未初始化 → 延迟初始化（Sleep3 秒 → 检测 Lua5X64.dll → Sleep2 秒 → Hook）</li>
+        </ul>
+        <div class="rule" aria-hidden="true"><span class="rule-diamond"></span></div>
+        <p class="strong">PE 结构关键参数</p>
+        <ul class="clean">
+          <li>入口点 RVA=0x0049D28C，文件偏移=0x0049C68C，ImageBase=0x140000000</li>
+          <li>代码洞穴 RVA=0x0060CE90，文件偏移=0x0060C290，大小 368 字节</li>
+          <li>原入口点指令：<span class="code">48 83 EC 28</span>（sub rsp,0x28）+ <span class="code">E8 DF 08 00 00</span>（call）</li>
+          <li>原 call 目标 VA=0x000000014049DB74，跳回地址 VA=0x000000014049D295（入口点+9）</li>
+          <li>LoadLibraryA IAT 条目 RVA=0x0060D258；.text 节区 VSize=0x60BE8E（原）→ 0x60C000（修改后）</li>
+        </ul>
+        <div class="rule" aria-hidden="true"><span class="rule-diamond"></span></div>
+        <p class="strong">版本迭代历史</p>
+        <ul class="clean">
+          <li>v1-v2：int 3 断点验证补丁机制</li>
+          <li>v3：正式版本，崩溃（跳回地址 + ASLR + 代码洞穴）</li>
+          <li>v4：空转测试，崩溃（代码洞穴未映射）</li>
+          <li>v5：修复 ASLR（相对跳转），仍崩溃（代码洞穴未映射）</li>
+          <li>v6：修复代码洞穴映射（修改 virtual_size），空转成功运行 60 秒+</li>
+          <li>v7：PEB 遍历获取 LoadLibraryA，崩溃（shellcode 有 bug）</li>
+          <li>v8：硬编码 LoadLibraryA 地址，成功！证明 DLL 加载流程正确</li>
+          <li>v9：IAT 寻址获取 LoadLibraryA，最终成功！不受 ASLR 影响</li>
+        </ul>
+        <div class="rule" aria-hidden="true"><span class="rule-diamond"></span></div>
+        <p class="strong">使用方法</p>
+        <ul class="clean">
+          <li>备份原游戏 exe（重命名为 BalladsOfHongye_original.exe）</li>
+          <li>把 BalladsOfHongye_patched_v9_final.exe 复制到游戏 bin64，改名为 BalladsOfHongye.exe</li>
+          <li>把 trainer_delayed.dll 放在游戏 bin64 目录（与 exe 同目录）</li>
+          <li>通过 Steam 启动游戏，约 5 秒后修改器自动加载；按 F8/F9/F10 使用热键</li>
+        </ul>
+        <div class="note">
+          <p class="note-title">A+C 合并版（project4）</p>
+          <p>目标：方案 C 的双击即玩 + 方案 A 的完整功能（热键 + 面板 + 监控）。基于方案 A 的 trainer.c（v17 路径自适应版），加延迟初始化：Sleep 3 秒 → 检测 Lua5X64.dll → Sleep 2 秒 → Hook → 等待捕获 lua_State → 自动加载 builtin_trainer_v15.lua → 自动加载 monitor_lua.lua。产物 <span class="code">trainer_v15_delayed.dll</span>（已编译，未作为最终方案）。</p>
+        </div>
+        <p class="mt0" style="margin-top:16px;">
+          <a class="tag tag-warn" href="tech.html">→ 创造模式部署详情</a>
+          <a class="tag tag-warn" href="versions.html">→ 版本演进详情</a>
+        </p>
+      </div>
+    </section>
+
+  </div>
+
+</main>
+<footer class="site-footer">
+  <p class="footer-couple plaque">匠心独运 · 鸿业长青</p>
+  <p class="footer-meta">woldvein 项目总览 · 依据《woldvein项目总交接文档_v2.0_完整版》编制 · 2026-09-08</p>
+</footer>
+
+<button class="to-top" aria-label="返回顶部">↑</button>
+<script src="js/main.js"></script>
+</body>
+</html>

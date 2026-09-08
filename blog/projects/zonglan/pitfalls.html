@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>踩坑记录 · woldvein 总览</title>
+<meta name="description" content="woldvein 项目已知问题与踩坑记录：启动、创造模式、存档操作、打包、bat 脚本、环境相关七大类的教训与解法，及已验证死路清单。">
+<link rel="preconnect" href="https://miaoda.feishu.cn">
+<link rel="stylesheet" href="https://miaoda.feishu.cn/fonts/css2?family=Ma+Shan+Zheng&family=Noto+Serif+SC:wght@400;600;700;900&display=swap">
+<link rel="stylesheet" href="css/style.css">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='8' fill='%23a91616' stroke='%23eec23f' stroke-width='3'/%3E%3Ctext x='32' y='44' font-size='34' text-anchor='middle' fill='%23eec23f' font-family='KaiTi,serif' font-weight='bold'%3E鸿%3C/text%3E%3C/svg%3E">
+</head>
+<body>
+<aside class="side-nav" id="sideNav" aria-label="侧边导航">
+  <a class="side-brand" href="index.html">
+    <svg class="side-mark" viewBox="0 0 64 64" aria-hidden="true">
+      <rect x="2" y="2" width="60" height="60" rx="9" fill="none" stroke="#eec23f" stroke-width="3"/>
+      <rect x="10" y="10" width="44" height="44" rx="6" fill="none" stroke="#eec23f" stroke-width="1.2" opacity=".6"/>
+      <text x="32" y="43" font-size="30" text-anchor="middle" fill="#ffe9ab" font-family="KaiTi,serif" font-weight="bold">鸿</text>
+    </svg>
+    <span class="side-name plaque">woldvein 总览</span>
+    <span class="side-sub">项目工具链 · 总览</span>
+  </a>
+  <nav class="side-links">
+    <a href="index.html">首页</a>
+    <a href="versions.html">版本演进</a>
+    <a href="tech.html">核心技术</a>
+    <a href="archive.html">存档破解</a>
+    <a href="trainer.html">内置修改器</a>
+    <a href="pitfalls.html">踩坑记录</a>
+    <a href="toolchain.html">工具链</a>
+    <a href="stats.html">数据统计</a>
+  </nav>
+  <p class="side-foot">匠心独运 · 鸿业长青</p>
+</aside>
+<div class="side-mask" id="sideMask"></div>
+<header class="site-header">
+  <div class="header-inner">
+    <a class="brand" href="index.html">
+      <svg class="brand-mark" viewBox="0 0 64 64" aria-hidden="true">
+        <rect x="2" y="2" width="60" height="60" rx="9" fill="none" stroke="#eec23f" stroke-width="3"/>
+        <rect x="10" y="10" width="44" height="44" rx="6" fill="none" stroke="#eec23f" stroke-width="1.2" opacity=".6"/>
+        <text x="32" y="43" font-size="30" text-anchor="middle" fill="#ffe9ab" font-family="KaiTi,serif" font-weight="bold">鸿</text>
+      </svg>
+      <span>
+        <span class="brand-name plaque">woldvein 总览</span>
+        <span class="brand-sub">项目工具链 · 总览</span>
+      </span>
+    </a>
+    <button class="nav-toggle" aria-label="打开导航">☰</button>
+  </div>
+</header>
+<main>
+  <div class="page-wrap">
+    <div class="page-head">
+      <h1 class="page-title plaque">踩坑记录</h1>
+      <p class="page-sub">前车之鉴 · 后事之师</p>
+      <div class="rule" aria-hidden="true"><span class="rule-diamond"></span></div>
+    </div>
+
+    <div class="panel reveal">
+      <span class="corner corner-tl"></span><span class="corner corner-tr"></span>
+      <span class="corner corner-bl"></span><span class="corner corner-br"></span>
+      <div class="search-box">
+        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
+        <input type="text" id="pit-search" data-filter="tbl-pit" placeholder="搜索问题 / 原因 / 解法…">
+      </div>
+      <div class="tbl-wrap"><table class="tbl" id="tbl-pit">
+        <thead><tr><th>类别</th><th>问题</th><th>原因</th><th>解决方案</th></tr></thead>
+        <tbody>
+          <tr data-cat="启动"><td>启动</td><td>直接启动游戏 exe 6 秒后退出</td><td>游戏进程是启动器子进程时会被退出</td><td>用 Task Scheduler（旧）或 Steam 唤醒（新）</td></tr>
+          <tr data-cat="启动"><td>启动</td><td>进游戏场景 CreateScene 崩溃</td><td>工作目录不对，存档路径 FS.GetCwd()/storage/&lt;user&gt; 找不到</td><td>用 Steam 唤醒启动（steam://rungameid），Steam 以游戏根目录为工作目录</td></tr>
+          <tr data-cat="启动"><td>启动</td><td>游戏更新后散文件每帧 Lua 错误</td><td>AgentBridgeGameTick / g_PublicityManager 在新版本不存在</td><td>加存在性判断（if X then）</td></tr>
+          <tr data-cat="启动"><td>启动</td><td>新建存档卡 3/4</td><td>存档缺 /TRANSLATE_V 标记（游戏自身 bug，原版下新建也缺）</td><td>archive_mgr.lua TRANSLATE_V 补丁（无条件写入 + pcall 保护）/ fix_all_translate.py</td></tr>
+          <tr data-cat="启动"><td>启动</td><td>Steam 验证 3 万文件缺失</td><td>游戏更新后文件不完整</td><td>在 Steam 中验证游戏文件完整性</td></tr>
+          <tr data-cat="启动"><td>启动</td><td>必须 Steam 启动游戏</td><td>直接 exe 启动会 XGSDK 失败卡"点击屏幕"</td><td>用 Steam.exe -applaunch 2656540 或 steam://rungameid/2656540</td></tr>
+          <tr data-cat="创造模式"><td>创造模式</td><td>building.lua 创造模式误判</td><td>用 return; 做标记，但 return; 是标准 Lua 语句出现 77 次</td><td>改用 "-- woldvein creative mod (building)" GBK 注释标记</td></tr>
+          <tr data-cat="创造模式"><td>创造模式</td><td>部署散文件到错误路径</td><td>deployer.py 复制到 game_root 而非 game_root/sim_common/script/</td><td>修正部署路径</td></tr>
+          <tr data-cat="创造模式"><td>创造模式</td><td>自动重新部署误判原版为创造</td><td>prelaunch_check 把原版正常文件误判为损坏创造文件</td><td>禁用自动重新部署，只做手动修复</td></tr>
+          <tr data-cat="创造模式"><td>创造模式</td><td>人口暴涨把资源吃光</td><td>直接改 m_tbSource[7]/[8]，游戏重算覆盖</td><td>用 g_camp:ModifyPopulation(增量) API</td></tr>
+          <tr data-cat="创造模式"><td>创造模式</td><td>繁荣度修改失效</td><td>只改 prosperity 缓存字段，没调 UpdateBoom</td><td>SetProsperityScore 后调用 boom:UpdateBoom()</td></tr>
+          <tr data-cat="创造模式"><td>创造模式</td><td>知名度修改 UI 不同步</td><td>只改一处，知名度是双存储</td><td>同时改 g_LReputationMgr.reputation 和 playerInfo.cityReputation</td></tr>
+          <tr data-cat="创造模式"><td>创造模式</td><td>资源修改 UI 不同步</td><td>直接改 m_tbSource，没调 ModifySourceValue</td><td>用 g_camp:ModifySourceValue(ID, 增量)</td></tr>
+          <tr data-cat="创造模式"><td>创造模式</td><td>资源字符串键 bug</td><td>_trainer_parse 返回的 id 是字符串，m_tbSource 用数字索引</td><td>tonumber(id)</td></tr>
+          <tr data-cat="创造模式"><td>创造模式</td><td>ImGui 面板只能显示 2 行</td><td>游戏限制窗口大小</td><td>必须设 ImVec2(360,430)（早期）/ ImVec2(620,900)（v13）</td></tr>
+          <tr data-cat="创造模式"><td>创造模式</td><td>运行时 SetWindowSize 导致崩溃</td><td>运行时改窗口大小会崩溃</td><td>改代码里的 SetNextWindowSize 再重载 lua</td></tr>
+          <tr data-cat="创造模式"><td>创造模式</td><td>绘制 hook 用错全局对象</td><td>用猜的 _G.GameDrawUI</td><td>必须用 g_LUiPageManager.GameDraw</td></tr>
+          <tr data-cat="创造模式"><td>创造模式</td><td>热键触发后游戏崩溃</td><td>热键线程直接调用 Lua API，与主线程并发</td><td>热键线程只入队，Lua 执行在主线程 my_lua_pcall 钩子</td></tr>
+          <tr data-cat="创造模式"><td>创造模式</td><td>多进程注入失败</td><td>注入了辅助进程而非主进程</td><td>必须注入带窗口的主进程</td></tr>
+          <tr data-cat="存档"><td>存档</td><td>解码后引号丢失 / 结构损坏</td><td>.NET 标准 GBK 解码器遇到非法字节会替换/丢弃</td><td>用逐字节容错解码（errors=replace）</td></tr>
+          <tr data-cat="存档"><td>存档</td><td>大 JSON 解析栈溢出</td><td>175 万字符整体递归解析</td><td>用迭代式分段解析 JsonSeg</td></tr>
+          <tr data-cat="存档"><td>存档</td><td>保存后文件翻倍</td><td>没执行 VACUUM</td><td>保存必须 VACUUM</td></tr>
+          <tr data-cat="存档"><td>存档</td><td>游戏识别不到新存档</td><td>内部 path 没更新 / index.json 没注册</td><td>更新 path + 同步 index.json</td></tr>
+          <tr data-cat="存档"><td>存档</td><td>CID 与资源 ID 混淆</td><td>两套独立编号</td><td>CID=存档对象类型，资源 ID=m_tbSource 槽位</td></tr>
+          <tr data-cat="存档"><td>存档</td><td>删存档后游戏启动崩溃</td><td>手动删除 .boh 触发 Steam 云同步冲突</td><td>不要删 .boh，用 restore_all_saves.py 恢复</td></tr>
+          <tr data-cat="存档"><td>存档</td><td>存档目录进程锁</td><td>游戏运行时锁定存档文件</td><td>写新存档要输出到其他目录，游戏关闭后手动替换</td></tr>
+          <tr data-cat="打包"><td>打包</td><td>onefile 版找不到数据文件</td><td>config.py 没有 _MEIPASS 候选路径</td><td>增加 sys._MEIPASS/02_shuju 候选</td></tr>
+          <tr data-cat="打包"><td>打包</td><td>Inno Setup /CURRENTUSER 安装失败</td><td>安装到 AppData 后文件找不到</td><td>用 /DIR 参数安装到 C:\InnoSetup6\</td></tr>
+          <tr data-cat="打包"><td>打包</td><td>Inno Setup 无中文界面</td><td>6.7.3 Languages 目录无 ChineseSimplified.isl</td><td>下载中文语言包放到 Languages 目录，在 .iss 引用</td></tr>
+          <tr data-cat="打包"><td>打包</td><td>PyInstaller --add-data 分号解析错误</td><td>PowerShell 把分号当语句分隔符</td><td>用 Python 脚本 subprocess 调用，或写 .bat 文件</td></tr>
+          <tr data-cat="打包"><td>打包</td><td>打包后 exe 被占用无法覆盖</td><td>旧版 exe 进程还在运行</td><td>taskkill 杀掉 woldvein_launcher.exe 再复制</td></tr>
+          <tr data-cat="打包"><td>打包</td><td>游戏目录被测试工具污染</td><td>pakv4 解包测试工具生成在游戏 bin64</td><td>测试工具必须放在独立目录</td></tr>
+          <tr data-cat="环境"><td>环境</td><td>游戏窗口失焦后 Lua 暂停</td><td>游戏后台时 Lua 逻辑自动暂停（渲染还在动）</td><td>下发命令后保证游戏窗口在前台跑几秒</td></tr>
+          <tr data-cat="环境"><td>环境</td><td>远程投屏操作命令不执行</td><td>游戏窗口不在前台</td><td>远程操作时确保游戏进程窗口前台</td></tr>
+          <tr data-cat="环境"><td>环境</td><td>3.0 文件夹占用 5.8GB</td><td>08_游戏目录撤回备份是游戏完整备份</td><td>不需要回退时可删除</td></tr>
+          <tr data-cat="环境"><td>环境</td><td>Python ctypes 调用 KG_InitPakV4FileSystem 崩溃</td><td>0xC0000409</td><td>必须用 C++ 版工具</td></tr>
+        </tbody>
+      </table></div>
+    </div>
+
+    <!-- ============ 贰 bat 脚本相关 ============ -->
+    <section class="section">
+      <div class="section-head reveal">
+        <span class="section-no">贰</span>
+        <h2 class="section-title plaque">bat 脚本相关（关键，勿再犯）</h2>
+        <span class="section-title-line"></span>
+      </div>
+      <div class="panel reveal">
+        <span class="corner corner-tl"></span><span class="corner corner-tr"></span>
+        <span class="corner corner-bl"></span><span class="corner corner-br"></span>
+        <ol class="clean">
+          <li>换行必须是 CRLF！Write 工具写 LF，cmd 解析 LF bat 报 "The syntax of the command is incorrect"。修法：ReadAllText + -replace "`r?`n","`r`n" + WriteAllText</li>
+          <li>内容用纯英文，避免中文！cmd 读取 bat 的代码页=启动时的 OEM 代码页（中文系统 GBK），与编辑环境（UTF-8）不一致导致中文路径乱码。中文文件名只能在命令行层处理，不能在 bat 内容里写中文路径 → 用英文别名 bat</li>
+          <li>不要 chcp 65001（会把 GBK 内容读乱）</li>
+          <li>echo 行禁括号（if(...) 块内括号被拆开当命令执行）</li>
+          <li>timeout 在输入重定向下报 "Input redirection is not supported" 并退出 → 改用 ping -n 3 127.0.0.1 &gt;nul</li>
+          <li>交互菜单（set /p）在无真实控制台的自动化环境行为异常，无法自动验证；但语法标准、菜单显示正常、真实双击正常</li>
+          <li>测试 bat：杀干净 cmd 进程再测；用 cmd /c 'bat &lt; 输入文件' 或 cmd 内部管道</li>
+        </ol>
+      </div>
+    </section>
+
+    <!-- ============ 叁 已验证死路 ============ -->
+    <section class="section">
+      <div class="section-head reveal">
+        <span class="section-no">叁</span>
+        <h2 class="section-title plaque">已验证死路（不要重复尝试）</h2>
+        <span class="section-title-line"></span>
+      </div>
+      <div class="panel reveal">
+        <span class="corner corner-tl"></span><span class="corner corner-tr"></span>
+        <span class="corner corner-bl"></span><span class="corner corner-br"></span>
+        <ul class="clean">
+          <li>project5 自制 Steam API 代理 DLL 测试无效（游戏 exe 不加载它，Steam 集成走 XGSDK 内部通道）</li>
+          <li>B 方案 DLL 劫持代理 version.dll 未实施，被散文件方案取代</li>
+          <li>方案 C v7 PEB 遍历动态获取 LoadLibraryA 的 shellcode 有 bug（启动后立即崩溃）</li>
+          <li>方案 C shellcode 使用绝对地址会因 ASLR 崩溃（v4/v5 早期版本）</li>
+          <li>方案 C 代码洞穴在 .text virtual_size 之外不会被映射到内存（v5 版本崩溃原因）</li>
+          <li>DLL 在游戏早期直接初始化会崩溃（需要延迟初始化）</li>
+          <li>version.dll Hook 版（含 INT3/Inline Hook）物理引擎初始化失败</li>
+          <li>B 方案外部内存已弃</li>
+          <li>早期错误结论"pakv4 重打包不可行"已推翻（实际 ZSTD 无加密，重打包可行）</li>
+          <li>早期错误结论"Lua 脚本加密存储"已推翻（实际 ZSTD 压缩）</li>
+        </ul>
+      </div>
+    </section>
+
+  </div>
+
+</main>
+<footer class="site-footer">
+  <p class="footer-couple plaque">匠心独运 · 鸿业长青</p>
+  <p class="footer-meta">woldvein 项目总览 · 依据《woldvein项目总交接文档_v2.0_完整版》编制 · 2026-09-08</p>
+</footer>
+
+<button class="to-top" aria-label="返回顶部">↑</button>
+<script src="js/main.js"></script>
+</body>
+</html>

@@ -1,0 +1,10 @@
+{
+  "name": "woldvein 项目总览",
+  "entry": "index.html",
+  "version": "2.1.1",
+  "description": "woldvein 游戏修改器项目全版本总览站。涵盖存档破解、离线修改器、DLL注入、二进制补丁、pakv4解包、启动器家族、崩溃监控、AI Agent 等 20 个项目的完整记录，含版本演进、技术方案、踩坑记录、工具链和数据统计。",
+  "icon": "📋",
+  "color": "c4",
+  "author": "180lisilence",
+  "tags": ["项目总览", "文档", "游戏修改器", "版本演进"]
+}
