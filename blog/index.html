@@ -10,6 +10,10 @@
 .global-sun-btn{position:fixed;top:16px;right:16px;z-index:999999;width:42px;height:42px;border-radius:50%;border:2px solid rgba(255,200,50,.7);background:linear-gradient(135deg,#ffd700,#ff8c00);color:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:18px;box-shadow:0 2px 12px rgba(255,165,0,.5);transition:all .3s;animation:globalSunSpin 6s linear infinite}
 .global-sun-btn:hover{transform:scale(1.15) rotate(15deg);box-shadow:0 4px 20px rgba(255,165,0,.8);animation-play-state:paused}
 @keyframes globalSunSpin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}
+/* 外部作品（友链）区块 */
+.links-hint{font-size:14px;color:#6b7280;margin:10px 0 18px}
+.project-card.ext-card{border-style:dashed}
+.project-card.ext-card .proj-links a{color:#0f766e}
 </style>
 </head>
 <body>
@@ -224,6 +228,16 @@
 
     </div>
 
+  <!-- 外部作品（友链） -->
+  <section id="extSection" style="display:none">
+    <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-top:8px">
+      <h2 class="section-title" id="links" style="margin-bottom:0">外部作品 · 友链</h2>
+      <a href="/projects.html" style="font-size:14px;color:#667eea;text-decoration:none;font-weight:500">在项目中心查看全部 →</a>
+    </div>
+    <p class="links-hint">独立仓库托管的作品，点击在新标签打开在线演示或 GitHub。</p>
+    <div class="project-grid ext-grid" id="extGrid"></div>
+  </section>
+
   <!-- 关于 -->
   <h2 class="section-title" id="about">关于我</h2>
   <div class="about">
@@ -283,6 +297,42 @@
   btn.addEventListener("pointerup",end);
   btn.addEventListener("pointercancel",end);
   btn.addEventListener("click",function(e){if(moved){e.stopPropagation();e.preventDefault();moved=false;}},true);
+})();
+</script>
+<script>
+/* 外部作品（友链）：从 /api/links 渲染，接口不可用时整块保持隐藏 */
+(async function () {
+  var section = document.getElementById("extSection");
+  var grid = document.getElementById("extGrid");
+  if (!section || !grid) return;
+  function esc(s) {
+    return String(s == null ? "" : s).replace(/[&<>"']/g, function (c) {
+      return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c];
+    });
+  }
+  try {
+    var r = await fetch("/api/links", { credentials: "same-origin" });
+    var d = await r.json();
+    if (!d || !d.ok || !Array.isArray(d.links) || !d.links.length) return;
+    grid.innerHTML = d.links.map(function (p) {
+      var tags = (p.tags || []).slice(0, 3).map(function (t) {
+        return '<span class="proj-tag">' + esc(t) + "</span>";
+      }).join("");
+      return '<article class="project-card ext-card">' +
+        '<div class="proj-icon">' + esc(p.icon || "🔗") + "</div>" +
+        '<h3><a href="' + esc(p.demo || p.repo) + '" target="_blank" rel="noopener noreferrer">' + esc(p.name) + " ↗</a></h3>" +
+        "<p>" + esc(p.desc) + "</p>" +
+        '<div class="proj-tags">' + tags + "</div>" +
+        '<div class="proj-links">' +
+          '<a href="' + esc(p.repo) + '" target="_blank" rel="noopener noreferrer">⌨️ 仓库</a>' +
+          (p.demo ? '<a href="' + esc(p.demo) + '" target="_blank" rel="noopener noreferrer">🖥️ 在线演示</a>' : "") +
+        "</div>" +
+        "</article>";
+    }).join("");
+    section.style.display = "";
+  } catch (e) {
+    /* 静默降级：保留隐藏状态 */
+  }
 })();
 </script>
 </body>

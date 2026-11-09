@@ -61,6 +61,7 @@ const config = {
   blogContent: BLOG_CONTENT,
   usersFile: path.join(ROOT_DIR, "users.json"),
   projectsFile: path.join(ROOT_DIR, "projects.json"),
+  linksFile: path.join(ROOT_DIR, "links.json"),
 
   // 会话超时
   qrExpireMs: numEnv("QR_EXPIRE_MS", 120 * 1000),

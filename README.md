@@ -144,6 +144,7 @@ myself-blog-beta/
 └── qrcode-login/               # 登录门禁后端（模块化架构）
     ├── server.js               # 入口（150行，纯组装逻辑）
     ├── package.json
+    ├── links.json              # 外链作品数据（2.2 新增）
     ├── .env.example            # 环境变量模板
     ├── .eslintrc.json          # ESLint 配置
     ├── .prettierrc             # Prettier 配置
@@ -167,10 +168,13 @@ myself-blog-beta/
         │   ├── service.js      # 会话 CRUD 业务逻辑
         │   ├── ocr.js          # OCR 服务代理（RapidOCR + 回退）
         │   └── routes.js       # 路由（会话/分享/OCR）
-        └── projects/           # 项目中心模块
-            ├── validator.js    # project.json 规范验证
-            ├── service.js      # 项目列表/扫描/导入/删除
-            └── routes.js       # 路由
+        ├── projects/           # 项目中心模块
+        │   ├── validator.js    # project.json 规范验证
+        │   ├── service.js      # 项目列表/扫描/导入/删除
+        │   └── routes.js       # 路由
+        └── links/              # 友链模块（2.2 新增）
+            ├── service.js      # links.json 读取 + URL 白名单校验
+            └── routes.js       # GET /api/links
 ```
 
 ## 📦 项目导入规范
@@ -331,3 +335,14 @@ Docker Compose 会自动启动：
 - 🎮 新增项目页 log/projects/woldvein/（含 project.json、入口页 index.html、全景复盘 review.html）
 - 🏠 博客首页文章区与项目区同步更新
 - 📊 复盘内容覆盖 v2.0 启动器 / v3.0 产品家族 / 崩溃危机 / v3.5·v3.6 修复 / v4.0 AI Agent / 第七项目存档修复
+
+## 🔖 2.2 版本说明
+
+新增 **外链作品墙（友链）**：10 个独立仓库托管的作品以卡片形式挂进项目中心与博客首页，不增加仓库体积，也不改动原有 10 个内置项目。
+
+- 🔗 新增数据源 `qrcode-login/links.json`（10 条：skilll-collection / critical-game / my-world-monitor-tool / 3D-model-construction / rea-tool-myself / personal-information-anliaysis / qi-mao-book-export-verison / card-unlock-master / gamehub / yunlu-room）
+- 🌐 新增接口 `GET /api/links`（需登录），域名白名单只认 `github.com/180lisilence/*` 与 `*.github.io`，防止 `javascript:` 注入
+- 🗂️ 项目中心新增「外部作品 · 友链」分区，卡片带 ↗ 角标：8 个有 Pages 的走「在线体验」，2 个无 Pages 的只走「前往 GitHub」
+- 🏠 博客首页新增同源区块（`/api/links` 驱动），接口异常时整块隐藏，不影响主页面
+- 📦 版本号 2.0.0 → 2.2.0；`/api/projects` 与 `BUILTIN_PROJECTS` 零改动
+- 🧩 `mirror` 字段预留：blog2.3 填入本地镜像路径后前端自动优先本地，渲染代码无需改动

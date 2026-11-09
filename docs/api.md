@@ -258,6 +258,52 @@
 
 ---
 
+## 4. 友链模块 `/api/links`
+
+外链作品（GitHub 独立仓库）列表，数据源为 `qrcode-login/links.json`。
+仅允许 `https://github.com/180lisilence/*` 与 `*.github.io` 域名，其余条目在加载时被跳过并记 WARN 日志。
+
+### 4.1 获取友链列表
+- **GET** `/api/links`
+- **需登录** ✅
+- **响应**：
+```json
+{
+  "ok": true,
+  "count": 10,
+  "links": [
+    {
+      "id": "link-gamehub",
+      "name": "TERMINAL ARCADE 终端街机",
+      "desc": "CRT 复古终端风的网页游戏平台，浏览器即玩。",
+      "repo": "https://github.com/180lisilence/gamehub",
+      "demo": "https://180lisilence.github.io/gamehub/",
+      "mirror": null,
+      "icon": "🕹️",
+      "color": "c3",
+      "tags": ["网页游戏", "FastAPI", "复古"],
+      "stack": "Python + HTML",
+      "size": "2.7 MB",
+      "updated": "2026-11-07",
+      "order": 9
+    }
+  ]
+}
+```
+
+字段说明：
+| 字段 | 说明 |
+|---|---|
+| `repo` | 必填，GitHub 仓库地址（白名单校验） |
+| `demo` | 在线演示地址，可为 `null`；为 null 时前端只显示「前往 GitHub」 |
+| `mirror` | 预留：blog2.3 本地镜像路径（`/blog/projects/<folder>/index.html`），2.2 恒为 `null` |
+| `icon` / `color` | 单个 emoji / `c1`~`c6` |
+| `order` | 排序权重，升序 |
+
+- **错误**：401 未登录
+
+---
+
 ## 错误码汇总
 
 | 状态码 | 含义 | 常见场景 |

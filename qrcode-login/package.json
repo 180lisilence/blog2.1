@@ -1,7 +1,7 @@
 {
   "name": "myself-blog-project-center",
-  "version": "2.0.0",
-  "description": "项目中心服务 - 模块化架构，支持扫码登录、账号注册、项目管理、ChatRecord 时序分析",
+  "version": "2.2.0",
+  "description": "项目中心服务 - 模块化架构，支持扫码登录、账号注册、项目管理、外链作品墙、ChatRecord 时序分析",
   "main": "server.js",
   "scripts": {
     "start": "node server.js",

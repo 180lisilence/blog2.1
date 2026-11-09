@@ -133,6 +133,25 @@
     }
     .card .del-btn:hover { background: #fef2f2; color: #ef4444; }
 
+    /* 分区标题与外链作品卡 */
+    .section-label {
+      grid-column: 1 / -1;
+      display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap;
+      margin: 10px 0 -2px;
+      font-size: 15px; font-weight: 600; color: #1f2937;
+    }
+    .section-label .sub { font-size: 12px; font-weight: 400; color: #9ca3af; }
+    .card.ext-card { border-style: dashed; border-color: #dbe2ef; }
+    .card.ext-card:hover { border-color: #667eea; }
+    .card .ext-badge {
+      position: absolute; top: 14px; right: 14px;
+      font-size: 12px; color: #667eea; background: #eef2ff;
+      border-radius: 8px; padding: 2px 7px; line-height: 1.4;
+    }
+    .card.ext-card .go { color: #0f766e; }
+    .card .meta { margin-top: 8px; font-size: 11px; color: #9ca3af; }
+    .nav-ext { color: #667eea; font-size: 11px; }
+
     /* 加号导入卡片 */
     .card.add-card {
       border: 2px dashed #d1d5db;
@@ -259,6 +278,31 @@
 
 <script>
   let allProjects = [];
+  let allLinks = [];
+
+  function escapeHtml(s) {
+    return String(s == null ? "" : s).replace(/[&<>"']/g, c => ({
+      "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"
+    }[c]));
+  }
+
+  // 外链作品卡：有在线演示优先跳演示站，没有则跳仓库
+  function extCardHtml(p) {
+    const href = p.demo || p.repo;
+    const label = p.demo ? "在线体验 →" : "前往 GitHub →";
+    const meta = [p.stack, p.size].filter(Boolean).join(" · ");
+    return `
+      <a class="card ext-card" href="${escapeHtml(href)}" target="_blank" rel="noopener noreferrer" title="${escapeHtml(p.repo)}">
+        <span class="ext-badge">↗</span>
+        <div class="c-icon ${p.color || "c1"}">${p.icon || "🔗"}</div>
+        <h3>${escapeHtml(p.name)}</h3>
+        <p>${escapeHtml(p.desc)}</p>
+        ${p.tags && p.tags.length ? `<div class="tags">${p.tags.slice(0, 3).map(t => `<span class="tag">${escapeHtml(t)}</span>`).join("")}</div>` : ""}
+        ${meta ? `<div class="meta">${escapeHtml(meta)}</div>` : ""}
+        <div class="go">${label}</div>
+      </a>
+    `;
+  }
 
   function getToken() {
     const c = document.cookie.split(";").map(s => s.trim()).find(s => s.startsWith("web_token="));
@@ -289,7 +333,9 @@
 
   function renderGrid() {
     const grid = document.querySelector("#grid");
-    document.getElementById("projectCount").textContent = `共 ${allProjects.length} 个项目`;
+    const extCount = allLinks.length;
+    document.getElementById("projectCount").textContent =
+      `共 ${allProjects.length} 个站内项目${extCount ? ` · ${extCount} 个外部作品` : ""}`;
 
     let html = `
       <div class="card add-card" onclick="openModal()">
@@ -308,6 +354,11 @@
         <div class="go">进入项目 →</div>
       </a>
     `).join("");
+
+    if (extCount) {
+      html += `<div class="section-label">外部作品 · 友链<span class="sub">独立仓库托管，点击在新标签打开在线演示或 GitHub</span></div>`;
+      html += allLinks.map(extCardHtml).join("");
+    }
 
     grid.innerHTML = html;
   }
@@ -333,6 +384,15 @@
         <a class="nav-item" href="${p.url}" target="_blank" onclick="closeNav()">
           <span class="nav-icon">${p.icon || '📁'}</span>
           <span class="nav-name">${p.name}</span>
+        </a>
+      `).join('');
+    }
+    if (allLinks.length) {
+      html += '<div class="nav-section">外部作品 <span class="nav-ext">↗</span></div>';
+      html += allLinks.map(p => `
+        <a class="nav-item" href="${escapeHtml(p.demo || p.repo)}" target="_blank" rel="noopener noreferrer" onclick="closeNav()">
+          <span class="nav-icon">${p.icon || '🔗'}</span>
+          <span class="nav-name">${escapeHtml(p.name)}</span>
         </a>
       `).join('');
     }
@@ -388,7 +448,7 @@
       const d = await r.json();
       if (d.ok) {
         showMsg(msg, d.msg, "success");
-        await loadProjects();
+        await loadData();
         setTimeout(() => { closeModal(); }, 1000);
       } else {
         let errText = d.msg;
@@ -436,7 +496,7 @@
       });
       const d = await r.json();
       if (d.ok) {
-        await loadProjects();
+        await loadData();
         btn.textContent = "✓";
         setTimeout(() => { closeModal(); }, 800);
       } else {
@@ -454,7 +514,7 @@
       const r = await apiFetch(`/api/projects/${id}`, { method: "DELETE" });
       const d = await r.json();
       if (d.ok) {
-        await loadProjects();
+        await loadData();
       } else {
         alert(d.msg);
       }
@@ -463,18 +523,34 @@
     }
   }
 
-  async function loadProjects() {
+  // 站内项目与外链作品并行加载，任一失败都只降级该区块，不白屏
+  async function loadData() {
+    let projectsOk = false;
     try {
       const r = await apiFetch("/api/projects");
       const d = await r.json();
-      if (d.ok) {
-        allProjects = d.projects;
-        renderGrid();
-        renderNav();
+      if (d && d.ok) {
+        allProjects = d.projects || [];
+        projectsOk = true;
       }
     } catch (e) {
-      document.querySelector("#grid").innerHTML = '<div class="error">加载项目列表失败</div>';
+      console.warn("加载站内项目失败", e);
     }
+
+    try {
+      const r = await apiFetch("/api/links");
+      const d = await r.json();
+      if (d && d.ok) allLinks = d.links || [];
+    } catch (e) {
+      console.warn("加载外部作品失败", e);
+    }
+
+    if (!projectsOk && !allLinks.length) {
+      document.querySelector("#grid").innerHTML = '<div class="error">加载项目列表失败</div>';
+      return;
+    }
+    renderGrid();
+    renderNav();
   }
 
   (async () => {
@@ -485,7 +561,7 @@
       if (d.ok) {
         document.querySelector("#currentUser").innerText = "当前账号：" + d.username;
         document.querySelector("#welcomeText").innerText = "欢迎回来，" + d.username;
-        await loadProjects();
+        await loadData();
       } else {
         main.innerHTML = '<div class="error">登录已过期，正在跳转到登录页...</div>';
         setTimeout(() => location.href = "/login.html", 1200);

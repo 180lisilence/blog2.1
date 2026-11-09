@@ -40,3 +40,6 @@ qrcode-login/users.json
 
 # ChatRecord 用户会话数据（聊天记录，属于本机数据，不应公开）
 qrcode-login/data/
+
+# 本机工作区数据（记忆/会话状态，不随仓库发布）
+.workbuddy/
