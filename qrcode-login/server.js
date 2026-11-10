@@ -28,6 +28,24 @@ const linksRoutes = require("./modules/links/routes");
 
 const app = express();
 
+// ========== 反向代理信任配置 ==========
+// 部署在 Nginx 之后时必须开启，否则 req.ip 永远是 127.0.0.1，
+// 会导致 IP 白名单与频率限制全部失效。
+// TRUST_PROXY 可选值：false / 数字(代理层数) / true / 具体网段
+const trustProxyEnv = process.env.TRUST_PROXY;
+if (trustProxyEnv === "true") {
+  app.set("trust proxy", true);
+} else if (trustProxyEnv && !isNaN(Number(trustProxyEnv))) {
+  app.set("trust proxy", Number(trustProxyEnv));
+} else if (trustProxyEnv) {
+  app.set("trust proxy", trustProxyEnv);
+} else if (process.env.NODE_ENV === "production") {
+  // 生产环境默认信任一层代理（本机 Nginx）
+  app.set("trust proxy", 1);
+}
+// 关闭 X-Powered-By，避免暴露技术栈
+app.disable("x-powered-by");
+
 // ========== 全局中间件 ==========
 app.use(forceHttps);           // 生产环境强制 HTTPS
 app.use(securityHeaders);      // 安全响应头
@@ -137,13 +155,14 @@ async function start() {
   }
 
   // 6. 启动服务
-  app.listen(config.port, () => {
-    logger.info("startup", `服务启动: http://127.0.0.1:${config.port}`);
-    logger.info("startup", `局域网地址: ${config.baseURL}`);
-    logger.info("startup", `登录页: http://127.0.0.1:${config.port}/`);
-    logger.info("startup", `健康检查: http://127.0.0.1:${config.port}/health`);
+  app.listen(config.port, config.host, () => {
+    logger.info("startup", `服务启动: http://${config.host}:${config.port}`);
+    logger.info("startup", `对外地址: ${config.baseURL}`);
+    logger.info("startup", `登录页: ${config.baseURL}/`);
+    logger.info("startup", `健康检查: ${config.baseURL}/health`);
     logger.info("startup", `数据库: MySQL ${config.db.host}:${config.db.port}/${config.db.database}`);
     logger.info("startup", `环境: ${process.env.NODE_ENV || "development"}`);
+    logger.info("startup", `免密白名单: ${process.env.DIRECT_LOGIN_IPS || "(未配置)"}`);
     logger.info("startup", "========================================");
   });
 }

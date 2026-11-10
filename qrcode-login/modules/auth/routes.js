@@ -16,8 +16,25 @@ const userModel = require("./model");
 const sessionMgr = require("./session");
 const { getTokenFromReq } = require("../../middleware/auth");
 const { loginLockCheck, recordFailure, clearFailure } = require("../../middleware/loginLock");
+const { createIpWhitelist } = require("../../middleware/ipWhitelist");
 
 const router = express.Router();
+
+// 免密直登的 IP 白名单：仅受信任网络可调用
+// 环境变量 DIRECT_LOGIN_IPS，留空时按 DIRECT_LOGIN_IPS_ALLOW_EMPTY 决定放行/拒绝
+const directLoginGuard = createIpWhitelist({
+  envKey: "DIRECT_LOGIN_IPS",
+  allowAllWhenEmpty: process.env.DIRECT_LOGIN_IPS_ALLOW_EMPTY !== "false",
+  label: "direct-login"
+});
+
+// 开放注册的 IP 白名单：默认关闭公网注册
+// 环境变量 REGISTER_IPS，留空且 ALLOW_EMPTY 非 true 时一律拒绝
+const registerGuard = createIpWhitelist({
+  envKey: "REGISTER_IPS",
+  allowAllWhenEmpty: process.env.REGISTER_IPS_ALLOW_EMPTY === "true",
+  label: "register"
+});
 
 // ========== 二维码登录 ==========
 
@@ -74,8 +91,8 @@ router.post("/qrcode/confirm", (req, res) => {
 
 // ========== 账号注册/登录 ==========
 
-// 注册
-router.post("/register", asyncHandler(async (req, res) => {
+// 注册（受 IP 白名单保护，生产环境默认仅管理员可调用）
+router.post("/register", registerGuard, asyncHandler(async (req, res) => {
   const { username, password } = req.body || {};
   const u = String(username || "").trim();
 
@@ -113,10 +130,10 @@ router.post("/login", loginLockCheck, (req, res) => {
   ok(res, { webToken, username: u });
 });
 
-// 直接登录（个人免密入口：本机个人使用，一键进入系统）
-router.post("/direct-login", (req, res) => {
+// 直接登录（个人免密入口：仅受信任 IP 可调用，公网默认拒绝）
+router.post("/direct-login", directLoginGuard, (req, res) => {
   const webToken = sessionMgr.createWebSession("local");
-  logger.info("auth-route", "直接登录（个人免密）");
+  logger.info("auth-route", `直接登录（个人免密）来源IP=${req.ip} trusted=${req.ipTrusted}`);
   ok(res, { webToken, username: "local" });
 });
 

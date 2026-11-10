@@ -19,6 +19,14 @@ function generateToken() {
   return crypto.randomBytes(TOKEN_BYTES).toString("hex");
 }
 
+// 判断是否应给 Cookie 加 Secure 标记
+// 只有真正跑在 HTTPS 上时才加，否则浏览器会直接丢弃该 Cookie，
+// 导致 CSRF 校验永远失败（纯 HTTP 部署的典型症状）。
+function isSecureRequest() {
+  if (String(process.env.FORCE_HTTPS || "").toLowerCase() === "false") return false;
+  return process.env.NODE_ENV === "production";
+}
+
 // 确保请求有 CSRF token cookie（没有则生成）
 function ensureCsrfCookie(req, res, next) {
   let token = req.cookies?.[CSRF_COOKIE_NAME];
@@ -26,7 +34,7 @@ function ensureCsrfCookie(req, res, next) {
     token = generateToken();
     res.cookie(CSRF_COOKIE_NAME, token, {
       httpOnly: false, // 前端需要读取
-      secure: process.env.NODE_ENV === "production",
+      secure: isSecureRequest(),
       sameSite: "lax",
       path: "/",
       maxAge: 24 * 60 * 60 * 1000 // 24 小时

@@ -52,8 +52,17 @@ function strEnv(key, def) {
 const config = {
   // 服务
   port: numEnv("PORT", 3000),
+  host: strEnv("HOST", "0.0.0.0"),
   lanIP: strEnv("LAN_IP", getLanIP()),
-  get baseURL() { return `http://${this.lanIP}:${this.port}`; },
+
+  // 对外访问地址
+  // PUBLIC_BASE_URL 优先（部署到公网时必须显式设置，
+  // 否则二维码里会是内网 IP，手机扫码后无法访问）
+  publicBaseURL: strEnv("PUBLIC_BASE_URL", ""),
+  get baseURL() {
+    if (this.publicBaseURL) return this.publicBaseURL.replace(/\/+$/, "");
+    return `http://${this.lanIP}:${this.port}`;
+  },
 
   // 路径
   rootDir: ROOT_DIR,

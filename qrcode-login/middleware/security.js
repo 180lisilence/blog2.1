@@ -7,9 +7,14 @@
 const logger = require("../core/logger");
 
 // 生产环境强制 HTTPS
+// 仅在同时满足以下条件时启用：
+//   1. NODE_ENV=production
+//   2. 未显式设置 FORCE_HTTPS=false
+// 说明：只有公网 IP、无证书的部署必须设置 FORCE_HTTPS=false，
+// 否则所有请求会被 301 到 https://，而该地址无服务，形成死循环。
 function forceHttps(req, res, next) {
-  // 只在生产环境启用，本地开发不强制
-  if (process.env.NODE_ENV === "production") {
+  const disabled = String(process.env.FORCE_HTTPS || "").toLowerCase() === "false";
+  if (process.env.NODE_ENV === "production" && !disabled) {
     // 检查 X-Forwarded-Proto（反向代理后）
     const proto = req.headers["x-forwarded-proto"] || req.protocol;
     if (proto === "http") {
