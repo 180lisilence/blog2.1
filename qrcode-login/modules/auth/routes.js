@@ -11,7 +11,7 @@ const pool = require("../../db/pool");
 const config = require("../../config");
 const logger = require("../../core/logger");
 const { errors, asyncHandler, ok, fail } = require("../../core/errors");
-const { validateUsername, validatePassword, safeGet } = require("../../core/security");
+const { validateUsername, validatePassword } = require("../../core/security");
 const userModel = require("./model");
 const sessionMgr = require("./session");
 const qrTicket = require("./qrTicket");
@@ -23,30 +23,46 @@ const router = express.Router();
 
 // ========== confirm 专用限速器（N-02 / N-11） ==========
 //
-// loginLock 是"IP+账号"维度的锁定，解决不了「换账号、换 IP 无限打」的
-// 分布式爆破。这里再叠一层纯 IP 维度的滑动窗口：同一 IP 每 10 分钟最多
-// 10 次 confirm 尝试。正常用户扫码一次就过，完全不会碰到天花板。
+// 1.0 复测残留项：旧版是「纯 IP」滑动窗口（10 次 / 10 分钟），
+// 同一 NAT 出口下所有用户共享这 10 次额度 —— 学校/公司网络里一个人误触，
+// 整段出口 10 分钟都扫不了码。现在改成双维度：
+//   - 主维度 IP+账号：每对组合 10 次 / 10 分钟（同出口不同账号互不牵连）
+//   - 兜底维度纯 IP：40 次 / 10 分钟（仍挡得住单 IP 换账号的分布式爆破）
+// 正常用户扫码一次就过，两个天花板都碰不到。
 const CONFIRM_WINDOW_MS = 10 * 60 * 1000;
-const CONFIRM_MAX_ATTEMPTS = 10;
-const confirmAttempts = new Map(); // ip -> { count, resetAt }
+const CONFIRM_MAX_PER_IP_ACCOUNT = 10;
+const CONFIRM_MAX_PER_IP = 40;
+const confirmAttempts = new Map();   // `${ip}:${username}` -> { count, resetAt }
+const confirmIpAttempts = new Map(); // ip -> { count, resetAt }
+
+function bumpLimit(map, key, max, ip, label) {
+  const now = Date.now();
+  let rec = map.get(key);
+  if (!rec || now > rec.resetAt) {
+    rec = { count: 0, resetAt: now + CONFIRM_WINDOW_MS };
+    map.set(key, rec);
+  }
+  rec.count++;
+  if (rec.count > max) {
+    const remainSec = Math.ceil((rec.resetAt - now) / 1000);
+    logger.warn("auth-route", `[N-02] confirm 触发 ${label} 限速: ip=${ip}, key=${key}, count=${rec.count}`);
+    return { blocked: true, remainSec };
+  }
+  return { blocked: false };
+}
 
 function confirmLimiter(req, res, next) {
   const ip = req.ip || req.socket?.remoteAddress || "unknown";
-  const now = Date.now();
-  const rec = confirmAttempts.get(ip);
+  const username = String(req.body?.username || "").trim() || "-";
 
-  if (!rec || now > rec.resetAt) {
-    confirmAttempts.set(ip, { count: 1, resetAt: now + CONFIRM_WINDOW_MS });
-    return next();
-  }
-  rec.count++;
-  if (rec.count > CONFIRM_MAX_ATTEMPTS) {
-    const remainSec = Math.ceil((rec.resetAt - now) / 1000);
-    logger.warn("auth-route", `[N-02] confirm 触发 IP 窗口限速: ip=${ip}, count=${rec.count}`);
+  const byPair = bumpLimit(confirmAttempts, `${ip}:${username}`, CONFIRM_MAX_PER_IP_ACCOUNT, ip, "IP+账号");
+  const byIp = bumpLimit(confirmIpAttempts, ip, CONFIRM_MAX_PER_IP, ip, "纯IP兜底");
+  const hit = byPair.blocked ? byPair : (byIp.blocked ? byIp : null);
+  if (hit) {
     return res.status(429).json({
       ok: false,
-      msg: `尝试次数过多，请 ${remainSec} 秒后再试`,
-      remainSec
+      msg: `尝试次数过多，请 ${hit.remainSec} 秒后再试`,
+      remainSec: hit.remainSec
     });
   }
   next();
@@ -55,8 +71,11 @@ function confirmLimiter(req, res, next) {
 // 定期清理限速窗口记录（避免 Map 无限增长）
 setInterval(() => {
   const now = Date.now();
-  for (const [ip, rec] of confirmAttempts) {
-    if (now > rec.resetAt) confirmAttempts.delete(ip);
+  for (const [k, rec] of confirmAttempts) {
+    if (now > rec.resetAt) confirmAttempts.delete(k);
+  }
+  for (const [ip, rec] of confirmIpAttempts) {
+    if (now > rec.resetAt) confirmIpAttempts.delete(ip);
   }
 }, 10 * 60 * 1000).unref?.();
 
@@ -372,7 +391,17 @@ router.post("/change-password", asyncHandler(async (req, res) => {
 const DATA_MAX_KEY_BYTES = 256 * 1024;
 const DATA_MAX_KEYS = 500;
 const DATA_MAX_TOTAL_BYTES = 2 * 1024 * 1024;
-const DATA_MAX_KEY_LEN = 100;
+const DATA_MAX_KEY_LEN = 64;
+
+// W2-04：键名白名单。旧版只拦了 __proto__/constructor/prototype，
+// 于是 ""、"a.b"、"../escape" 都能落库。现在统一成一处显式白名单，
+// 前端实际使用的键（workbench / earth_inventory / foods / carts / orders…）
+// 全部符合，线上存量键名也已核验过不会误伤。
+const DATA_KEY_RE = /^[A-Za-z0-9_-]{1,64}$/;
+
+function isValidKey(k) {
+  return DATA_KEY_RE.test(String(k));
+}
 
 function byteLen(str) {
   return Buffer.byteLength(String(str || ""), "utf8");
@@ -386,8 +415,8 @@ function validateDataset(data) {
   }
   let total = 0;
   for (const k of keys) {
-    if (k.length > DATA_MAX_KEY_LEN) {
-      return `键名过长（最大 ${DATA_MAX_KEY_LEN} 字符）`;
+    if (!isValidKey(k)) {
+      return `数据含有非法键名："${String(k).slice(0, 40)}"（只允许字母、数字、下划线、连字符，1-${DATA_MAX_KEY_LEN} 字符）`;
     }
     let serialized;
     try {
@@ -407,28 +436,78 @@ function validateDataset(data) {
   return null;
 }
 
+// 把库里的 data_value（已是 JSON 字符串）还原成真实值再算配额。
+// 旧版直接把字符串塞进 merged，validateDataset 又 stringify 一次，
+// 导致存量数据被双序列化、usedBytes 虚高、配额统计与实际不一致。
+function parseStoredValue(raw) {
+  try { return JSON.parse(raw); } catch (e) { return raw; }
+}
+
 // 取当前用户已占用的总量（用于写入前后的二次校验）
 async function currentUsage(username) {
   const [rows] = await pool.query(
-    "SELECT COUNT(*) AS cnt, COALESCE(SUM(CHAR_LENGTH(data_value)), 0) AS bytes FROM user_data WHERE username = ?",
+    "SELECT COUNT(*) AS cnt, COALESCE(SUM(OCTET_LENGTH(data_value)), 0) AS bytes FROM user_data WHERE username = ?",
     [username]
   );
   const r = rows[0] || {};
   return { count: Number(r.cnt || 0), bytes: Number(r.bytes || 0) };
 }
 
-// 获取用户全部数据
+// 获取用户数据
+//
+// W2-05：旧版忽略全部 query，永远返回全量。配合 W2-03 的存储放大，
+// 客户端每次刷新都要拉完整快照。现在支持：
+//   GET /api/data/all              全量（兼容旧前端）
+//   GET /api/data/all?key=workbench      只取一个键
+//   GET /api/data/all?keys=a,b,c         只取多个键
+// 响应附带 totalKeys / truncated，前端可据此判断是否需要分片。
 router.get("/data/all", asyncHandler(async (req, res) => {
   const token = getTokenFromReq(req);
   const ws = sessionMgr.getWebSession(token);
   if (!ws) return fail(res, 401, "请先登录");
-  const [rows] = await pool.query("SELECT data_key, data_value FROM user_data WHERE username = ?", [ws.username]);
-  const data = {};
-  for (const r of rows) {
-    data[r.data_key] = r.data_value;
+
+  let wanted = null;
+  if (req.query.key !== undefined) {
+    wanted = [String(req.query.key)];
+  } else if (req.query.keys !== undefined) {
+    wanted = String(req.query.keys).split(",").map(s => s.trim()).filter(Boolean);
   }
+  if (wanted) {
+    for (const k of wanted) {
+      if (!isValidKey(k)) return fail(res, 400, "查询键名非法");
+    }
+    if (wanted.length > DATA_MAX_KEYS) return fail(res, 400, "查询键数过多");
+  }
+
+  let rows;
+  if (wanted && wanted.length > 0) {
+    const placeholders = wanted.map(() => "?").join(",");
+    [rows] = await pool.query(
+      `SELECT data_key, data_value FROM user_data WHERE username = ? AND data_key IN (${placeholders})`,
+      [ws.username, ...wanted]
+    );
+  } else if (wanted && wanted.length === 0) {
+    rows = [];
+  } else {
+    [rows] = await pool.query("SELECT data_key, data_value FROM user_data WHERE username = ?", [ws.username]);
+  }
+
+  const data = {};
+  for (const r of rows) data[r.data_key] = r.data_value;
+
+  // 全量键数（按需查询时也有意义，前端可判断是否需要拉全量）
+  let totalKeys = rows.length;
+  if (wanted) {
+    const [c] = await pool.query("SELECT COUNT(*) AS c FROM user_data WHERE username = ?", [ws.username]);
+    totalKeys = Number(c[0]?.c || 0);
+  }
+
   res.set("Cache-Control", "no-store, no-cache, must-revalidate, private");
-  ok(res, { data });
+  ok(res, {
+    data,
+    totalKeys,
+    truncated: wanted ? rows.length < totalKeys : false
+  });
 }));
 
 // 保存用户数据 —— **替换语义**
@@ -445,16 +524,16 @@ router.put("/data/all", asyncHandler(async (req, res) => {
     return fail(res, 403, "数据写入已关闭");
   }
 
-  const data = safeGet(req, "body.data", {});
+  // W2-02：PUT 是"全量替换"，缺 data 字段必须显式拒绝。
+  // 旧版用 safeGet(req, "body.data", {}) 把缺失当成空快照执行 replace，
+  // 一次前端 bug / API 误用 / 重试逻辑就会 200 静默清空该用户全部数据。
+  const body = req.body || {};
+  if (!Object.prototype.hasOwnProperty.call(body, "data")) {
+    return fail(res, 400, "缺少 data 字段：PUT 为全量替换，必须显式提交完整快照（清空请传 {\"data\":{}}）");
+  }
+  const data = body.data;
   if (typeof data !== "object" || data === null || Array.isArray(data)) {
     return fail(res, 400, "数据格式错误");
-  }
-
-  // 原型污染防御：这几种键名一律拒绝，绝不落库
-  for (const k of Object.keys(data)) {
-    if (k === "__proto__" || k === "constructor" || k === "prototype") {
-      return fail(res, 400, "数据含有非法键名");
-    }
   }
 
   const vErr = validateDataset(data);
@@ -538,12 +617,16 @@ router.patch("/data/all", asyncHandler(async (req, res) => {
   }
 
   const setData = setObj || {};
-  const removeKeys = (removeArr || []).map(x => String(x)).filter(Boolean);
+  // 去重，避免同一键在 remove 里出现多次导致计数虚高
+  const removeKeys = [...new Set((removeArr || []).map(x => String(x)).filter(Boolean))];
 
   for (const k of Object.keys(setData)) {
-    if (k === "__proto__" || k === "constructor" || k === "prototype") {
-      return fail(res, 400, "数据含有非法键名");
+    if (!isValidKey(k)) {
+      return fail(res, 400, `数据含有非法键名："${String(k).slice(0, 40)}"`);
     }
+  }
+  for (const k of removeKeys) {
+    if (!isValidKey(k)) return fail(res, 400, `删除键名非法："${String(k).slice(0, 40)}"`);
   }
   if (Object.keys(setData).length === 0 && removeKeys.length === 0) {
     return ok(res, { set: 0, removed: 0 }, "无变更");
@@ -555,7 +638,7 @@ router.patch("/data/all", asyncHandler(async (req, res) => {
     [ws.username]
   );
   const merged = {};
-  for (const r of rows) merged[r.data_key] = r.data_value;
+  for (const r of rows) merged[r.data_key] = parseStoredValue(r.data_value);
   for (const k of removeKeys) delete merged[k];
   for (const k of Object.keys(setData)) merged[k] = setData[k];
 
@@ -577,19 +660,23 @@ router.patch("/data/all", asyncHandler(async (req, res) => {
         [ws.username, k, JSON.stringify(setData[k]), now]
       );
     }
+    // W2-06：用 affectedRows 累加真实删除数，不再把"请求里列出的键数"
+    // 当成"实际删掉的行数"回报（删不存在的键以前也回 removed:1）。
+    let removed = 0;
     for (const k of removeKeys) {
-      await conn.execute(
+      const [r] = await conn.execute(
         "DELETE FROM user_data WHERE username = ? AND data_key = ?",
         [ws.username, k]
       );
+      removed += r.affectedRows || 0;
     }
 
     await conn.commit();
     logger.info(
       "auth-route",
-      `用户数据增量保存: ${ws.username}, set=${Object.keys(setData).length}, remove=${removeKeys.length}`
+      `用户数据增量保存: ${ws.username}, set=${Object.keys(setData).length}, remove=${removeKeys.length}, 实际删除=${removed}`
     );
-    ok(res, { set: Object.keys(setData).length, removed: removeKeys.length }, "保存成功");
+    ok(res, { set: Object.keys(setData).length, removed }, "保存成功");
   } catch (e) {
     await conn.rollback().catch(() => {});
     logger.error("auth-route", "增量保存用户数据失败", e);
@@ -609,6 +696,7 @@ router.delete("/data/all", asyncHandler(async (req, res) => {
   const key = req.query.key !== undefined ? String(req.query.key) : "";
 
   if (key) {
+    if (!isValidKey(key)) return fail(res, 400, "删除键名非法");
     const [r] = await pool.execute(
       "DELETE FROM user_data WHERE username = ? AND data_key = ?",
       [ws.username, key]
@@ -646,5 +734,7 @@ module.exports.__limits = {
   DATA_MAX_KEYS,
   DATA_MAX_TOTAL_BYTES,
   DATA_MAX_KEY_LEN,
+  DATA_KEY_RE,
+  isValidKey,
   validateDataset
 };

@@ -64,6 +64,25 @@ let appStore = {};
 let saveTimeout = null;
 let isSaving = false;
 
+// ============================================================================
+// W3-02 / N-06：API Key 内存容器
+// ---------------------------------------------------------------------------
+// 旧版把 Key 挂在 window.__aiKeyMem，任何同源脚本（含 XSS、含被污染的
+// 第三方脚本）都能直接读走，配合"客户端可改白名单"构成 Key 外带链的条件项。
+// 现在收进闭包，只暴露受控的 set/get/has/clear，且 UI 判据统一走
+// Config.aiReady()，不再依赖可全局读取的变量。
+// Key 依旧不落盘、不上传服务端（N-06 语义保持），刷新后需重填。
+// ============================================================================
+const AIKey = (function () {
+    let mem = '';
+    return {
+        set(v) { mem = String(v || ''); },
+        get() { return mem; },
+        has() { return !!mem; },
+        clear() { mem = ''; }
+    };
+})();
+
 // 所有需要持久化的 store 名称
 const STORES = ['todos','media','develop','consult','fitness','diet','game','notes','recycleBin','config','aiConvs','aiMsgs'];
 
@@ -112,10 +131,10 @@ function migrateConfig() {
         debouncePersistStore();
     }
     // N-06 数据清理：历史版本可能已经把 API Key 明文写进了磁盘/服务端。
-    // 加载时若发现残留，立刻搬到内存并标记为"需清洗"，让下一次持久化把它抹掉。
+    // 加载时若发现残留，立刻搬进受控内存容器并安排清洗，让下一次持久化抹掉。
     const ai = appStore.config.ai;
     if (ai && typeof ai === 'object' && ai.apiKey) {
-        window.__aiKeyMem = String(ai.apiKey);
+        AIKey.set(ai.apiKey);
         ai.apiKey = '';
         ai.__keySet = true;
         console.warn('[N-06] 检测到磁盘/服务端残留的明文 API Key，已迁移到内存并安排清洗');
@@ -132,9 +151,9 @@ async function persistStore() {
         // ---- N-06：持久化前剥离敏感字段 ----
         // appStore.config.ai.apiKey 明文落盘、并被 /api/data/all 持久化到服务端，
         // 是"API Key 外带 + 永久留存"的根源。这里在写入磁盘/服务端前把它清空，
-        // 只保留在内存（window.__aiKeyMem）。
+        // 只保留在受控内存容器（AIKey）里。
         if (appStore && appStore.config && appStore.config.ai && appStore.config.ai.apiKey) {
-            window.__aiKeyMem = appStore.config.ai.apiKey;
+            AIKey.set(appStore.config.ai.apiKey);
             appStore.config.ai.apiKey = '';
             appStore.config.ai.__keySet = true;
         }
@@ -254,13 +273,20 @@ const Config = {
     set(k, v) {
         if (!appStore) return;
         if (!appStore.config) appStore.config = {};
-        // N-06：apiKey 只进内存，不跟着 config 落盘 / 上传服务端
+        // N-06：apiKey 只进受控内存容器，不跟着 config 落盘 / 上传服务端
         if (k === 'ai' && v && typeof v === 'object' && v.apiKey) {
-            window.__aiKeyMem = String(v.apiKey);
+            AIKey.set(v.apiKey);
             v = { ...v, apiKey: '', __keySet: true };
         }
         appStore.config[k] = v;
         debouncePersistStore();
+    },
+    // W2-01：统一的「AI 是否已配置」判据。
+    // N-06 之后 config.ai.apiKey 恒为空，UI 不能再判 !aiCfg.apiKey；
+    // 真正的判据是受控内存容器里有没有本次会话的 Key。
+    aiReady() {
+        const ai = this.get('ai', this.defaults.ai);
+        return !!(ai.apiKey || AIKey.has());
     },
     sanitizeAi(providers) {
         try {
@@ -301,5 +327,6 @@ window.Store = {
     DBdelete,
     DBpurge,
     Config,
+    AIKey,
     getDefaultStore
 };

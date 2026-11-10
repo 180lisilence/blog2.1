@@ -169,8 +169,9 @@ window.SidebarToggle = SidebarToggle;
         if(loading) return;
         const text = input.value.trim();
         if(!text) return;
+        // W2-01：N-06 后 config.ai.apiKey 恒为空，统一走 Config.aiReady()
+        if(!Store.Config.aiReady()){UI.Toast.err('请先到 AI 设置里填 API Key');return;}
         const aiCfg = Store.Config.get('ai',Store.Config.defaults.ai);
-        if(!aiCfg.apiKey){UI.Toast.err('请先到 AI 设置里填 API Key');return;}
         input.value='';
         quickHistory.push({role:'user',content:text});
         renderQuickMsg({role:'user',content:text});
@@ -198,7 +199,7 @@ async function checkDeadlines() {
     if (typeof Notification === 'undefined') return;
     if (!Store.Config.get('notifyEnabled', Store.Config.defaults.notifyEnabled)) return;
     if (Notification.permission !== 'granted') return;
-   
+
     const now = Date.now();
     const all = [
         ...(await Store.DBgetAll('todos')).filter(t=>t.deadline && !t.done),
@@ -227,7 +228,21 @@ function showFatalError(title,detail){
         panel.style.cssText='position:fixed;z-index:99999;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.85);color:#fff;padding:24px;font-family:monospace;overflow:auto;white-space:pre-wrap;font-size:13px;';
         document.body.appendChild(panel);
     }
-    panel.innerHTML = '<h2 style="color:#ff6b6b;margin-bottom:12px;">❌ '+title+'</h2><div>'+String(detail).slice(0,3000)+'</div><p style="margin-top:16px;color:#aaa;">请截图发我</p>';
+    // W1-03 / W3-05：title / detail 都来自运行时错误，可能含任意字符。
+    // 旧版直接拼进 innerHTML，等于给同源脚本留了一个 HTML 注入 sink。
+    // 改为纯 DOM 构建 + textContent，彻底断开「字符串 → HTML」这条路。
+    panel.textContent = '';
+    const h = document.createElement('h2');
+    h.style.cssText = 'color:#ff6b6b;margin-bottom:12px;';
+    h.textContent = '❌ ' + title;
+    const box = document.createElement('div');
+    box.textContent = String(detail).slice(0, 3000);
+    const tip = document.createElement('p');
+    tip.style.cssText = 'margin-top:16px;color:#aaa;';
+    tip.textContent = '请截图发我';
+    panel.appendChild(h);
+    panel.appendChild(box);
+    panel.appendChild(tip);
 }
 window.addEventListener('error',(e)=>{ showFatalError('全局错误',e.error?.stack||e.message); });
 window.addEventListener('unhandledrejection',(e)=>{ showFatalError('未处理 Promise',e.reason?.stack||String(e.reason)); });

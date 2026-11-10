@@ -167,7 +167,10 @@
 
   </div>
 
-  <script src="https://cdn.jsdelivr.net/npm/echarts@5.5.0/dist/echarts.min.js"></script>
+  <!-- N-05 / W1-04：本地化并加 SRI，CSP script-src 不再需要放行外部域 -->
+  <script src="assets/lib/echarts.min.js"
+          integrity="sha384-o5uz97et3bErHvpKfD4Jz4n0JfhJDWABFuF4NP+iEEDxE1VwMWJ19QGR0lqFZnr6"
+          crossorigin="anonymous"></script>
   <script>
   (function () {
     if (typeof echarts === "undefined") return;

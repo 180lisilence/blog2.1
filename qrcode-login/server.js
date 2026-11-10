@@ -23,6 +23,7 @@ const authRoutes = require("./modules/auth/routes");
 const authModel = require("./modules/auth/model");
 const authSession = require("./modules/auth/session");
 const qrTicket = require("./modules/auth/qrTicket");
+const aiRoutes = require("./modules/ai/routes");
 const chatrecordRoutes = require("./modules/chatrecord/routes");
 const projectsRoutes = require("./modules/projects/routes");
 const linksRoutes = require("./modules/links/routes");
@@ -87,8 +88,28 @@ app.get("/health/live", (req, res) => {
 // CSRF token 获取接口
 app.get("/api/csrf-token", getCsrfToken);
 
-// ========== API 路由（CSRF 验证） ==========
-app.use("/api", verifyCsrfToken, authRoutes);
+// W2-07：鉴权顺序修正。
+// 旧版 CSRF 校验挂在身份校验之前，匿名写操作统一返回 403「CSRF 验证失败」，
+// 而不是 401「请先登录」。这既泄露了状态码差异，也让「拿到有效 CSRF token
+// 的匿名请求」能推进到下一层。现在对非公开的写操作，先确认登录态再谈 CSRF。
+const PUBLIC_WRITE_PATHS = new Set([
+  "/register", "/login", "/direct-login", "/logout",
+  "/qrcode/generate", "/qrcode/check", "/qrcode/confirm",
+  "/qrcode/redeem", "/qrcode/scanned"
+]);
+function loginFirstGuard(req, res, next) {
+  if (!["POST", "PUT", "PATCH", "DELETE"].includes(req.method)) return next();
+  if (PUBLIC_WRITE_PATHS.has(req.path)) return next();
+  const token = getTokenFromReq(req);
+  const ws = token ? authSession.getWebSession(token) : null;
+  if (!ws) return res.status(401).json({ ok: false, msg: "请先登录" });
+  next();
+}
+
+// ========== API 路由（鉴权前置 + CSRF 验证） ==========
+// AI 代理单独挂在 /api 之前，避免被 authRoutes 的通配挂载吞掉。
+app.use("/api/ai", loginFirstGuard, verifyCsrfToken, aiRoutes);
+app.use("/api", loginFirstGuard, verifyCsrfToken, authRoutes);
 app.use("/api/chatrecord", verifyCsrfToken, chatrecordRoutes);
 app.use("/api/projects", verifyCsrfToken, projectsRoutes);
 app.use("/api/links", verifyCsrfToken, linksRoutes);
@@ -128,8 +149,7 @@ app.get("/settings.html", authGate, (req, res) => {
 app.use("/blog", createBlogStatic({
   root: config.blogContent,
   getToken: getTokenFromReq,
-  getSession: (t) => authSession.getWebSession(t),
-  loginPagePath: path.join(config.blogRoot, "index.html")
+  getSession: (t) => authSession.getWebSession(t)
 }));
 
 // 构建方法示例（需登录）

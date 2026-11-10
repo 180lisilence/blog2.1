@@ -60,13 +60,29 @@ Router.registerRoute('setting', async (root) => {
         const aiProviderEl = U.el('select', { class: 'form-input', style: 'max-width:200px' },
             Object.entries(AIMod.AI_PROVIDERS).map(([k, p]) => U.el('option', { value: k, text: p.label, selected: aiCfg.provider === k }))
         );
-        const aiApiKeyEl = U.el('input', { class: 'form-input', placeholder: 'sk-xxxxxxxxxxx', type: 'password', value: aiCfg.apiKey || '' });
-        const aiApiUrlEl = U.el('input', { class: 'form-input', placeholder: '留空使用默认地址', value: aiCfg.apiUrl || '' });
+        // W3-02 / N-06：输入框永不回填内存 Key，避免明文重新出现在 DOM 里。
+        // 留空 = 保持已配置的 Key；填写 = 覆盖（只进受控内存容器，不落盘）。
+        const aiApiKeyEl = U.el('input', {
+            class: 'form-input',
+            placeholder: '留空保持已配置的 Key；填写则覆盖（仅存内存，不落盘）',
+            type: 'password',
+            value: ''
+        });
         const aiModelInput = U.el('input', { class: 'form-input', style: 'max-width:220px', list: 'ai-model-list', placeholder: '选一个或手动填' });
         const aiModelList = U.el('datalist', { id: 'ai-model-list' });
         document.body.appendChild(aiModelList);
         const aiSystemPromptEl = U.el('textarea', { class: 'form-input', rows: 2, placeholder: 'System Prompt（可选）', text: aiCfg.systemPrompt || '' });
         aiModelInput.value = aiCfg.model || '';
+
+        function providerLabel(key) {
+            return (AIMod.AI_PROVIDERS[key] || AIMod.AI_PROVIDERS.doubao).label;
+        }
+        // W2-01：状态显示不再依赖恒为空的 aiCfg.apiKey，也不回显 Key 片段
+        function aiKeyStatusText(key) {
+            return providerLabel(key) + ' Key：'
+                + (Store.AIKey.has() ? '✅ 本次会话已配置（仅存内存，刷新后需重填）' : '❌ 未配置');
+        }
+        const aiKeyStatusEl = U.el('div', { class: 'setting-label', text: aiKeyStatusText(aiCfg.provider) });
 
         function refreshModelOptions() {
             const providerKey = aiProviderEl.value;
@@ -85,14 +101,22 @@ Router.registerRoute('setting', async (root) => {
         aiProviderEl.addEventListener('change', refreshModelOptions);
 
         function saveAiCfg() {
+            const typed = aiApiKeyEl.value.trim();
+            if (typed) {
+                // Key 只进受控内存容器，绝不回写 DOM 或持久化配置
+                Store.AIKey.set(typed);
+                aiApiKeyEl.value = '';
+            }
             cfg.ai = {
                 provider: aiProviderEl.value,
-                apiKey: aiApiKeyEl.value.trim(),
-                apiUrl: aiApiUrlEl.value.trim(),
+                apiKey: '',
+                apiUrl: '',
                 model: aiModelInput.value.trim(),
-                systemPrompt: aiSystemPromptEl.value.trim()
+                systemPrompt: aiSystemPromptEl.value.trim(),
+                __keySet: Store.AIKey.has()
             };
             Store.Config.set('ai', cfg.ai);
+            aiKeyStatusEl.textContent = aiKeyStatusText(aiProviderEl.value);
             UI.Toast.ok('AI 配置已保存');
         }
 
@@ -124,16 +148,17 @@ Router.registerRoute('setting', async (root) => {
                 U.el('div', { class: 'setting-label', text: '模型（或 Endpoint ID）' }),
                 aiModelInput
             ]),
+            // W3-01 / W3-02：端点不再由前端决定，改走服务端代理；原「自定义 API 地址」输入框移除
             U.el('div', { class: 'setting-row' }, [
-                U.el('div', { class: 'setting-label', text: '自定义 API 地址' }),
-                aiApiUrlEl
+                U.el('div', { class: 'setting-label', text: '请求通道' }),
+                U.el('div', { class: 'setting-label', style: 'color:#8a8f98;font-size:12px;line-height:1.6;', text: "经本站服务端代理 /api/ai/chat 转发，目标端点由服务端白名单固定；浏览器不直连第三方，CSP 保持 connect-src 'self'" })
             ]),
             U.el('div', { class: 'setting-row', style: 'flex-direction:column;align-items:stretch;gap:8px;' }, [
                 U.el('div', { class: 'setting-label', text: 'System Prompt（人设）' }),
                 aiSystemPromptEl
             ]),
             U.el('div', { class: 'setting-row' }, [
-                U.el('div', { class: 'setting-label', text: AIMod.AI_PROVIDERS[aiCfg.provider].label + ' Key：' + (aiCfg.apiKey ? '✅ 已填 (' + aiCfg.apiKey.slice(0,6) + '...' + aiCfg.apiKey.slice(-4) + ')' : '❌ 未填') }),
+                aiKeyStatusEl,
                 U.el('div', { style: 'display:flex;gap:8px;' }, [
                     U.el('button', { class: 'btn btn-ghost', text: '💾 保存', onclick: saveAiCfg }),
                     U.el('button', { class: 'btn btn-primary', text: '🧪 测试连接', onclick: testAi })

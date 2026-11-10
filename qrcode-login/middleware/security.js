@@ -45,13 +45,18 @@ function forceHttps(req, res, next) {
 //
 //   CSP_MODE=legacy
 //     回退到旧的宽松策略（仅在紧急排障时使用）
-const CDN_HOSTS_DEFAULT = [
-  "https://cdn.tailwindcss.com",
-  "https://cdn.jsdelivr.net",
-  "https://unpkg.com",
-  "https://miaoda.feishu.cn",
-  "https://cdnjs.cloudflare.com"
-];
+// N-05 / W1-04：1.0 复测指出「页面已不用外部脚本，却仍放行 5 个 CDN 域」。
+// 本轮把最后一个真实外链也消掉了：
+//   - restaurant 的 tailwind / font-awesome 上一轮已本地化
+//   - zonglan/stats.html 的 echarts 已下载到 assets/lib/ 并加 SRI
+// 因此默认 script-src 不再放行**任何**外部域。
+// 若将来临时需要外部脚本，用 CSP_SCRIPT_HOSTS 显式列出（应急，不默认开）。
+const CDN_HOSTS_DEFAULT = [];
+
+// zonglan 的字体 CSS 来自 miaoda.feishu.cn（加载的是 CSS，不是脚本）。
+// 旧 CSP 把它错放在 script-src 里，而 style-src 只有 'self' —— 字体其实
+// 一直被拦着没生效。这里放到 style-src 精确白名单，功能恢复且不放宽脚本。
+const STYLE_HOSTS_DEFAULT = ["https://miaoda.feishu.cn"];
 
 function buildCsp() {
   const mode = String(process.env.CSP_MODE || "strict").toLowerCase();
@@ -66,13 +71,14 @@ function buildCsp() {
     .map(s => s.trim())
     .filter(Boolean);
   const scriptHosts = Array.from(new Set([...CDN_HOSTS_DEFAULT, ...extraHosts])).join(" ");
+  const styleHosts = Array.from(new Set(STYLE_HOSTS_DEFAULT)).join(" ");
 
   return [
     "default-src 'self'",
-    // 脚本：同源 + 内联（暂留）+ 显式 CDN 白名单，不含 unsafe-eval
-    `script-src 'self' 'unsafe-inline' ${scriptHosts}`,
-    // 样式：同源 + 内联
-    "style-src 'self' 'unsafe-inline'",
+    // 脚本：同源 + 内联（暂留），默认零外部域
+    `script-src 'self' 'unsafe-inline'${scriptHosts ? " " + scriptHosts : ""}`,
+    // 样式：同源 + 内联 + 字体 CSS 精确域名
+    `style-src 'self' 'unsafe-inline'${styleHosts ? " " + styleHosts : ""}`,
     // 图片/字体/媒体：允许 https 与 data:（这些不执行代码）
     "img-src 'self' data: blob: https:",
     "font-src 'self' data: https:",

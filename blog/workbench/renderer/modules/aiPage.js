@@ -50,12 +50,12 @@ Router.registerRoute('ai', async (root) => {
 
     function renderEmpty() {
         chatArea.innerHTML = '';
-        const aiCfg = Store.Config.get('ai', Store.Config.defaults.ai);
-        const needSetup = !aiCfg.apiKey;
+        // W2-01：N-06 后 config.ai.apiKey 恒为空，统一走 Config.aiReady()
+        const needSetup = !Store.Config.aiReady();
         chatArea.appendChild(U.el('div', { class: 'ai-empty', style: 'height:100%;' }, [
             U.el('div', { class: 'ai-empty-icon', text: '🤖' }),
             U.el('div', { class: 'ai-empty-text', text: needSetup ? '请先到「数据与设置」配置 AI API' : '点击左侧「新对话」开始聊天' }),
-            U.el('div', { class: 'ai-empty-hint', text: '支持豆包 / 通义千问 / 文心一言 / 自定义代理' })
+            U.el('div', { class: 'ai-empty-hint', text: '支持豆包 / 通义千问 / DeepSeek / OpenAI / Kimi / 智谱（经本站服务端代理转发）' })
         ]));
     }
 
@@ -109,7 +109,8 @@ Router.registerRoute('ai', async (root) => {
             const text = ta.value.trim();
             if (!text) return;
             ta.value = '';
-            if (!aiCfg.apiKey) { UI.Toast.err('请先到设置里填写 API Key'); return; }
+            // W2-01：统一判据，不再判恒为空的 aiCfg.apiKey
+            if (!Store.Config.aiReady()) { UI.Toast.err('请先到设置里填写 API Key'); return; }
 
             await AIMod.AI_addMsg(activeConvId, 'user', text);
             body.appendChild(AIMod.renderChatMsg({ role: 'user', content: text }));

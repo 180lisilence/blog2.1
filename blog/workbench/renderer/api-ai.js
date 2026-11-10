@@ -3,8 +3,25 @@
 const Store = window.Store;
 const UI = window.UI;
 
+// ============================================================================
+// W2-01 / W3-01 / W3-02：AI 请求改走服务端代理
+// ---------------------------------------------------------------------------
+// 旧版由浏览器直接 fetch 第三方 AI 端点，于是三件事同时成立：
+//   1. CSP connect-src 'self' 把第三方请求全拦掉，AI 功能事实上不可用（W3-01）；
+//   2. ALLOWED_HOSTS 是挂 window 的运行时 Set，同源脚本可 .add() 改掉，
+//      __aiKeyMem 全局可读 —— 客户端白名单根本不是安全边界（W3-02）；
+//   3. N-06 把 Key 从 config 剥离到内存后，UI 仍判 !apiKey，全面拒绝发送（W2-01）。
+//
+// 现在统一走 POST /api/ai/chat（同源）：
+//   - 目标域名由 qrcode-login/modules/ai/routes.js 的硬编码表决定，
+//     前端传什么 apiUrl 都不参与转发；CSP 一个字都不用放宽；
+//   - Key 只随本次请求提交到本站，不落库、不落日志、不写 Cookie；
+//   - 上游原始错误正文由服务端脱敏后才回传，不会变成 boot.js 的注入源；
+//   - ALLOWED_HOSTS 不再对外暴露可变引用，Key 收进 Store.AIKey 闭包。
+// ============================================================================
 
-// AI 服务商配置表
+// AI 服务商配置表（label / model 用于 UI；defaultUrl 仅用于展示与本地预校验，
+// 真正的转发目标由服务端决定）
 const AI_PROVIDERS = {
     doubao: {
         label: '豆包 (Doubao)',
@@ -68,141 +85,177 @@ const AI_PROVIDERS = {
 };
 
 // ============================================================================
-// N-06 修复：API Key 外带通道 + 明文持久化
+// W3-02：白名单不再是安全边界
+// ---------------------------------------------------------------------------
+// 旧版 buildAllowedHosts() 生成一个可变 Set 并挂到 window.AIMod，同源脚本
+// 可以 AIMod.ALLOWED_HOSTS.add('attacker.example') 直接污染。
+// 现在目标 URL 由服务端硬编码，前端这份表只用于「本地展示/预校验」，
+// 且冻结、不再对外暴露可变引用。
 // ============================================================================
-//
-// 原问题：
-//   1. apiUrl 完全由用户输入、无任何校验，fetch 直接把
-//      `Authorization: Bearer <apiKey>` 发出去 —— 任何能改这个配置的人
-//      （或一次 XSS、或拿到账号的第三方）都能把用户的 Key 转发到任意地址。
-//   2. apiKey 明文存进 appStore.config.ai，而 appStore 整体 PUT 到
-//      /api/data/all，于是 **服务端持久化了用户的 API Key**；
-//      叠加 N-03（旧版无法删除）Key 换掉后旧的还留在库里。
-//
-// 修复策略：
-//   A. 端点白名单：只允许已知 AI 服务商的官方域名 + https。
-//      自定义端点必须显式加到下面的 EXTRA_ALLOWED_HOSTS 里。
-//   B. Key 不落盘：持久化前把 apiKey 置空（见 stripSecretForPersist），
-//      只保留在内存里。刷新页面后需要重填 —— 这是安全性的必要代价。
-//   C. 值形状校验：Key 必须匹配可打印 ASCII 且长度合理，防止被塞进
-//      换行/控制字符做 header 注入。
-// ============================================================================
-
-// 允许的自定义端点（如自建反代）。留空 = 只允许官方端点。
-const EXTRA_ALLOWED_HOSTS = [];
-
-// 从 AI_PROVIDERS 自动收集所有官方端点域名
-function buildAllowedHosts() {
-  const hosts = new Set(EXTRA_ALLOWED_HOSTS.map(h => String(h).toLowerCase()));
-  for (const key of Object.keys(AI_PROVIDERS)) {
-    try {
-      const u = new URL(AI_PROVIDERS[key].defaultUrl);
-      hosts.add(u.hostname.toLowerCase());
-    } catch (e) { /* 忽略格式异常 */ }
-  }
-  return hosts;
-}
-const ALLOWED_HOSTS = buildAllowedHosts();
+const OFFICIAL_HOSTS = Object.freeze(
+    Object.keys(AI_PROVIDERS).map(function (k) {
+        try { return new URL(AI_PROVIDERS[k].defaultUrl).hostname.toLowerCase(); }
+        catch (e) { return ''; }
+    }).filter(Boolean)
+);
 
 /**
- * 校验并规范化 API 端点
- * @param {string} raw 用户输入的 apiUrl
- * @returns {string} 校验通过的 URL
- * @throws {Error} 不在白名单 / 非 https / 格式非法
+ * 校验并规范化 API 地址（仅本地展示/预校验，不参与实际网络请求）。
+ * 实际转发目标由服务端 /api/ai/chat 决定。
+ * @param {string} raw
+ * @returns {string}
+ * @throws {Error}
  */
 function resolveApiUrl(raw) {
-  const s = String(raw || '').trim();
-  if (!s) throw new Error('API 地址为空');
+    const s = String(raw || '').trim();
+    if (!s) throw new Error('API 地址为空');
 
-  let u;
-  try {
-    u = new URL(s);
-  } catch (e) {
-    throw new Error('API 地址格式不合法');
-  }
+    let u;
+    try {
+        u = new URL(s);
+    } catch (e) {
+        throw new Error('API 地址格式不合法');
+    }
 
-  // 只允许 https：http 会让 Bearer token 明文过网
-  if (u.protocol !== 'https:') {
-    throw new Error('API 地址必须使用 https://');
-  }
+    if (u.protocol !== 'https:') {
+        throw new Error('API 地址必须使用 https://');
+    }
 
-  const host = u.hostname.toLowerCase();
+    // W3-03：只允许默认 443 端口。非标端口常被用来指向内网服务或自架中转，
+    // 服务端代理根本不看 apiUrl，这里一并封死，避免留下可误解的入口。
+    if (u.port && u.port !== '443') {
+        throw new Error('API 地址不允许使用非标准端口：' + u.port);
+    }
 
-  // 拒绝 IP 直连与特殊主机名，避免被指向内网/回环
-  if (/^\d+\.\d+\.\d+\.\d+$/.test(host) || host === 'localhost' || host.endsWith('.local')) {
-    throw new Error(`API 地址不允许指向 IP 或本地主机：${host}`);
-  }
+    const host = u.hostname.toLowerCase();
+    if (/^\d+\.\d+\.\d+\.\d+$/.test(host) || host === 'localhost' || host.endsWith('.local')) {
+        throw new Error(`API 地址不允许指向 IP 或本地主机：${host}`);
+    }
 
-  if (!ALLOWED_HOSTS.has(host)) {
-    throw new Error(
-      `API 地址不在允许列表：${host}\n`
-      + `允许的域名：${Array.from(ALLOWED_HOSTS).join(', ')}`
-    );
-  }
+    if (OFFICIAL_HOSTS.indexOf(host) === -1) {
+        throw new Error(
+            `API 地址不在允许列表：${host}\n`
+            + `允许的域名：${OFFICIAL_HOSTS.join(', ')}`
+        );
+    }
 
-  // 不允许带 URL 内嵌凭据（https://user:pass@host/ 会把凭据写进日志）
-  if (u.username || u.password) {
-    throw new Error('API 地址不允许包含用户名/密码');
-  }
+    if (u.username || u.password) {
+        throw new Error('API 地址不允许包含用户名/密码');
+    }
 
-  return u.toString();
+    return u.toString();
 }
 
 /**
- * 校验 API Key 形状
+ * 校验 API Key 形状（与服务端 ai/routes.js validateKey 对齐）
+ * W3-04：旧版 /^[\x21-\x7E]+$/ 放行 < > " ' 等 HTML 元字符，
+ * 曾可被拼进全局错误面板的 innerHTML。这里收紧到白名单字符集。
  * @param {string} key
- * @returns {string} 去掉首尾空白后的 key
+ * @returns {string}
  * @throws {Error}
  */
 function validateApiKey(key) {
-  const k = String(key || '').trim();
-  if (!k) throw new Error('未配置 API Key');
-  if (k.length > 512) throw new Error('API Key 过长');
-  // 只允许可见 ASCII：任何控制字符（\r \n \0）都可能导致 header 注入
-  if (!/^[\x21-\x7E]+$/.test(k)) {
-    throw new Error('API Key 含非法字符（只允许可见 ASCII 字符）');
-  }
-  return k;
+    const k = String(key || '').trim();
+    if (!k) throw new Error('未配置 API Key');
+    if (k.length > 512) throw new Error('API Key 过长');
+    if (!/^[A-Za-z0-9._\-]{1,512}$/.test(k)) {
+        throw new Error('API Key 含非法字符（只允许字母、数字、. _ -）');
+    }
+    return k;
+}
+
+// ============================================================================
+// 同源 POST 封装：自动带 CSRF token，拿不到就补，403「CSRF」时补一次再重试
+// （与 blog-storage.js / comments.js 相同的成熟模式）
+// ============================================================================
+function readCsrfCookie() {
+    var m = document.cookie.match(/(?:^|; )csrf_token=([^;]*)/);
+    return m ? decodeURIComponent(m[1]) : '';
+}
+
+var csrfCache = '';
+function getCsrf() {
+    var v = readCsrfCookie();
+    if (v && v !== 'null' && v !== 'undefined') { csrfCache = v; return v; }
+    return csrfCache;
+}
+
+var csrfPending = null;
+function refreshCsrf(force) {
+    if (csrfPending) return csrfPending;
+    var url = '/api/csrf-token' + (force ? '?fresh=1&_t=' + Date.now() : '');
+    csrfPending = fetch(url, { credentials: 'same-origin', cache: 'no-store' })
+        .then(function (r) { return r.json(); })
+        .then(function (d) {
+            if (d && d.ok && d.csrfToken) { csrfCache = d.csrfToken; return d.csrfToken; }
+            return '';
+        })
+        .catch(function () { return ''; })
+        .then(function (t) { csrfPending = null; return t; });
+    return csrfPending;
+}
+
+function parseJson(r) {
+    return r.json().catch(function () {
+        return { ok: false, msg: '服务器返回异常（HTTP ' + r.status + '）' };
+    });
+}
+
+function aiFetch(path, body) {
+    function send(token) {
+        var h = { 'Content-Type': 'application/json' };
+        if (token) h['X-CSRF-Token'] = token;
+        return fetch(path, {
+            method: 'POST',
+            headers: h,
+            credentials: 'same-origin',
+            body: JSON.stringify(body)
+        });
+    }
+
+    var token = getCsrf();
+    return (token ? Promise.resolve(token) : refreshCsrf())
+        .then(send)
+        .then(function (r) {
+            if (r.status !== 403) return r;
+            return parseJson(r.clone()).then(function (d) {
+                if (!d || String(d.msg || '').indexOf('CSRF') < 0) return r;
+                return refreshCsrf(true).then(function (fresh) {
+                    return fresh ? send(fresh) : r;
+                });
+            });
+        })
+        .then(parseJson)
+        .then(function (d) {
+            if (!d || !d.ok) throw new Error((d && d.msg) || 'AI 请求失败');
+            return d;
+        });
 }
 
 const AI = {
     async chat(messages, opts = {}) {
         const aiCfg = Store.Config.get('ai', Store.Config.defaults.ai);
 
-        // B: Key 优先从内存取（sessionStorage 只在同一标签页存活，不落磁盘）
+        // Key 只从受控内存容器取（N-06 / W3-02），不再读取全局内存变量
         const apiKey = validateApiKey(
-          (opts.apiKey !== undefined ? opts.apiKey : null)
-          || aiCfg.apiKey
-          || (window.__aiKeyMem || '')
+            (opts.apiKey !== undefined ? opts.apiKey : null)
+            || aiCfg.apiKey
+            || Store.AIKey.get()
         );
 
-        const provider = AI_PROVIDERS[aiCfg.provider] || AI_PROVIDERS.doubao;
-        // A: 端点必须过白名单
-        const url = resolveApiUrl(aiCfg.apiUrl || provider.defaultUrl);
-        const model = aiCfg.model || provider.defaultModel;
+        const providerKey = AI_PROVIDERS[aiCfg.provider] ? aiCfg.provider : 'doubao';
+        const provider = AI_PROVIDERS[providerKey];
+        const model = String(aiCfg.model || provider.defaultModel).trim().slice(0, 128);
 
-        const body = {
-            model,
+        // 只连本站同源；provider 名决定服务端转发到哪个官方端点
+        const data = await aiFetch('/api/ai/chat', {
+            provider: providerKey,
+            apiKey,
             messages,
-            temperature: opts.temperature ?? 0.7,
-            stream: false
-        };
-        const resp = await fetch(url, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': 'Bearer ' + apiKey
-            },
-            body: JSON.stringify(body)
+            model,
+            temperature: opts.temperature ?? 0.7
         });
-        if (!resp.ok) {
-            const text = await resp.text().catch(() => '');
-            throw new Error('API 错误 ' + resp.status + ': ' + (text || resp.statusText));
-        }
-        const data = await resp.json();
-        const content = data?.choices?.[0]?.message?.content;
-        if (!content) throw new Error('API 返回格式异常：' + JSON.stringify(data).slice(0, 200));
-        return String(content);
+        return String(data.content);
     },
     buildMessages(systemPrompt, history, userText) {
         const msgs = [];
@@ -213,30 +266,28 @@ const AI = {
     },
     // 供设置页使用
     resolveApiUrl,
-    validateApiKey,
-    ALLOWED_HOSTS
+    validateApiKey
 };
 
 /**
  * 持久化前剥离敏感字段（N-06 B）
- *
  * store.js 每次 debouncePersistStore 前都应该调它，
  * 或者由 Config.set 在写入 ai 配置时先行剥离。
  */
 function stripSecretForPersist(appStore) {
-  try {
-    const ai = appStore?.config?.ai;
-    if (!ai) return appStore;
-    if (ai.apiKey) {
-      // 只保留内存副本
-      window.__aiKeyMem = ai.apiKey;
-      ai.apiKey = '';
-      ai.__keySet = true;   // 给 UI 用：告诉用户"本次会话已填过"，值在内存里
+    try {
+        const ai = appStore?.config?.ai;
+        if (!ai) return appStore;
+        if (ai.apiKey) {
+            // 只保留在受控内存容器里，不挂 window
+            Store.AIKey.set(ai.apiKey);
+            ai.apiKey = '';
+            ai.__keySet = true;
+        }
+        return appStore;
+    } catch (e) {
+        return appStore;
     }
-    return appStore;
-  } catch (e) {
-    return appStore;
-  }
 }
 
 async function AI_newConv(title = '新对话') {
@@ -294,6 +345,7 @@ function renderTyping() {
     ]);
 }
 
+// 注意：不再对外暴露 ALLOWED_HOSTS（W3-02 的可变 Set 入口已彻底移除）
 window.AIMod = {
     AI_PROVIDERS,
     AI,
@@ -306,7 +358,5 @@ window.AIMod = {
     renderTyping,
     resolveApiUrl,
     validateApiKey,
-    stripSecretForPersist,
-    ALLOWED_HOSTS
+    stripSecretForPersist
 };
-window.AIMod = AIMod;
