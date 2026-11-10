@@ -19,6 +19,75 @@ function generateToken() {
   return crypto.randomBytes(TOKEN_BYTES).toString("hex");
 }
 
+// ========== token 签章 ==========
+//
+// 单纯 randomBytes 出来的 token 有一个弱点：服务端没记住它，就无法分辨
+// "这串字符是我发的"还是"攻击者自己编的"。所以加一道 HMAC 签章。
+//
+// 签名密钥来源（按优先级）：
+//   1. CSRF_SECRET 环境变量（推荐，多实例部署必须显式设置且保持一致）
+//   2. 从 SESSION_SECRET / COOKIE_SECRET 派生
+//   3. 兜底：进程启动时随机生成（注意：多进程/重启后旧 token 会失效，
+//      单进程部署没问题，多实例部署必须配 CSRF_SECRET）
+const SIG_LEN = 16; // 签章截断到 16 字节（32 hex），够用且不撑大 cookie
+
+let cachedSecret = null;
+function getSigningKey() {
+  if (cachedSecret) return cachedSecret;
+
+  const explicit = process.env.CSRF_SECRET || process.env.SESSION_SECRET || process.env.COOKIE_SECRET;
+  if (explicit && explicit.length >= 16) {
+    cachedSecret = Buffer.from(String(explicit), "utf8");
+    return cachedSecret;
+  }
+
+  // 兜底：进程级随机密钥
+  cachedSecret = crypto.randomBytes(32);
+  logger.warn(
+    "csrf",
+    "未配置 CSRF_SECRET/SESSION_SECRET，使用进程随机密钥。"
+    + "多实例部署或重启后，已发出的 token 会全部失效（前端会自动补 token 重试）。"
+  );
+  return cachedSecret;
+}
+
+function signToken(body) {
+  return crypto
+    .createHmac("sha256", getSigningKey())
+    .update(String(body))
+    .digest("hex")
+    .slice(0, SIG_LEN * 2);
+}
+
+// 签发一个带签名的 token：<32字节随机hex>.<32位签章hex>
+function issueToken() {
+  const body = generateToken();
+  return body + "." + signToken(body);
+}
+
+// 校验签名是否有效
+function isSignedToken(token) {
+  if (typeof token !== "string") return false;
+  const dot = token.lastIndexOf(".");
+  if (dot <= 0) return false;
+
+  const body = token.slice(0, dot);
+  const sig = token.slice(dot + 1);
+  // 随机部分必须是 64 位 hex，签章必须是 32 位 hex，先做格式校验省一次 HMAC
+  if (!/^[0-9a-f]{64}$/i.test(body)) return false;
+  if (!new RegExp("^[0-9a-f]{" + SIG_LEN * 2 + "}$", "i").test(sig)) return false;
+  if (sig.length === 0) return false;
+
+  const expect = signToken(body);
+  const a = Buffer.from(sig, "utf8");
+  const b = Buffer.from(expect, "utf8");
+  if (a.length !== b.length) return false;
+  return crypto.timingSafeEqual(a, b);
+}
+
+// 旧 token（无签名）不再兼容，见 verifyCsrfToken 的说明。
+
+
 // 判断是否应给 Cookie 加 Secure 标记
 //
 // 注意：这里必须独立判断，不能复用 FORCE_HTTPS。
@@ -65,19 +134,31 @@ function isSecureRequest(req) {
   return decided;
 }
 
-// 确保请求有 CSRF token cookie（没有则生成）
+const CSRF_COOKIE_MAX_AGE = 24 * 60 * 60 * 1000; // 24 小时
+
+// 写 csrf_token cookie 的统一出口，保证各处的属性一致
+function writeCsrfCookie(req, res, token) {
+  res.cookie(CSRF_COOKIE_NAME, token, {
+    httpOnly: false, // 前端需要读取
+    secure: isSecureRequest(req),
+    sameSite: "lax",
+    path: "/",
+    maxAge: CSRF_COOKIE_MAX_AGE
+  });
+}
+
+// 确保请求有 CSRF token cookie（没有则签发一个带签名的）
 function ensureCsrfCookie(req, res, next) {
   let token = req.cookies?.[CSRF_COOKIE_NAME];
-  if (!token) {
-    token = generateToken();
-    res.cookie(CSRF_COOKIE_NAME, token, {
-      httpOnly: false, // 前端需要读取
-      secure: isSecureRequest(req),
-      sameSite: "lax",
-      path: "/",
-      maxAge: 24 * 60 * 60 * 1000 // 24 小时
-    });
+
+  // 没有 token，或者是历史上遗留下来的旧格式 token（无签名）→ 立刻换成签名版。
+  // 旧 token 在这里主动升级，用户下一次请求就已经是新 token 了，
+  // 不用等前端走 403 → 补 token → 重试那一轮。
+  if (!token || !isSignedToken(token)) {
+    token = issueToken();
+    writeCsrfCookie(req, res, token);
   }
+
   req.csrfToken = token;
   next();
 }
@@ -96,11 +177,28 @@ function verifyCsrfToken(req, res, next) {
     return res.status(403).json({ ok: false, msg: "CSRF 验证失败，请刷新页面重试" });
   }
 
+  // 1) 双向一致性（double-submit 的基础）
   // 常量时间比较，防止时序攻击
   const cookieBuf = Buffer.from(cookieToken);
   const headerBuf = Buffer.from(headerToken);
   if (cookieBuf.length !== headerBuf.length || !crypto.timingSafeEqual(cookieBuf, headerBuf)) {
     logger.warn("csrf", `CSRF token 不匹配: ${req.method} ${req.url}`);
+    return res.status(403).json({ ok: false, msg: "CSRF 验证失败，请刷新页面重试" });
+  }
+
+  // 2) 签发有效性（加固）
+  //
+  // 只比 cookie 与 header 是否相同是不够的：攻击者只要能往受害者浏览器里
+  // 写入一个自己知道的 csrf_token（子域 cookie 注入、同站 XSS 前置等），
+  // 就能构造"两边都是同一个任意字符串"的请求，一致性校验照样通过。
+  // 所以 token 必须能证明是服务端签发的 —— 这里用 HMAC 签章校验。
+  //
+  // 不设宽限期：旧格式 token 一律拒绝。
+  // 代价只是第一次写请求多一次往返（前端收到 403 会自动 ?fresh=1 换 token 重试），
+  // 用户无感。设宽限期反而会让"任意伪造 token 在过渡期内可通行"，
+  // 等于加固在过渡期完全失效 —— 不值得。
+  if (!isSignedToken(cookieToken)) {
+    logger.warn("csrf", `CSRF token 未签名/签名无效: ${req.method} ${req.url}`);
     return res.status(403).json({ ok: false, msg: "CSRF 验证失败，请刷新页面重试" });
   }
 
@@ -124,15 +222,15 @@ function getCsrfToken(req, res) {
   });
 
   const wantFresh = String(req.query?.fresh || "") === "1";
-  if (wantFresh) {
-    const token = generateToken();
-    res.cookie(CSRF_COOKIE_NAME, token, {
-      httpOnly: false,
-      secure: isSecureRequest(req),
-      sameSite: "lax",
-      path: "/",
-      maxAge: 24 * 60 * 60 * 1000
-    });
+
+  // 存量旧格式 token（无签名）也在这里静默升级成签名版：
+  // 前端每次补 token 都是一次换发机会，不必等 cookie 自然过期。
+  const current = req.csrfToken;
+  const needUpgrade = current && !isSignedToken(current);
+
+  if (wantFresh || needUpgrade) {
+    const token = issueToken();
+    writeCsrfCookie(req, res, token);
     req.csrfToken = token;
   }
 
@@ -143,6 +241,8 @@ module.exports = {
   ensureCsrfCookie,
   verifyCsrfToken,
   getCsrfToken,
+  isSignedToken,
+  issueToken,
   CSRF_COOKIE_NAME,
   CSRF_HEADER_NAME
 };
