@@ -134,7 +134,9 @@ router.get("/share/:shareId", (req, res) => {
 // ========== OCR ==========
 
 // OCR 健康检查
-router.get("/ocr/health", asyncHandler(async (req, res) => {
+// B2-03：旧版匿名可 200 读到本机 OCR 服务的存活状态与端口信息，
+// 属于未授权的内部服务探测面。现在与 /ocr 一样要求登录。
+router.get("/ocr/health", requireAuth, asyncHandler(async (req, res) => {
   const health = await crOcr.checkHealth();
   ok(res, { ocr: health });
 }));

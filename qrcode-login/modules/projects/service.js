@@ -103,7 +103,9 @@ function importProject(folderName) {
 
   const folderPath = path.join(config.projects.dir, folderName);
   if (!fs.existsSync(folderPath) || !fs.statSync(folderPath).isDirectory()) {
-    throw errors.badRequest(`文件夹不存在: blog/projects/${folderName}`);
+    // P-11 / B2-05：不再把服务器目录结构拼进对外错误文案
+    logger.warn("projects-service", `导入失败，文件夹不存在: ${folderName}`);
+    throw errors.badRequest("项目文件夹不存在或不可访问");
   }
 
   // 读取并验证 project.json

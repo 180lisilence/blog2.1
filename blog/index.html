@@ -310,6 +310,13 @@
       return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c];
     });
   }
+  // B1-08：href 只允许站内绝对路径或 http(s)，挡住 javascript:/data: 协议
+  function safeHref(u) {
+    var s = String(u == null ? "" : u).trim();
+    if (/^\/(?!\/)/.test(s)) return esc(s);
+    if (/^https?:\/\//i.test(s)) return esc(s);
+    return "#";
+  }
   try {
     var r = await fetch("/api/links", { credentials: "same-origin" });
     var d = await r.json();
@@ -320,12 +327,12 @@
       }).join("");
       return '<article class="project-card ext-card">' +
         '<div class="proj-icon">' + esc(p.icon || "🔗") + "</div>" +
-        '<h3><a href="' + esc(p.demo || p.repo) + '" target="_blank" rel="noopener noreferrer">' + esc(p.name) + " ↗</a></h3>" +
+        '<h3><a href="' + safeHref(p.demo || p.repo) + '" target="_blank" rel="noopener noreferrer">' + esc(p.name) + " ↗</a></h3>" +
         "<p>" + esc(p.desc) + "</p>" +
         '<div class="proj-tags">' + tags + "</div>" +
         '<div class="proj-links">' +
-          '<a href="' + esc(p.repo) + '" target="_blank" rel="noopener noreferrer">⌨️ 仓库</a>' +
-          (p.demo ? '<a href="' + esc(p.demo) + '" target="_blank" rel="noopener noreferrer">🖥️ 在线演示</a>' : "") +
+          '<a href="' + safeHref(p.repo) + '" target="_blank" rel="noopener noreferrer">⌨️ 仓库</a>' +
+          (p.demo ? '<a href="' + safeHref(p.demo) + '" target="_blank" rel="noopener noreferrer">🖥️ 在线演示</a>' : "") +
         "</div>" +
         "</article>";
     }).join("");

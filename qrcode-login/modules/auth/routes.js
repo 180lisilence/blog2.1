@@ -18,6 +18,7 @@ const qrTicket = require("./qrTicket");
 const { getTokenFromReq } = require("../../middleware/auth");
 const { loginLockCheck, recordFailure, failureResponse, clearFailure } = require("../../middleware/loginLock");
 const { createIpWhitelist } = require("../../middleware/ipWhitelist");
+const captcha = require("../../middleware/captcha");
 
 const router = express.Router();
 
@@ -59,11 +60,9 @@ function confirmLimiter(req, res, next) {
   const byIp = bumpLimit(confirmIpAttempts, ip, CONFIRM_MAX_PER_IP, ip, "纯IP兜底");
   const hit = byPair.blocked ? byPair : (byIp.blocked ? byIp : null);
   if (hit) {
-    return res.status(429).json({
-      ok: false,
-      msg: `尝试次数过多，请 ${hit.remainSec} 秒后再试`,
-      remainSec: hit.remainSec
-    });
+    // 9-02：不再回显剩余秒数，避免给攻击者提供限速窗口计时器
+    logger.warn("auth-route", `confirm 限速触发: ip=${ip}, remainSec=${hit.remainSec}`);
+    return res.status(429).json({ ok: false, msg: "请求过于频繁，请稍后再试" });
   }
   next();
 }
@@ -256,6 +255,19 @@ router.post("/register", asyncHandler(async (req, res) => {
     return fail(res, 403, "本站暂未开放注册");
   }
 
+  // 8-01：服务端验证码。旧版注册接口既无验证码也无独立限速，脚本可以
+  // 无成本地批量撞库/灌账号。challenge 由服务端签发并一次性消费，答案
+  // 不下发，客户端无法伪造；配合 server.js 上按 IP 的注册限速形成两层。
+  const cap = captcha.verify(
+    req.body?.captchaId,
+    req.body?.captchaToken,
+    req.body?.captchaAnswer
+  );
+  if (!cap.ok) {
+    logger.warn("auth-route", `注册验证码校验失败: ip=${req.ip}, reason=${cap.msg}`);
+    return fail(res, 400, cap.msg);
+  }
+
   const { username, password } = req.body || {};
   const u = String(username || "").trim();
 
@@ -294,18 +306,20 @@ router.post("/register", asyncHandler(async (req, res) => {
 // F-08：旧实现在中间件阶段就直接拒绝锁定中的请求，于是一个不知道密码的人
 // 只要周期性打错密码，就能让真实管理员永久进不来（纯 DoS）。
 // 现在改为「先算密码再决定」：密码对的永远放行并清空计数，密码错的才吃锁。
-router.post("/login", loginLockCheck, (req, res) => {
+router.post("/login", loginLockCheck, asyncHandler(async (req, res) => {
   const { username, password } = req.body || {};
   const u = String(username || "").trim();
   const p = String(password || "");
   const ip = req.loginIp || req.ip;
   if (!u || !p) return fail(res, 400, "请输入账号和密码");
 
-  const user = userModel.verifyPassword(u, p);
+  // P-10：scrypt 改异步，密码校验不再阻塞事件循环
+  const user = await userModel.verifyPassword(u, p);
 
   if (!user) {
+    // 9-02：统一失败文案，不回显剩余次数 / 锁定秒数
     const r = failureResponse(ip, u);
-    return fail(res, r.status, r.msg, r.remainSec ? { remainSec: r.remainSec } : undefined);
+    return fail(res, r.status, r.msg);
   }
 
   // 密码正确 → 无论此前是否处于锁定中，一律放行，并清空全部计数。
@@ -317,7 +331,7 @@ router.post("/login", loginLockCheck, (req, res) => {
   const webToken = sessionMgr.createWebSession(u);
   logger.info("auth-route", `账号密码登录: ${u}`);
   ok(res, { webToken, username: u });
-});
+}));
 
 // 直接登录（个人免密入口：仅受信任 IP 可调用，公网默认拒绝）
 router.post("/direct-login", directLoginGuard, (req, res) => {
@@ -349,7 +363,9 @@ router.post("/logout", (req, res) => {
 router.get("/me", (req, res) => {
   const token = getTokenFromReq(req);
   const ws = sessionMgr.getWebSession(token);
-  if (!ws) return fail(res, 401, "未登录");
+  // 4-01 / 报告5：全站未授权响应统一为 401 + 同一句文案，
+  // 不再让 /me 的「未登录」与其它接口的「请先登录」形成接口地图差异。
+  if (!ws) return fail(res, 401, "请先登录");
   ok(res, { username: ws.username });
 });
 
@@ -399,8 +415,17 @@ const DATA_MAX_KEY_LEN = 64;
 // 全部符合，线上存量键名也已核验过不会误伤。
 const DATA_KEY_RE = /^[A-Za-z0-9_-]{1,64}$/;
 
+// V2-02（2.0 复测）：白名单本身允许下划线，所以 "__proto__"、
+// "constructor"、"prototype" 都能通过 DATA_KEY_RE。虽然这些键最终进的是
+// MySQL，但服务端组装响应/合并快照时用的是普通 {}，写入这类键会触发
+// 原型链赋值，属于可被利用的原型污染面。这里补回显式黑名单（大小写不敏感），
+// 与第一次修复的口径保持一致，同时也作为纵深防御。
+const DATA_KEY_DENY = new Set(["__proto__", "constructor", "prototype", "__definegetter__", "__definesetter__"]);
+
 function isValidKey(k) {
-  return DATA_KEY_RE.test(String(k));
+  const s = String(k);
+  if (DATA_KEY_DENY.has(s.toLowerCase())) return false;
+  return DATA_KEY_RE.test(s);
 }
 
 function byteLen(str) {
@@ -492,7 +517,8 @@ router.get("/data/all", asyncHandler(async (req, res) => {
     [rows] = await pool.query("SELECT data_key, data_value FROM user_data WHERE username = ?", [ws.username]);
   }
 
-  const data = {};
+  // V2-02：用无原型对象承接来自数据库的键名，彻底断掉原型链赋值路径
+  const data = Object.create(null);
   for (const r of rows) data[r.data_key] = r.data_value;
 
   // 全量键数（按需查询时也有意义，前端可判断是否需要拉全量）
@@ -637,7 +663,8 @@ router.patch("/data/all", asyncHandler(async (req, res) => {
     "SELECT data_key, data_value FROM user_data WHERE username = ?",
     [ws.username]
   );
-  const merged = {};
+  // V2-02：无原型对象，避免数据键名触发原型链赋值
+  const merged = Object.create(null);
   for (const r of rows) merged[r.data_key] = parseStoredValue(r.data_value);
   for (const k of removeKeys) delete merged[k];
   for (const k of Object.keys(setData)) merged[k] = setData[k];

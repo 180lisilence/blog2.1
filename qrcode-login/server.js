@@ -16,6 +16,7 @@ const { initDatabase } = require("./db/init");
 const { createAuthGate, getTokenFromReq } = require("./middleware/auth");
 const { forceHttps, securityHeaders, createRateLimiter, createCorsPolicy } = require("./middleware/security");
 const { ensureCsrfCookie, verifyCsrfToken, getCsrfToken } = require("./middleware/csrf");
+const captcha = require("./middleware/captcha");
 const { startCleanup: startLoginLockCleanup } = require("./middleware/loginLock");
 const { createBlogStatic } = require("./middleware/blogStatic");
 
@@ -38,6 +39,11 @@ const app = express();
 const trustProxyEnv = process.env.TRUST_PROXY;
 if (trustProxyEnv === "true") {
   app.set("trust proxy", true);
+} else if (trustProxyEnv === "false") {
+  // 显式关闭。旧版会把字符串 "false" 落到下面的「具体网段」分支，
+  // Express 的 proxy-addr 会抛 TypeError: invalid IP address: false，
+  // 服务直接起不来。配置文件里写 false 是很常见的写法，必须正确识别。
+  app.set("trust proxy", false);
 } else if (trustProxyEnv && !isNaN(Number(trustProxyEnv))) {
   app.set("trust proxy", Number(trustProxyEnv));
 } else if (trustProxyEnv) {
@@ -67,6 +73,70 @@ app.use(cookieParser());
 // 单请求体上限：原来 10mb，配合 N-03 的"无配额"等于允许单次塞 10MB。
 // 现在收到 1MB，配合 /api/data/all 的 2MB 总配额足够用。
 app.use(express.json({ limit: "1mb" }));
+
+// ========== blog-sentinel 访问审计适配器（可选，零侵入） ==========
+// 仅在 qrcode-login/.env 配置了 INGEST_KEY 时启用；
+// 未配置或加载失败都不会影响博客原有功能。
+let sentinelAdapter = null;
+try {
+  const sentinel = require("./sentinel-adapter");
+  sentinelAdapter = sentinel.install(app, authSession, {
+    key: process.env.INGEST_KEY,
+    // 生产 Nginx :3100 做 TLS 终止后反代到 Node :3101，同机直连必须写 3101。
+    // 写 3100 会打到 HTTPS 端口导致适配器上报失败。
+    baseUrl: process.env.SENTINEL_BASE_URL || "http://127.0.0.1:3101",
+    logAccess: process.env.SENTINEL_LOG_ACCESS !== "false",
+    excludeStatic: process.env.SENTINEL_EXCLUDE_STATIC === "true",
+    trustProxy: app.get("trust proxy")
+  });
+  if (sentinelAdapter?.enabled) logger.info("sentinel", "访问审计适配器已启用");
+} catch (e) {
+  logger.warn("sentinel", "访问审计适配器加载失败（不影响博客）", e.message);
+}
+
+// ========== 成员快照接口（供 blog-sentinel 审计后台拉取，机器对机器） ==========
+// 必须挂在 /api 通用守卫之前：它用 x-sentinel-key 鉴权，不走用户登录 / CSRF。
+// 只输出脱敏字段（账号/注册时间/是否内置/在线会话），绝不含 salt/hash/webToken。
+// 未配置 INGEST_KEY 时端点直接关闭，对博客零影响。
+const sentinelMembers = require("./modules/audit/members");
+function requireSentinelKey(req, res, next) {
+  const expected = process.env.INGEST_KEY;
+  if (!expected) return res.status(404).json({ ok: false, msg: "接口不存在" });
+  const got = String(req.get("x-sentinel-key") || "");
+  const a = Buffer.from(got);
+  const b = Buffer.from(expected);
+  if (a.length !== b.length || !require("crypto").timingSafeEqual(a, b)) {
+    return res.status(401).json({ ok: false, msg: "unauthorized" });
+  }
+  next();
+}
+app.get("/api/members", requireSentinelKey, (req, res) => {
+  try {
+    res.json(sentinelMembers.snapshot());
+  } catch (e) {
+    logger.error("sentinel-members", "成员快照生成失败", e.message);
+    res.status(500).json({ ok: false, msg: "快照生成失败" });
+  }
+});
+
+// ========== 账号管理端点（供 blog-sentinel 审计后台代管，机器对机器） ==========
+// 同样用 x-sentinel-key 鉴权，挂在 /api 通用登录/CSRF 守卫之前。
+// 支持 create / rename / reset-password / kick / delete；内置账号禁止改名与删除。
+// 写操作会同步 MySQL + 内存 + 会话，并让目标账号全部会话立即失效。
+const sentinelMembersAdmin = require("./modules/audit/members-admin").createMembersAdmin({ logger });
+app.post("/api/members/admin", requireSentinelKey, async (req, res) => {
+  try {
+    const out = await sentinelMembersAdmin.apply(req.body || {});
+    res.json({ ok: true, ...out });
+  } catch (e) {
+    if (e && e.isOperational) {
+      return res.status(e.statusCode).json({ ok: false, msg: e.message });
+    }
+    logger.error("sentinel-members-admin", "账号管理操作失败", e.message);
+    res.status(500).json({ ok: false, msg: "账号管理操作失败" });
+  }
+});
+
 app.use(ensureCsrfCookie);     // 确保 CSRF token cookie
 
 // 请求日志
@@ -87,6 +157,14 @@ app.get("/health/live", (req, res) => {
 
 // CSRF token 获取接口
 app.get("/api/csrf-token", getCsrfToken);
+
+// 8-01：注册验证码下发接口（公开只读，答案不下发）
+app.get("/api/captcha", captcha.captchaRoute);
+
+// 8-01：注册接口独立按 IP 限速。全局 300 次/分钟对"批量灌账号"太宽，
+// 这里收紧到 10 分钟 5 次；与服务端验证码形成两层，脚本无法无成本重试。
+const registerLimiter = createRateLimiter(5, 10 * 60 * 1000);
+app.use("/api/register", registerLimiter);
 
 // W2-07：鉴权顺序修正。
 // 旧版 CSRF 校验挂在身份校验之前，匿名写操作统一返回 403「CSRF 验证失败」，
@@ -191,6 +269,9 @@ async function start() {
   // 4. 启动登录失败锁定清理
   startLoginLockCleanup();
 
+  // 4.0 启动注册验证码过期清理
+  captcha.startCleanup();
+
   // 4.1 启动扫码一次性票据清理
   qrTicket.startCleanup();
 
@@ -222,12 +303,14 @@ start().catch(err => {
 // 优雅关闭
 process.on("SIGTERM", async () => {
   logger.info("startup", "收到 SIGTERM，正在关闭...");
+  if (sentinelAdapter?.stop) await sentinelAdapter.stop().catch(() => {});
   ocrManager.stopOcrProcess();
   await pool.end().catch(() => {});
   process.exit(0);
 });
 process.on("SIGINT", async () => {
   logger.info("startup", "收到 SIGINT，正在关闭...");
+  if (sentinelAdapter?.stop) await sentinelAdapter.stop().catch(() => {});
   ocrManager.stopOcrProcess();
   await pool.end().catch(() => {});
   process.exit(0);

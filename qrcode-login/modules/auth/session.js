@@ -5,6 +5,7 @@
  * - 定时清理过期会话
  */
 const { v4: uuidv4 } = require("uuid");
+const crypto = require("crypto");
 const config = require("../../config");
 const logger = require("../../core/logger");
 
@@ -47,14 +48,18 @@ function destroyQrSession(qid) {
 
 // 创建 Web 登录态
 function createWebSession(username) {
-  const webToken = `SELF-LOGIN-${uuidv4()}`;
+  // 6-02：旧 token 带 `SELF-LOGIN-` 前缀，等于在 Cookie / 日志 / 分享出去的
+  // 截图里免费标注「这是本站自助签发的长期会话」，还泄露了签发路径。
+  // 换成 256 位纯随机不透明令牌，不带任何语义。
+  // 同时日志不再打印 token 片段，避免凭据残留在 pm2 logs / 日志采集里。
+  const webToken = crypto.randomBytes(32).toString("base64url");
   const session = {
     username,
     createAt: Date.now(),
     expireAt: Date.now() + config.webTokenExpireMs
   };
   webSessions.set(webToken, session);
-  logger.info("auth-session", `用户登录: ${username}, token=${webToken.substring(0, 20)}...`);
+  logger.info("auth-session", `用户登录: ${username}`);
   return webToken;
 }
 

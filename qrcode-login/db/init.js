@@ -50,8 +50,15 @@ const CREATE_TABLES_SQL = [
   ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci`
 ];
 
+// P-10：改用异步 scrypt，与 modules/auth/model.js 保持同一实现口径，
+// 避免启动阶段同步阻塞事件循环。
 function hashPassword(password, salt) {
-  return crypto.scryptSync(String(password), salt, 64).toString("hex");
+  return new Promise((resolve, reject) => {
+    crypto.scrypt(String(password), salt, 64, (err, derived) => {
+      if (err) reject(err);
+      else resolve(derived.toString("hex"));
+    });
+  });
 }
 
 // 确保数据库存在
@@ -87,7 +94,7 @@ async function ensureBuiltinAdmin(pool) {
     return;
   }
   const salt = crypto.randomBytes(16).toString("hex");
-  const hash = hashPassword(config.defaultAdmin.password, salt);
+  const hash = await hashPassword(config.defaultAdmin.password, salt);
   await pool.execute(
     "INSERT INTO users (username, salt, hash, created_at, is_builtin) VALUES (?,?,?,?,1)",
     [config.defaultAdmin.username, salt, hash, Date.now()]

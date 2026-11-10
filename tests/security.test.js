@@ -51,9 +51,11 @@ test("validateUsername: 非法字符被拒绝", () => {
 });
 
 // validatePassword
+// 8-02：策略升级为 8-64 位且需同时含字母与数字
 test("validatePassword: 合法密码通过", () => {
-  assert.strictEqual(security.validatePassword("123456"), null);
+  assert.strictEqual(security.validatePassword("Abcd1234"), null);
   assert.strictEqual(security.validatePassword("abcdefghijklmnopqrstuvwxyz123456"), null);
+  assert.strictEqual(security.validatePassword("A1" + "x".repeat(62)), null);
 });
 
 test("validatePassword: 空密码被拒绝", () => {
@@ -62,11 +64,16 @@ test("validatePassword: 空密码被拒绝", () => {
 });
 
 test("validatePassword: 过短密码被拒绝", () => {
-  assert.ok(security.validatePassword("12345"));
+  assert.ok(security.validatePassword("Ab1"));
 });
 
 test("validatePassword: 过长密码被拒绝", () => {
-  assert.ok(security.validatePassword("a".repeat(33)));
+  assert.ok(security.validatePassword("A1" + "x".repeat(63)));
+});
+
+test("validatePassword: 弱口令被拒绝（纯数字 / 纯字母）", () => {
+  assert.ok(security.validatePassword("12345678"));
+  assert.ok(security.validatePassword("abcdefgh"));
 });
 
 // safePath

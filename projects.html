@@ -286,15 +286,23 @@
     }[c]));
   }
 
+  // B1-05：href 插值只允许站内绝对路径或 http(s)，挡住 javascript:/data: 协议
+  function safeHref(u) {
+    const s = String(u == null ? "" : u).trim();
+    if (/^\/(?!\/)/.test(s)) return escapeHtml(s);
+    if (/^https?:\/\//i.test(s)) return escapeHtml(s);
+    return "#";
+  }
+
   // 外链作品卡：有在线演示优先跳演示站，没有则跳仓库
   function extCardHtml(p) {
     const href = p.demo || p.repo;
     const label = p.demo ? "在线体验 →" : "前往 GitHub →";
     const meta = [p.stack, p.size].filter(Boolean).join(" · ");
     return `
-      <a class="card ext-card" href="${escapeHtml(href)}" target="_blank" rel="noopener noreferrer" title="${escapeHtml(p.repo)}">
+      <a class="card ext-card" href="${safeHref(href)}" target="_blank" rel="noopener noreferrer" title="${escapeHtml(p.repo)}">
         <span class="ext-badge">↗</span>
-        <div class="c-icon ${p.color || "c1"}">${p.icon || "🔗"}</div>
+        <div class="c-icon ${escapeHtml(p.color || "c1")}">${escapeHtml(p.icon || "🔗")}</div>
         <h3>${escapeHtml(p.name)}</h3>
         <p>${escapeHtml(p.desc)}</p>
         ${p.tags && p.tags.length ? `<div class="tags">${p.tags.slice(0, 3).map(t => `<span class="tag">${escapeHtml(t)}</span>`).join("")}</div>` : ""}
@@ -395,13 +403,15 @@
       </div>
     `;
 
+    // B1-05：项目名/描述/图标/标签/颜色/id 全部转义；id 与 name 走
+    // data-* 属性而非拼进 JS 字符串字面量，彻底消除引号闭合注入。
     html += allProjects.map((p) => `
-      <a class="card" href="${p.url}" target="_blank" rel="noopener">
-        ${!p.builtin ? `<button class="del-btn" onclick="event.preventDefault();event.stopPropagation();deleteProject('${p.id}','${p.name.replace(/'/g,"\\'")}')" title="删除">×</button>` : ''}
-        <div class="c-icon ${p.color || 'c1'}">${p.icon || '📁'}</div>
-        <h3>${p.name}</h3>
-        <p>${p.desc || ''}</p>
-        ${p.tags && p.tags.length ? `<div class="tags">${p.tags.slice(0,3).map(t => `<span class="tag">${t}</span>`).join('')}</div>` : ''}
+      <a class="card" href="${safeHref(p.url)}" target="_blank" rel="noopener noreferrer">
+        ${!p.builtin ? `<button class="del-btn" data-pid="${escapeHtml(p.id)}" data-pname="${escapeHtml(p.name)}" onclick="event.preventDefault();event.stopPropagation();deleteProject(this.dataset.pid,this.dataset.pname)" title="删除">×</button>` : ''}
+        <div class="c-icon ${escapeHtml(p.color || 'c1')}">${escapeHtml(p.icon || '📁')}</div>
+        <h3>${escapeHtml(p.name)}</h3>
+        <p>${escapeHtml(p.desc || '')}</p>
+        ${p.tags && p.tags.length ? `<div class="tags">${p.tags.slice(0,3).map(t => `<span class="tag">${escapeHtml(t)}</span>`).join('')}</div>` : ''}
         <div class="go">进入项目 →</div>
       </a>
     `).join("");
@@ -423,26 +433,26 @@
     if (builtin.length) {
       html += '<div class="nav-section">内置项目</div>';
       html += builtin.map(p => `
-        <a class="nav-item" href="${p.url}" target="_blank" onclick="closeNav()">
-          <span class="nav-icon">${p.icon || '📁'}</span>
-          <span class="nav-name">${p.name}</span>
+        <a class="nav-item" href="${safeHref(p.url)}" target="_blank" rel="noopener noreferrer" onclick="closeNav()">
+          <span class="nav-icon">${escapeHtml(p.icon || '📁')}</span>
+          <span class="nav-name">${escapeHtml(p.name)}</span>
         </a>
       `).join('');
     }
     if (imported.length) {
       html += '<div class="nav-section">导入项目</div>';
       html += imported.map(p => `
-        <a class="nav-item" href="${p.url}" target="_blank" onclick="closeNav()">
-          <span class="nav-icon">${p.icon || '📁'}</span>
-          <span class="nav-name">${p.name}</span>
+        <a class="nav-item" href="${safeHref(p.url)}" target="_blank" rel="noopener noreferrer" onclick="closeNav()">
+          <span class="nav-icon">${escapeHtml(p.icon || '📁')}</span>
+          <span class="nav-name">${escapeHtml(p.name)}</span>
         </a>
       `).join('');
     }
     if (allLinks.length) {
       html += '<div class="nav-section">外部作品 <span class="nav-ext">↗</span></div>';
       html += allLinks.map(p => `
-        <a class="nav-item" href="${escapeHtml(p.demo || p.repo)}" target="_blank" rel="noopener noreferrer" onclick="closeNav()">
-          <span class="nav-icon">${p.icon || '🔗'}</span>
+        <a class="nav-item" href="${safeHref(p.demo || p.repo)}" target="_blank" rel="noopener noreferrer" onclick="closeNav()">
+          <span class="nav-icon">${escapeHtml(p.icon || '🔗')}</span>
           <span class="nav-name">${escapeHtml(p.name)}</span>
         </a>
       `).join('');
@@ -519,14 +529,16 @@
       const r = await apiFetch("/api/projects/scan");
       const d = await r.json();
       if (d.ok && d.available.length) {
+        // B1-05：扫描结果来自磁盘目录名 / project.json，全部当作不可信文本；
+        // folder 放进 data-* 属性，不再拼进 onclick 的 JS 字符串字面量。
         list.innerHTML = d.available.map(p => `
           <div class="scan-item">
-            <span class="scan-icon">${p.icon}</span>
+            <span class="scan-icon">${escapeHtml(p.icon)}</span>
             <div class="scan-info">
-              <div class="scan-name">${p.name} ${p.valid ? '' : '⚠️ 规范不符'}</div>
-              <div class="scan-folder">blog/projects/${p.folder}</div>
+              <div class="scan-name">${escapeHtml(p.name)} ${p.valid ? '' : '⚠️ 规范不符'}</div>
+              <div class="scan-folder">blog/projects/${escapeHtml(p.folder)}</div>
             </div>
-            <button class="scan-import" ${p.valid ? '' : 'disabled'} onclick="quickImport('${p.folder}', this)">导入</button>
+            <button class="scan-import" data-folder="${escapeHtml(p.folder)}" ${p.valid ? '' : 'disabled'} onclick="quickImport(this.dataset.folder, this)">导入</button>
           </div>
         `).join('');
       } else {

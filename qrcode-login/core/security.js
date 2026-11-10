@@ -20,9 +20,16 @@ function validateUsername(username) {
 }
 
 // 验证密码
+//
+// 3-01 / 8-02：旧策略只要求 6-32 位，`123456` 这类口令可直接注册。
+// 现在要求 8-64 位且同时包含字母与数字，前端注册/改密提示已同步。
+// 该校验只作用于「新设置的密码」，不影响已有账号登录。
 function validatePassword(password) {
   if (!password || typeof password !== "string") return "密码不能为空";
-  if (password.length < 6 || password.length > 32) return "密码长度需为 6-32 位";
+  if (password.length < 8 || password.length > 64) return "密码长度需为 8-64 位";
+  if (!/[A-Za-z]/.test(password) || !/[0-9]/.test(password)) {
+    return "密码需同时包含字母和数字";
+  }
   return null;
 }
 

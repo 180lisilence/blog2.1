@@ -33,12 +33,23 @@ const LOCK_DURATION_MS = 5 * 60 * 1000; // 锁 5 分钟
 const ACCOUNT_MAX_ATTEMPTS = 30;        // 全站对同一账号的失败上限
 const ACCOUNT_LOCK_DURATION_MS = 60 * 1000; // 只锁 60 秒，避免变成永久 DoS
 
+// 9-01（第二轮总汇 P0）：纯 IP 维度，专治「密码喷洒」——
+// 攻击者拿一个弱密码去撞几百个账号时，上面两个维度都拦不住：
+//   IP+账号维度：每个账号只错 1 次，永远到不了 5 次
+//   账号全局维度：每个账号只错 1 次，也永远到不了 30 次
+// 现在同一 IP 跨账号累计失败也会触发锁定。阈值放宽到 20 次，
+// 且同样遵守「正确密码优先放行」，不会把真实用户锁在门外。
+const IP_MAX_ATTEMPTS = 20;
+const IP_LOCK_DURATION_MS = 10 * 60 * 1000;
+
 const CLEANUP_INTERVAL = 10 * 60 * 1000;
 
 // key: `${ip}:${username}` -> { count, lockUntil }
 const failRecords = new Map();
 // key: username -> { count, lockUntil }
 const accountRecords = new Map();
+// key: ip -> { count, lockUntil }  （跨账号，只计失败）
+const ipRecords = new Map();
 
 // 获取客户端 IP
 function getClientIp(req) {
@@ -62,6 +73,11 @@ function isLocked(ip, username) {
   const acct = accountRecords.get(username);
   if (acct && acct.lockUntil && now < acct.lockUntil) {
     return { locked: true, remainSec: Math.ceil((acct.lockUntil - now) / 1000), scope: "account" };
+  }
+
+  const pureIp = ipRecords.get(ip);
+  if (pureIp && pureIp.lockUntil && now < pureIp.lockUntil) {
+    return { locked: true, remainSec: Math.ceil((pureIp.lockUntil - now) / 1000), scope: "ip-global" };
   }
 
   const remaining = ipRec ? Math.max(0, MAX_ATTEMPTS - ipRec.count) : MAX_ATTEMPTS;
@@ -100,20 +116,36 @@ function recordFailure(ip, username) {
   }
   accountRecords.set(username, acct);
 
-  const locked = ipRec.lockUntil > now || acct.lockUntil > now;
+  // --- 纯 IP（跨账号，9-01）---
+  const pureIp = ipRecords.get(ip) || { count: 0, lockUntil: 0 };
+  if (pureIp.lockUntil && now > pureIp.lockUntil) {
+    pureIp.count = 0;
+    pureIp.lockUntil = 0;
+  }
+  pureIp.count++;
+  pureIp.lastFail = now;
+  if (pureIp.count >= IP_MAX_ATTEMPTS) {
+    pureIp.lockUntil = now + IP_LOCK_DURATION_MS;
+    logger.warn("login-lock", `[纯IP] 密码喷洒限速: ip=${ip}, 跨账号失败${pureIp.count}次, 锁10分钟`);
+  }
+  ipRecords.set(ip, pureIp);
+
+  const locked = ipRec.lockUntil > now || acct.lockUntil > now || pureIp.lockUntil > now;
   return {
     locked,
     remaining: Math.max(0, MAX_ATTEMPTS - ipRec.count),
     remainSec: locked
-      ? Math.ceil(Math.max(ipRec.lockUntil || 0, acct.lockUntil || 0) / 1000 - now / 1000)
+      ? Math.ceil(Math.max(ipRec.lockUntil || 0, acct.lockUntil || 0, pureIp.lockUntil || 0) / 1000 - now / 1000)
       : 0
   };
 }
 
-// 登录成功后清除该 IP+账号 与账号全局 的记录
+// 登录成功后清除该 IP+账号 / 账号全局 / 纯 IP 的记录
+// 正确密码持有者永远不该被任何一层计数器挡住（F-08 语义不变）。
 function clearFailure(ip, username) {
   failRecords.delete(`${ip}:${username}`);
   accountRecords.delete(username);
+  ipRecords.delete(ip);
 }
 
 /**
@@ -142,21 +174,19 @@ function loginLockCheck(req, res, next) {
 
 /**
  * 业务层在密码校验**失败之后**调用，产出统一响应。
- * @returns {{ status:number, msg:string, remainSec?:number }}
+ *
+ * 3-01 / 9-02 / 9-03：旧响应会回显「还可尝试 N 次」和「请 N 秒后再试」，
+ * 等于免费告诉攻击者还剩几发、锁多久、什么时候能继续打。现在对外一律
+ * 固定文案，状态码只区分「被限速」和「凭据错误」，细节全部只进服务端日志。
+ * @returns {{ status:number, msg:string }}
  */
 function failureResponse(ip, username) {
   const result = recordFailure(ip, username);
   if (result.locked) {
-    return {
-      status: 429,
-      msg: `尝试次数过多，请 ${Math.round(result.remainSec)} 秒后再试`,
-      remainSec: Math.round(result.remainSec)
-    };
+    logger.warn("login-lock", `失败登录被限速: ip=${ip}, username=${username}, remainSec=${result.remainSec}`);
+    return { status: 429, msg: "请求过于频繁，请稍后再试" };
   }
-  return {
-    status: 400,
-    msg: `账号或密码错误（还可尝试 ${result.remaining} 次）`
-  };
+  return { status: 400, msg: "账号或密码错误" };
 }
 
 // 定期清理过期记录
@@ -183,6 +213,16 @@ function startCleanup() {
       }
     }
 
+    for (const [key, record] of ipRecords) {
+      if (record.lockUntil && now > record.lockUntil + CLEANUP_INTERVAL) {
+        ipRecords.delete(key);
+        cleaned++;
+      } else if (!record.lockUntil && now - (record.lastFail || 0) > CLEANUP_INTERVAL * 2) {
+        ipRecords.delete(key);
+        cleaned++;
+      }
+    }
+
     if (cleaned > 0) {
       logger.debug("login-lock", `清理过期锁定记录: ${cleaned} 条`);
     }
@@ -205,5 +245,7 @@ module.exports = {
   MAX_ATTEMPTS,
   LOCK_DURATION_MS,
   ACCOUNT_MAX_ATTEMPTS,
-  ACCOUNT_LOCK_DURATION_MS
+  ACCOUNT_LOCK_DURATION_MS,
+  IP_MAX_ATTEMPTS,
+  IP_LOCK_DURATION_MS
 };

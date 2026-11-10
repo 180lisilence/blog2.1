@@ -451,11 +451,22 @@
         </div>
         <div class="form-group">
           <label>设置密码</label>
-          <input type="password" id="regPass" placeholder="6-32位密码" autocomplete="new-password">
+          <input type="password" id="regPass" placeholder="8-64位，需含字母和数字" autocomplete="new-password">
         </div>
         <div class="form-group">
           <label>确认密码</label>
           <input type="password" id="regPass2" placeholder="再次输入密码" autocomplete="new-password">
+        </div>
+        <!-- 8-01：服务端算术验证码，答案不下发，challenge 一次性 -->
+        <div class="form-group">
+          <label>验证码</label>
+          <div style="display:flex;gap:10px;align-items:center">
+            <img id="captchaImg" alt="点击刷新验证码" title="点击刷新"
+                 style="width:120px;height:40px;border:1px solid #d9e2ef;border-radius:6px;cursor:pointer;flex:none"
+                 onclick="refreshCaptcha()">
+            <input type="text" id="captchaAnswer" placeholder="输入计算结果"
+                   inputmode="numeric" maxlength="3" autocomplete="off">
+          </div>
         </div>
         <div class="error-msg" id="regError"></div>
         <button class="btn-primary" id="regBtn" onclick="doRegister()">注 册</button>
@@ -764,12 +775,31 @@
   }
 
   // 注册
+  // 8-01：验证码由服务端签发，前端只保存 id/token，拿不到答案。
+  let captchaState = { id: "", token: "" };
+  async function refreshCaptcha() {
+    const img = document.getElementById("captchaImg");
+    const ans = document.getElementById("captchaAnswer");
+    if (ans) ans.value = "";
+    captchaState = { id: "", token: "" };
+    try {
+      const r = await fetch("/api/captcha", { credentials: "same-origin", cache: "no-store" });
+      const d = await r.json();
+      if (!d.ok) return;
+      captchaState = { id: d.id, token: d.token };
+      if (img) img.src = d.image;
+    } catch (e) {
+      // 拿不到验证码时保持空态，提交会被后端拒绝，不会出现"静默放行"
+    }
+  }
+
   function showRegister() {
     document.getElementById("loginForm").style.display = "none";
     document.getElementById("registerForm").style.display = "block";
     document.getElementById("panelTitle").innerText = "注册账号";
     document.getElementById("panelSub").innerText = "创建新账号，开启项目管理之旅";
     document.getElementById("regError").textContent = "";
+    refreshCaptcha();
     document.getElementById("regUser").focus();
   }
   function showLogin() {
@@ -792,14 +822,23 @@
     if (!u) { err.textContent = "请输入账号"; return; }
     if (u.length < 2 || u.length > 20) { err.textContent = "账号长度需为 2-20 位"; return; }
     if (!p) { err.textContent = "请输入密码"; return; }
-    if (p.length < 6 || p.length > 32) { err.textContent = "密码长度需为 6-32 位"; return; }
+    if (p.length < 8 || p.length > 64) { err.textContent = "密码长度需为 8-64 位"; return; }
+    if (!/[A-Za-z]/.test(p) || !/[0-9]/.test(p)) { err.textContent = "密码需同时包含字母和数字"; return; }
     if (p !== p2) { err.textContent = "两次输入的密码不一致"; return; }
+    const captchaAnswer = (document.getElementById("captchaAnswer")?.value || "").trim();
+    if (!captchaState.token || !captchaAnswer) { err.textContent = "请完成验证码"; return; }
     btn.disabled = true; btn.textContent = "注册中...";
     try {
       const r = await apiFetch("/api/register", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ username: u, password: p })
+        body: JSON.stringify({
+          username: u,
+          password: p,
+          captchaId: captchaState.id,
+          captchaToken: captchaState.token,
+          captchaAnswer
+        })
       });
       const d = await r.json();
       if (d.ok) {
@@ -810,10 +849,12 @@
         setTimeout(() => { showLogin(); }, 1200);
       } else {
         err.textContent = d.msg || "注册失败";
+        refreshCaptcha();  // challenge 一次性，失败必须换新的
         btn.disabled = false; btn.textContent = "注 册";
       }
     } catch (e) {
       err.textContent = "网络错误，请检查服务是否启动";
+      refreshCaptcha();
       btn.disabled = false; btn.textContent = "注 册";
     }
   }

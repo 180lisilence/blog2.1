@@ -10,8 +10,17 @@ const { errors } = require("../../core/errors");
 // 内存缓存：{ username: { salt, hash, createdAt, builtin } }
 const users = new Map();
 
+// P-10（04-访客权限加固复测遗留）：scryptSync 是同步阻塞调用，默认
+// N=16384 的单次计算会占满整个事件循环几十毫秒；登录/注册/改密并发时
+// 全站请求（含静态资源、健康检查）都会被卡住，属于可被放大的 DoS 面。
+// 改为 crypto.scrypt 的异步版本，计算落到 libuv 线程池，不阻塞主线程。
 function hashPassword(password, salt) {
-  return crypto.scryptSync(String(password), salt, 64).toString("hex");
+  return new Promise((resolve, reject) => {
+    crypto.scrypt(String(password), salt, 64, (err, derived) => {
+      if (err) reject(err);
+      else resolve(derived.toString("hex"));
+    });
+  });
 }
 
 // 从 MySQL 加载所有用户到内存
@@ -44,11 +53,14 @@ function exists(username) {
   return users.has(username);
 }
 
-// 验证密码
-function verifyPassword(username, password) {
+// 验证密码（异步，见 hashPassword 说明）
+async function verifyPassword(username, password) {
   const user = users.get(username);
   if (!user) return null;
-  if (hashPassword(password, user.salt) !== user.hash) return null;
+  const computed = Buffer.from(await hashPassword(password, user.salt), "hex");
+  const stored = Buffer.from(String(user.hash || ""), "hex");
+  // 定长比较，避免普通 !== 的逐字节早退形成时序侧信道
+  if (computed.length !== stored.length || !crypto.timingSafeEqual(computed, stored)) return null;
   return user;
 }
 
@@ -58,7 +70,7 @@ async function create(username, password, builtin = false) {
     throw errors.conflict("该账号已被注册，请直接登录");
   }
   const salt = crypto.randomBytes(16).toString("hex");
-  const hash = hashPassword(password, salt);
+  const hash = await hashPassword(password, salt);
   const createdAt = Date.now();
   try {
     await pool.execute(
@@ -80,12 +92,14 @@ async function changePassword(username, oldPassword, newPassword) {
   const user = users.get(username);
   if (!user) throw errors.notFound("用户不存在");
   // 验证旧密码
-  if (hashPassword(oldPassword, user.salt) !== user.hash) {
+  const oldHash = Buffer.from(await hashPassword(oldPassword, user.salt), "hex");
+  const stored = Buffer.from(String(user.hash || ""), "hex");
+  if (oldHash.length !== stored.length || !crypto.timingSafeEqual(oldHash, stored)) {
     throw errors.badRequest("旧密码错误");
   }
   // 生成新盐值和哈希
   const newSalt = crypto.randomBytes(16).toString("hex");
-  const newHash = hashPassword(newPassword, newSalt);
+  const newHash = await hashPassword(newPassword, newSalt);
   try {
     await pool.execute(
       "UPDATE users SET salt = ?, hash = ? WHERE username = ?",

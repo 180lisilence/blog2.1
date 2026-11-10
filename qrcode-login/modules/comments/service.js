@@ -81,6 +81,12 @@ function normalizeContent(raw) {
  * @returns {{ok:boolean, msg?:string, content?:string}}
  */
 function validateContent(raw) {
+  // B2-02：旧版用 String(raw) 兜底，传对象会被静默变成
+  // "[object Object]"、传数组变成 "x,y" 并成功落库，属于输入类型混淆。
+  // 评论内容只接受字符串，其它一律显式 400 拒绝。
+  if (typeof raw !== "string") {
+    return { ok: false, msg: "评论内容必须是字符串" };
+  }
   const content = normalizeContent(raw);
   if (content.length < MIN_LENGTH) {
     return { ok: false, msg: "评论内容不能为空" };

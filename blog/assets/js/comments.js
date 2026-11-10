@@ -302,11 +302,14 @@
   // 渲染一条评论（含其回复）
   Comments.prototype.renderOne = function (c, isReply) {
     var av = avatarOf(c.username || '?');
+    // B1-04：c.id 来自服务端响应，曾被直接拼进 HTML 属性；一旦 id 里带引号
+    // 就能闭合属性并注入事件处理器。所有插值统一走 esc()。
+    var cid = esc(c.id);
     var delBtn = c.canDelete
-      ? '<button type="button" class="cm-act cm-del" data-del="' + c.id + '">删除</button>'
+      ? '<button type="button" class="cm-act cm-del" data-del="' + cid + '">删除</button>'
       : '';
     var replyBtn = (!isReply && this.me)
-      ? '<button type="button" class="cm-act cm-reply" data-reply="' + c.id + '" data-user="' +
+      ? '<button type="button" class="cm-act cm-reply" data-reply="' + cid + '" data-user="' +
         esc(c.username || '') + '">回复</button>'
       : '';
 
@@ -317,7 +320,7 @@
     }
 
     var html =
-      '<div class="cm-item' + (isReply ? ' cm-is-reply' : '') + '" data-id="' + c.id + '">' +
+      '<div class="cm-item' + (isReply ? ' cm-is-reply' : '') + '" data-id="' + cid + '">' +
         '<div class="cm-avatar" style="background:' + av.color + '">' + esc(av.text) + '</div>' +
         '<div class="cm-body">' +
           '<div class="cm-meta">' +

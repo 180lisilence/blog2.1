@@ -61,7 +61,10 @@ test("二维码会话状态流转: pending -> scanned -> confirmed", () => {
 // Web 会话
 test("createWebSession: 创建 Web 登录态", () => {
   const token = sessionMgr.createWebSession("testuser");
-  assert.ok(token.startsWith("SELF-LOGIN-"));
+  // 6-02：token 改为 256 位不透明随机值，不再带 SELF-LOGIN- 语义前缀
+  assert.ok(typeof token === "string" && token.length >= 32);
+  assert.ok(!token.startsWith("SELF-LOGIN-"));
+  assert.ok(/^[A-Za-z0-9_-]+$/.test(token));
 });
 
 test("getWebSession: 获取有效会话", () => {
