@@ -1,6 +1,6 @@
 {
   "name": "myself-blog-project-center",
-  "version": "2.2.3",
+  "version": "2.2.4",
   "description": "项目中心服务 - 模块化架构，支持扫码登录、账号注册、项目管理、外链作品墙、ChatRecord 时序分析",
   "main": "server.js",
   "scripts": {
