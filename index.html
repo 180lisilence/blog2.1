@@ -717,7 +717,7 @@
       });
       const d = await r.json();
       if (d.ok && d.webToken) {
-        document.cookie = "web_token=" + encodeURIComponent(d.webToken) + "; path=/; max-age=604800; SameSite=Lax";
+        writeTokenCookie(d.webToken);
         if (btn) btn.textContent = "✅ 已进入";
         setTimeout(() => { location.href = "/blog/"; }, 300);
       } else {
@@ -749,7 +749,7 @@
       });
       const d = await r.json();
       if (d.ok) {
-        document.cookie = "web_token=" + encodeURIComponent(d.webToken) + "; path=/; max-age=604800; SameSite=Lax";
+        writeTokenCookie(d.webToken);
         err.className = "success-msg";
         err.textContent = "✅ 登录成功，正在进入系统...";
         setTimeout(() => { location.href = "/blog/"; }, 600);
@@ -864,7 +864,7 @@
     clearInterval(pollTimer);
     pollTimer = setInterval(async () => {
       try {
-        const res = await apiFetch(`/api/qrcode/check?qid=${qid}`);
+        const res = await apiFetch(`/api/qrcode/check?qid=${encodeURIComponent(qid)}`, { cache: "no-store" });
         const ret = await res.json();
         switch (ret.status) {
           case "pending": setStatus("等待手机扫码", "pending"); break;
@@ -874,12 +874,18 @@
             showMask("📱", "检测到已扫码，请在手机上确认登录");
             break;
           case "confirmed":
+            // F-01：check 不再直接下发 webToken，只给一次性换码票据。
+            // 必须立刻停下来换取真实会话，否则票据 30 秒就过期。
             clearInterval(pollTimer); clearInterval(countdownTimer);
             setStatus("登录成功，正在进入系统...", "confirmed");
             setStep(1, "done"); setStep(2, "done"); setStep(3, "active");
             showMask("✅", "登录成功");
-            document.cookie = "web_token=" + encodeURIComponent(ret.webToken) + "; path=/; max-age=604800; SameSite=Lax";
-            setTimeout(() => { location.href = "/blog/"; }, 900);
+            if (!ret.ticket) {
+              setStatus("登录票据缺失，请刷新二维码重试", "invalid");
+              setTimeout(initQr, 1200);
+              break;
+            }
+            await redeemTicket(ret.ticket);
             break;
           case "expired":
             clearInterval(pollTimer);
@@ -891,9 +897,48 @@
             setStatus("会话无效，正在刷新...", "invalid");
             setTimeout(initQr, 1200);
             break;
+          default:
+            // 400 会话无效 等异常分支
+            if (ret.ok === false) {
+              clearInterval(pollTimer);
+              setStatus(ret.msg || "会话无效，正在刷新...", "invalid");
+              setTimeout(initQr, 1200);
+            }
         }
       } catch (e) {}
     }, 1100);
+  }
+
+  // 用一次性票据换真实会话
+  // ticket 只能由 qid 的发起者（持有 httpOnly 的 qrt Cookie）消费，
+  // 因此即便票据在网络上被看到，攻击者也换不出来（F-01）。
+  async function redeemTicket(ticket) {
+    try {
+      const r = await apiFetch("/api/qrcode/redeem", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ticket, qid })
+      });
+      const d = await r.json();
+      if (!d.ok || !d.webToken) {
+        setStatus("换取登录态失败：" + (d.msg || "请重新扫码"), "invalid");
+        setTimeout(initQr, 1500);
+        return;
+      }
+      writeTokenCookie(d.webToken);
+      setTimeout(() => { location.href = "/blog/"; }, 500);
+    } catch (e) {
+      setStatus("网络错误，请重试", "invalid");
+      setTimeout(initQr, 1500);
+    }
+  }
+
+  // 统一写 web_token Cookie
+  // 注意：https 页面才能带 Secure，否则浏览器直接丢弃；http 备用地址不加。
+  function writeTokenCookie(token) {
+    const secure = location.protocol === "https:" ? "; Secure" : "";
+    document.cookie = "web_token=" + encodeURIComponent(token)
+      + "; path=/; max-age=604800; SameSite=Lax" + secure;
   }
 
   // 回车快捷登录/注册

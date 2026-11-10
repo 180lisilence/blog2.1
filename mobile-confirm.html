@@ -165,10 +165,51 @@
     showMsg("", "ok");
   }
 
+  // CSRF：服务端对 POST 有 double-submit 校验，必须带 X-CSRF-Token
+  function readCookie(name) {
+    const m = document.cookie.match(new RegExp('(?:^|; )' + name + '=([^;]*)'));
+    return m ? decodeURIComponent(m[1]) : '';
+  }
+  let csrfMem = null;
+  async function getCsrf(force) {
+    if (!force) {
+      const v = readCookie('csrf_token');
+      if (v && v !== 'null' && v !== 'undefined') { csrfMem = v; return v; }
+      if (csrfMem) return csrfMem;
+    }
+    try {
+      const r = await fetch('/api/csrf-token' + (force ? '?fresh=1&_t=' + Date.now() : ''),
+        { credentials: 'same-origin', cache: 'no-store' });
+      const d = await r.json();
+      if (d && d.ok && d.csrfToken) { csrfMem = d.csrfToken; return csrfMem; }
+    } catch (e) {}
+    return '';
+  }
+
+  async function postJson(url, body) {
+    let token = await getCsrf(false);
+    let r = await fetch(url, {
+      method: "POST",
+      credentials: "same-origin",
+      headers: { "Content-Type": "application/json", "X-CSRF-Token": token },
+      body: JSON.stringify(body)
+    });
+    if (r.status === 403) {
+      token = await getCsrf(true);
+      r = await fetch(url, {
+        method: "POST",
+        credentials: "same-origin",
+        headers: { "Content-Type": "application/json", "X-CSRF-Token": token },
+        body: JSON.stringify(body)
+      });
+    }
+    return r;
+  }
+
   // 打开页面即通知后端：已扫码
   async function notifyScanned() {
     try {
-      const r = await fetch(`/api/qrcode/scanned?qid=${qid}`);
+      const r = await fetch(`/api/qrcode/scanned?qid=${encodeURIComponent(qid)}`, { cache: "no-store" });
       const d = await r.json();
       if (!d.ok) {
         document.querySelector("#expired").style.display = "block";
@@ -187,14 +228,12 @@
     document.querySelector("#loginBtn").innerText = "确认中...";
     showMsg("", "ok");
     try {
-      const resp = await fetch("/api/qrcode/confirm", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ qid, username, password })
-      });
+      const resp = await postJson("/api/qrcode/confirm", { qid, username, password });
       const ret = await resp.json();
       if (ret.ok) {
-        showMsg("✅ 登录成功！PC 端已进入系统，可关闭本页面", "ok");
+        // F-01：这里不再拿到 webToken。确认成功后，PC 端会用自己持有的
+        // qrt Cookie + 一次性票据去 /api/qrcode/redeem 换取会话。
+        showMsg("✅ 已确认！PC 端正在登录，可关闭本页面", "ok");
         document.querySelector("#loginForm").style.display = "none";
         document.querySelector("#regForm").style.display = "none";
         document.querySelector(".tabs").style.display = "none";
@@ -220,23 +259,15 @@
     document.querySelector("#regBtn").innerText = "注册中...";
     showMsg("", "ok");
     try {
-      const resp = await fetch("/api/register", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ username, password: pwd })
-      });
+      const resp = await postJson("/api/register", { username, password: pwd });
       const ret = await resp.json();
       if (ret.ok) {
         showMsg("✅ 注册成功，正在登录...", "ok");
-        // 注册成功自动用该账号登录
-        const r2 = await fetch("/api/qrcode/confirm", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ qid, username, password: pwd })
-        });
+        // 注册成功后直接用该账号确认扫码
+        const r2 = await postJson("/api/qrcode/confirm", { qid, username, password: pwd });
         const d2 = await r2.json();
         if (d2.ok) {
-          showMsg("✅ 注册并登录成功！PC 端已进入系统，可关闭本页面", "ok");
+          showMsg("✅ 注册并确认成功！PC 端正在登录，可关闭本页面", "ok");
           document.querySelector("#loginForm").style.display = "none";
           document.querySelector("#regForm").style.display = "none";
           document.querySelector(".tabs").style.display = "none";

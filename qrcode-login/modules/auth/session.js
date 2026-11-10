@@ -8,7 +8,7 @@ const { v4: uuidv4 } = require("uuid");
 const config = require("../../config");
 const logger = require("../../core/logger");
 
-// 二维码登录会话：qid -> { status, createAt, expireAt, webToken, username }
+// 二维码登录会话：qid -> { status, createAt, expireAt, webToken, username, redeemTicket }
 const loginSessions = new Map();
 
 // Web 登录态：webToken -> { username, createAt, expireAt }
@@ -23,7 +23,8 @@ function createQrSession() {
     createAt: Date.now(),
     expireAt: Date.now() + config.qrExpireMs,
     webToken: null,
-    username: null
+    username: null,
+    redeemTicket: null
   };
   loginSessions.set(qid, session);
   return session;
@@ -37,6 +38,11 @@ function getQrSession(qid) {
     s.status = "expired";
   }
   return s;
+}
+
+// 销毁二维码会话（换取完登录态后立即调用，让 qid 彻底不可用）
+function destroyQrSession(qid) {
+  return loginSessions.delete(qid);
 }
 
 // 创建 Web 登录态
@@ -105,6 +111,7 @@ module.exports = {
   webSessions,
   createQrSession,
   getQrSession,
+  destroyQrSession,
   createWebSession,
   getWebSession,
   destroyWebSession,

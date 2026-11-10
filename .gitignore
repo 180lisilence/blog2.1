@@ -43,3 +43,8 @@ qrcode-login/data/
 
 # 本机工作区数据（记忆/会话状态，不随仓库发布）
 .workbuddy/
+
+# 渗透验证脚本与本地测试文档不入库
+qrcode-login/_srv_pentest*.sh
+qrcode-login/_pentest_verify.js
+*.doc

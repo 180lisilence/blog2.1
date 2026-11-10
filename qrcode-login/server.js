@@ -3,7 +3,6 @@
  * 模块化架构：config / core / db / middleware / modules
  */
 const express = require("express");
-const cors = require("cors");
 const path = require("path");
 const cookieParser = require("cookie-parser");
 
@@ -14,14 +13,16 @@ const health = require("./core/health");
 const ocrManager = require("./core/ocrManager");
 const pool = require("./db/pool");
 const { initDatabase } = require("./db/init");
-const { createAuthGate } = require("./middleware/auth");
-const { forceHttps, securityHeaders, createRateLimiter } = require("./middleware/security");
+const { createAuthGate, getTokenFromReq } = require("./middleware/auth");
+const { forceHttps, securityHeaders, createRateLimiter, createCorsPolicy } = require("./middleware/security");
 const { ensureCsrfCookie, verifyCsrfToken, getCsrfToken } = require("./middleware/csrf");
 const { startCleanup: startLoginLockCleanup } = require("./middleware/loginLock");
+const { createBlogStatic } = require("./middleware/blogStatic");
 
 const authRoutes = require("./modules/auth/routes");
 const authModel = require("./modules/auth/model");
 const authSession = require("./modules/auth/session");
+const qrTicket = require("./modules/auth/qrTicket");
 const chatrecordRoutes = require("./modules/chatrecord/routes");
 const projectsRoutes = require("./modules/projects/routes");
 const linksRoutes = require("./modules/links/routes");
@@ -51,9 +52,20 @@ app.disable("x-powered-by");
 app.use(forceHttps);           // 生产环境强制 HTTPS
 app.use(securityHeaders);      // 安全响应头
 app.use(createRateLimiter(300, 60000)); // 频率限制：每分钟 300 次
-app.use(cors());
+
+// CORS（F-11）
+//
+// 旧写法 app.use(cors()) 会输出 `Access-Control-Allow-Origin: *`。
+// 虽然带 `*` 时浏览器不会附带 Cookie（凭据模式被禁），危害有限，
+// 但配合 F-02 那类"CSRF 可构造"的缺陷就是放大器。
+// 现在改为：默认**不下发任何 CORS 头**（同源部署根本不需要），
+// 只有当请求 Origin 命中 CORS_ORIGINS 白名单时才回显该 Origin。
+app.use(createCorsPolicy());
+
 app.use(cookieParser());
-app.use(express.json({ limit: "10mb" }));
+// 单请求体上限：原来 10mb，配合 N-03 的"无配额"等于允许单次塞 10MB。
+// 现在收到 1MB，配合 /api/data/all 的 2MB 总配额足够用。
+app.use(express.json({ limit: "1mb" }));
 app.use(ensureCsrfCookie);     // 确保 CSRF token cookie
 
 // 请求日志
@@ -108,7 +120,17 @@ app.get("/settings.html", authGate, (req, res) => {
 });
 
 // 博客内容（需登录）
-app.use("/blog", authGate, express.static(config.blogContent));
+//
+// 用自研中间件替代 express.static(config.blogContent)：
+//   - F-06 / N-10：编码斜杠路径遍历 -> 归一化 + 前缀校验，越界 400
+//   - N-08：未登录的静态资源返回 401 JSON，不再伪装成 200 text/html
+//   - N-09：统一 private + no-store + Vary: Cookie，杜绝共享缓存串味
+app.use("/blog", createBlogStatic({
+  root: config.blogContent,
+  getToken: getTokenFromReq,
+  getSession: (t) => authSession.getWebSession(t),
+  loginPagePath: path.join(config.blogRoot, "index.html")
+}));
 
 // 构建方法示例（需登录）
 app.use("/build-methods", authGate, express.static(path.join(config.blogRoot, "build-methods")));
@@ -148,6 +170,9 @@ async function start() {
 
   // 4. 启动登录失败锁定清理
   startLoginLockCleanup();
+
+  // 4.1 启动扫码一次性票据清理
+  qrTicket.startCleanup();
 
   // 5. 初始化 OCR 管理器（可选自动启动）
   try {

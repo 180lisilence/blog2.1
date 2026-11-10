@@ -111,6 +111,16 @@ function migrateConfig() {
         delete appStore.config.global;
         debouncePersistStore();
     }
+    // N-06 数据清理：历史版本可能已经把 API Key 明文写进了磁盘/服务端。
+    // 加载时若发现残留，立刻搬到内存并标记为"需清洗"，让下一次持久化把它抹掉。
+    const ai = appStore.config.ai;
+    if (ai && typeof ai === 'object' && ai.apiKey) {
+        window.__aiKeyMem = String(ai.apiKey);
+        ai.apiKey = '';
+        ai.__keySet = true;
+        console.warn('[N-06] 检测到磁盘/服务端残留的明文 API Key，已迁移到内存并安排清洗');
+        debouncePersistStore();
+    }
 }
 async function persistStore() {
     if (isSaving) return;
@@ -118,6 +128,15 @@ async function persistStore() {
     try {
         if (!wbAPI) {
             throw new Error('workbenchAPI 未就绪，请检查 preload');
+        }
+        // ---- N-06：持久化前剥离敏感字段 ----
+        // appStore.config.ai.apiKey 明文落盘、并被 /api/data/all 持久化到服务端，
+        // 是"API Key 外带 + 永久留存"的根源。这里在写入磁盘/服务端前把它清空，
+        // 只保留在内存（window.__aiKeyMem）。
+        if (appStore && appStore.config && appStore.config.ai && appStore.config.ai.apiKey) {
+            window.__aiKeyMem = appStore.config.ai.apiKey;
+            appStore.config.ai.apiKey = '';
+            appStore.config.ai.__keySet = true;
         }
         const result = await wbAPI.save(appStore);
         if (result.success) {
@@ -235,6 +254,11 @@ const Config = {
     set(k, v) {
         if (!appStore) return;
         if (!appStore.config) appStore.config = {};
+        // N-06：apiKey 只进内存，不跟着 config 落盘 / 上传服务端
+        if (k === 'ai' && v && typeof v === 'object' && v.apiKey) {
+            window.__aiKeyMem = String(v.apiKey);
+            v = { ...v, apiKey: '', __keySet: true };
+        }
         appStore.config[k] = v;
         debouncePersistStore();
     },

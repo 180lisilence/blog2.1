@@ -67,13 +67,120 @@ const AI_PROVIDERS = {
     }
 };
 
+// ============================================================================
+// N-06 修复：API Key 外带通道 + 明文持久化
+// ============================================================================
+//
+// 原问题：
+//   1. apiUrl 完全由用户输入、无任何校验，fetch 直接把
+//      `Authorization: Bearer <apiKey>` 发出去 —— 任何能改这个配置的人
+//      （或一次 XSS、或拿到账号的第三方）都能把用户的 Key 转发到任意地址。
+//   2. apiKey 明文存进 appStore.config.ai，而 appStore 整体 PUT 到
+//      /api/data/all，于是 **服务端持久化了用户的 API Key**；
+//      叠加 N-03（旧版无法删除）Key 换掉后旧的还留在库里。
+//
+// 修复策略：
+//   A. 端点白名单：只允许已知 AI 服务商的官方域名 + https。
+//      自定义端点必须显式加到下面的 EXTRA_ALLOWED_HOSTS 里。
+//   B. Key 不落盘：持久化前把 apiKey 置空（见 stripSecretForPersist），
+//      只保留在内存里。刷新页面后需要重填 —— 这是安全性的必要代价。
+//   C. 值形状校验：Key 必须匹配可打印 ASCII 且长度合理，防止被塞进
+//      换行/控制字符做 header 注入。
+// ============================================================================
+
+// 允许的自定义端点（如自建反代）。留空 = 只允许官方端点。
+const EXTRA_ALLOWED_HOSTS = [];
+
+// 从 AI_PROVIDERS 自动收集所有官方端点域名
+function buildAllowedHosts() {
+  const hosts = new Set(EXTRA_ALLOWED_HOSTS.map(h => String(h).toLowerCase()));
+  for (const key of Object.keys(AI_PROVIDERS)) {
+    try {
+      const u = new URL(AI_PROVIDERS[key].defaultUrl);
+      hosts.add(u.hostname.toLowerCase());
+    } catch (e) { /* 忽略格式异常 */ }
+  }
+  return hosts;
+}
+const ALLOWED_HOSTS = buildAllowedHosts();
+
+/**
+ * 校验并规范化 API 端点
+ * @param {string} raw 用户输入的 apiUrl
+ * @returns {string} 校验通过的 URL
+ * @throws {Error} 不在白名单 / 非 https / 格式非法
+ */
+function resolveApiUrl(raw) {
+  const s = String(raw || '').trim();
+  if (!s) throw new Error('API 地址为空');
+
+  let u;
+  try {
+    u = new URL(s);
+  } catch (e) {
+    throw new Error('API 地址格式不合法');
+  }
+
+  // 只允许 https：http 会让 Bearer token 明文过网
+  if (u.protocol !== 'https:') {
+    throw new Error('API 地址必须使用 https://');
+  }
+
+  const host = u.hostname.toLowerCase();
+
+  // 拒绝 IP 直连与特殊主机名，避免被指向内网/回环
+  if (/^\d+\.\d+\.\d+\.\d+$/.test(host) || host === 'localhost' || host.endsWith('.local')) {
+    throw new Error(`API 地址不允许指向 IP 或本地主机：${host}`);
+  }
+
+  if (!ALLOWED_HOSTS.has(host)) {
+    throw new Error(
+      `API 地址不在允许列表：${host}\n`
+      + `允许的域名：${Array.from(ALLOWED_HOSTS).join(', ')}`
+    );
+  }
+
+  // 不允许带 URL 内嵌凭据（https://user:pass@host/ 会把凭据写进日志）
+  if (u.username || u.password) {
+    throw new Error('API 地址不允许包含用户名/密码');
+  }
+
+  return u.toString();
+}
+
+/**
+ * 校验 API Key 形状
+ * @param {string} key
+ * @returns {string} 去掉首尾空白后的 key
+ * @throws {Error}
+ */
+function validateApiKey(key) {
+  const k = String(key || '').trim();
+  if (!k) throw new Error('未配置 API Key');
+  if (k.length > 512) throw new Error('API Key 过长');
+  // 只允许可见 ASCII：任何控制字符（\r \n \0）都可能导致 header 注入
+  if (!/^[\x21-\x7E]+$/.test(k)) {
+    throw new Error('API Key 含非法字符（只允许可见 ASCII 字符）');
+  }
+  return k;
+}
+
 const AI = {
     async chat(messages, opts = {}) {
         const aiCfg = Store.Config.get('ai', Store.Config.defaults.ai);
-        if (!aiCfg.apiKey) throw new Error('未配置 API Key，请在「数据与设置」中填写');
+
+        // B: Key 优先从内存取（sessionStorage 只在同一标签页存活，不落磁盘）
+        const apiKey = validateApiKey(
+          (opts.apiKey !== undefined ? opts.apiKey : null)
+          || aiCfg.apiKey
+          || (window.__aiKeyMem || '')
+        );
+
         const provider = AI_PROVIDERS[aiCfg.provider] || AI_PROVIDERS.doubao;
-        const url = aiCfg.apiUrl || provider.defaultUrl;
+        // A: 端点必须过白名单
+        const url = resolveApiUrl(aiCfg.apiUrl || provider.defaultUrl);
         const model = aiCfg.model || provider.defaultModel;
+
         const body = {
             model,
             messages,
@@ -84,7 +191,7 @@ const AI = {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
-                'Authorization': 'Bearer ' + aiCfg.apiKey
+                'Authorization': 'Bearer ' + apiKey
             },
             body: JSON.stringify(body)
         });
@@ -103,8 +210,34 @@ const AI = {
         (history || []).forEach(m => msgs.push({ role: m.role, content: m.content }));
         msgs.push({ role: 'user', content: userText });
         return msgs;
-    }
+    },
+    // 供设置页使用
+    resolveApiUrl,
+    validateApiKey,
+    ALLOWED_HOSTS
 };
+
+/**
+ * 持久化前剥离敏感字段（N-06 B）
+ *
+ * store.js 每次 debouncePersistStore 前都应该调它，
+ * 或者由 Config.set 在写入 ai 配置时先行剥离。
+ */
+function stripSecretForPersist(appStore) {
+  try {
+    const ai = appStore?.config?.ai;
+    if (!ai) return appStore;
+    if (ai.apiKey) {
+      // 只保留内存副本
+      window.__aiKeyMem = ai.apiKey;
+      ai.apiKey = '';
+      ai.__keySet = true;   // 给 UI 用：告诉用户"本次会话已填过"，值在内存里
+    }
+    return appStore;
+  } catch (e) {
+    return appStore;
+  }
+}
 
 async function AI_newConv(title = '新对话') {
     const aiCfg = Store.Config.get('ai', Store.Config.defaults.ai);
@@ -170,6 +303,10 @@ window.AIMod = {
     AI_addMsg,
     AI_deleteConv,
     renderChatMsg,
-    renderTyping
+    renderTyping,
+    resolveApiUrl,
+    validateApiKey,
+    stripSecretForPersist,
+    ALLOWED_HOSTS
 };
 window.AIMod = AIMod;
