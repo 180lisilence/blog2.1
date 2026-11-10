@@ -21,20 +21,25 @@ const { createIpWhitelist } = require("../../middleware/ipWhitelist");
 const router = express.Router();
 
 // 免密直登的 IP 白名单：仅受信任网络可调用
+//
+// 这是全站唯一需要 IP 限制的入口。原因：该接口不需要任何凭据即可签发
+// 会话，一旦公网可达，等于任何人点一下就能进站。所以必须锁死。
+//
 // 环境变量 DIRECT_LOGIN_IPS，留空时按 DIRECT_LOGIN_IPS_ALLOW_EMPTY 决定放行/拒绝
+// （生产环境应显式设为 false，即"白名单为空 = 一律拒绝"，fail-closed）
 const directLoginGuard = createIpWhitelist({
   envKey: "DIRECT_LOGIN_IPS",
   allowAllWhenEmpty: process.env.DIRECT_LOGIN_IPS_ALLOW_EMPTY !== "false",
   label: "direct-login"
 });
 
-// 开放注册的 IP 白名单：默认关闭公网注册
-// 环境变量 REGISTER_IPS，留空且 ALLOW_EMPTY 非 true 时一律拒绝
-const registerGuard = createIpWhitelist({
-  envKey: "REGISTER_IPS",
-  allowAllWhenEmpty: process.env.REGISTER_IPS_ALLOW_EMPTY === "true",
-  label: "register"
-});
+// 注册：对外开放，不做 IP 限制
+//
+// 曾经用 REGISTER_IPS 白名单把注册锁成"仅管理员可调用"，但那会让所有
+// 正常访客都无法自助注册，等于把注册功能废掉。当前改为：
+//   - 不做 IP 限制，任何来源都能注册
+//   - 防滥用交给已有的 输入校验 + CSRF + 全局限流 三层
+// 如需临时关闭注册，把 ALLOW_REGISTER 设为 false 即可（返回 403）
 
 // ========== 二维码登录 ==========
 
@@ -91,8 +96,15 @@ router.post("/qrcode/confirm", (req, res) => {
 
 // ========== 账号注册/登录 ==========
 
-// 注册（受 IP 白名单保护，生产环境默认仅管理员可调用）
-router.post("/register", registerGuard, asyncHandler(async (req, res) => {
+// 注册（对公网开放，不做 IP 限制）
+// 如需临时关闭注册：环境变量 ALLOW_REGISTER=false
+router.post("/register", asyncHandler(async (req, res) => {
+  // 注册总开关：默认开启，显式 false 时关闭
+  if (String(process.env.ALLOW_REGISTER || "").toLowerCase() === "false") {
+    logger.warn("auth-route", `注册已被 ALLOW_REGISTER=false 关闭，来源IP=${req.ip}`);
+    return fail(res, 403, "本站暂未开放注册");
+  }
+
   const { username, password } = req.body || {};
   const u = String(username || "").trim();
 
