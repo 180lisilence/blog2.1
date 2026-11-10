@@ -25,6 +25,7 @@ const authSession = require("./modules/auth/session");
 const chatrecordRoutes = require("./modules/chatrecord/routes");
 const projectsRoutes = require("./modules/projects/routes");
 const linksRoutes = require("./modules/links/routes");
+const commentsRoutes = require("./modules/comments/routes");
 
 const app = express();
 
@@ -79,6 +80,7 @@ app.use("/api", verifyCsrfToken, authRoutes);
 app.use("/api/chatrecord", verifyCsrfToken, chatrecordRoutes);
 app.use("/api/projects", verifyCsrfToken, projectsRoutes);
 app.use("/api/links", verifyCsrfToken, linksRoutes);
+app.use("/api/comments", verifyCsrfToken, commentsRoutes);
 
 // ========== 认证守卫 ==========
 const authGate = createAuthGate(authSession.webSessions);

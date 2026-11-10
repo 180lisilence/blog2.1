@@ -1,0 +1,301 @@
+/* ===================================================================
+ * comments.css —— 博客文章评论区
+ * 全部复用 blog.css 里的 :root 变量，深色/浅色主题自动跟随。
+ * =================================================================== */
+
+.comments {
+  max-width: 820px;
+  margin: 48px auto 0;
+  padding: 0 24px;
+}
+
+.cm-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  margin-bottom: 20px;
+  padding-top: 28px;
+  border-top: 1px solid var(--line);
+}
+
+.cm-title {
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--text);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.cm-count {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--brand);
+  background: var(--brand-soft);
+  padding: 2px 10px;
+  border-radius: 999px;
+  min-width: 24px;
+  text-align: center;
+}
+
+/* ---------- 发表区 ---------- */
+.cm-composer {
+  background: var(--card-solid);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 16px;
+  margin-bottom: 28px;
+  box-shadow: var(--shadow);
+}
+
+.cm-login-tip {
+  text-align: center;
+  color: var(--muted);
+  font-size: 14px;
+  padding: 18px 0;
+}
+
+.cm-reply-tip {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 13px;
+  color: var(--muted);
+  background: var(--brand-soft);
+  border-radius: 8px;
+  padding: 8px 12px;
+  margin-bottom: 12px;
+}
+
+.cm-reply-tip b { color: var(--brand); }
+
+.cm-cancel-reply {
+  margin-left: auto;
+  background: none;
+  border: none;
+  color: var(--muted);
+  font-size: 12px;
+  cursor: pointer;
+  padding: 2px 6px;
+  border-radius: 6px;
+  transition: all .2s;
+}
+
+.cm-cancel-reply:hover { color: var(--brand-3); background: rgba(236,72,153,.1); }
+
+.cm-input {
+  width: 100%;
+  min-height: 88px;
+  resize: vertical;
+  background: var(--bg);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 12px 14px;
+  color: var(--text);
+  font-size: 14px;
+  line-height: 1.7;
+  font-family: inherit;
+  outline: none;
+  transition: border-color .2s, box-shadow .2s;
+}
+
+.cm-input:focus {
+  border-color: var(--brand);
+  box-shadow: 0 0 0 3px var(--brand-soft);
+}
+
+.cm-input::placeholder { color: var(--muted); }
+
+.cm-composer-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 10px;
+}
+
+.cm-counter {
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.cm-counter.cm-over { color: #ef4444; font-weight: 600; }
+
+.cm-submit {
+  background: linear-gradient(135deg, var(--brand), var(--brand-2));
+  color: #fff;
+  border: none;
+  border-radius: 9px;
+  padding: 9px 22px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: transform .2s, box-shadow .2s, opacity .2s;
+}
+
+.cm-submit:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 20px rgba(99,102,241,.35);
+}
+
+.cm-submit:disabled { opacity: .55; cursor: not-allowed; }
+
+.cm-error {
+  color: #ef4444;
+  font-size: 13px;
+  margin-top: 8px;
+  min-height: 18px;
+}
+
+/* ---------- 列表 ---------- */
+.cm-list { display: flex; flex-direction: column; gap: 4px; }
+
+.cm-empty {
+  text-align: center;
+  color: var(--muted);
+  font-size: 14px;
+  padding: 40px 0;
+}
+
+.cm-item {
+  display: flex;
+  gap: 12px;
+  padding: 16px 0;
+  border-bottom: 1px solid var(--line);
+}
+
+.cm-item:last-child { border-bottom: none; }
+
+.cm-item.cm-deleted { opacity: .5; }
+
+.cm-avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  font-size: 15px;
+  font-weight: 700;
+  user-select: none;
+}
+
+.cm-body { flex: 1; min-width: 0; }
+
+.cm-meta {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 6px;
+  flex-wrap: wrap;
+}
+
+.cm-user {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.cm-time {
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.cm-text {
+  font-size: 14px;
+  line-height: 1.75;
+  color: var(--text);
+  opacity: .92;
+  word-break: break-word;
+  white-space: pre-wrap;
+}
+
+.cm-text.cm-gone {
+  color: var(--muted);
+  font-style: italic;
+  opacity: .7;
+}
+
+.cm-actions {
+  display: flex;
+  gap: 14px;
+  margin-top: 8px;
+}
+
+.cm-act {
+  background: none;
+  border: none;
+  padding: 0;
+  font-size: 12px;
+  color: var(--muted);
+  cursor: pointer;
+  transition: color .2s;
+}
+
+.cm-act:hover { color: var(--brand); }
+.cm-act.cm-del:hover { color: #ef4444; }
+.cm-act:disabled { opacity: .5; cursor: not-allowed; }
+
+/* ---------- 回复 ---------- */
+.cm-replies {
+  margin-left: 48px;
+  padding-left: 16px;
+  border-left: 2px solid var(--line);
+}
+
+.cm-is-reply {
+  padding: 12px 0;
+  border-bottom: none;
+}
+
+.cm-is-reply .cm-avatar {
+  width: 28px;
+  height: 28px;
+  font-size: 12px;
+}
+
+.cm-is-reply .cm-text { font-size: 13px; }
+.cm-is-reply .cm-user { font-size: 13px; }
+
+/* ---------- 分页 ---------- */
+.cm-pager {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  margin-top: 24px;
+}
+
+.cm-page {
+  background: var(--card-solid);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 7px 16px;
+  font-size: 13px;
+  color: var(--text);
+  cursor: pointer;
+  transition: all .2s;
+}
+
+.cm-page:hover:not(:disabled) {
+  border-color: var(--brand);
+  color: var(--brand);
+}
+
+.cm-page:disabled { opacity: .4; cursor: not-allowed; }
+
+.cm-page-info {
+  font-size: 13px;
+  color: var(--muted);
+}
+
+/* ---------- 移动端 ---------- */
+@media (max-width: 640px) {
+  .comments { padding: 0 16px; margin-top: 36px; }
+  .cm-title { font-size: 17px; }
+  .cm-replies { margin-left: 20px; padding-left: 12px; }
+  .cm-avatar { width: 30px; height: 30px; font-size: 13px; }
+  .cm-text { font-size: 13px; }
+  .cm-submit { padding: 8px 16px; font-size: 13px; }
+}

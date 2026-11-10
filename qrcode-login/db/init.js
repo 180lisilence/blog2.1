@@ -27,6 +27,26 @@ const CREATE_TABLES_SQL = [
     data_value JSON,
     updated_at BIGINT NOT NULL,
     PRIMARY KEY (username, data_key)
+  ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci`,
+  // 博客文章评论表
+  // - post_slug 是文章标识（对应 blog/posts/<slug>.html 的文件名，不含扩展名）
+  // - parent_id 指向同表 id，实现一级回复；NULL 表示顶层评论
+  // - 删除采用软删除（status=0），保留回复链不被破坏
+  `CREATE TABLE IF NOT EXISTS comments (
+    id BIGINT NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    post_slug VARCHAR(128) NOT NULL,
+    parent_id BIGINT DEFAULT NULL,
+    username VARCHAR(255) NOT NULL,
+    content TEXT NOT NULL,
+    status TINYINT NOT NULL DEFAULT 1,
+    ip VARCHAR(64) DEFAULT NULL,
+    user_agent VARCHAR(255) DEFAULT NULL,
+    created_at BIGINT NOT NULL,
+    updated_at BIGINT NOT NULL,
+    INDEX idx_post (post_slug, status, created_at),
+    INDEX idx_parent (parent_id),
+    INDEX idx_user (username),
+    INDEX idx_created (created_at)
   ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci`
 ];
 
