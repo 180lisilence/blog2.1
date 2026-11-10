@@ -402,3 +402,5 @@ Docker Compose 会自动启动：
 - 2026-11-10/11：独立部署 `blog-sentinel` 访问审计后台（未纳入本仓库），含态势地图与「注册 / 在线」视图。
 - 2026-11-11：清理线上 85 个渗透测试账号，仅保留 7 个；`user_data` 由 19.95MB 降至 29,759 字节，删除前全量备份留在服务器 `/root/`。
 - 2026-11-11：`main` 同步推送至 GitHub 与 Gitee 双平台。
+- 2026-11-11（运维侧安全整改，未纳入代码仓库）：nginx 两个 vhost 的 HSTS 补全为 `max-age=31536000; includeSubDomains; preload`；修复 `blog-sentinel` vhost 因 `location /` 内 `add_header` 屏蔽继承导致 3100 端口实际缺失 HSTS 的问题（在该 location 内重新声明）。明文 HTTP 80 跳转块仍不下发 HSTS。
+- 2026-11-11（运维侧安全整改）：`blog-sentinel` 公开 `/health` 移除 `counts`（访问/登录/事件数不再匿名可读），只保留 `ok/status/ts`；详细计数移到需后台登录的 `GET /api/audit/health`，看板「系统·接入」三项数值不退化；静态资源版本升 `?v=5`。主站 `/health` 未改动。
