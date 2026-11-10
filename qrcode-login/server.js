@@ -137,6 +137,61 @@ app.post("/api/members/admin", requireSentinelKey, async (req, res) => {
   }
 });
 
+// ========== 在线状态提示（presence） ==========
+// 三端联动的用户端一侧：用户端轮询 /api/presence/state 感知「被管理员下线」；
+// 提示开关由主站持有，审计后台经带密钥接口读写，两端读同一份状态，天然同步。
+// 必须挂在 /api 通用登录 / CSRF 守卫之前：被踢后 token 已从 webSessions 删除，
+// 走通用守卫会 401，反而无法把「你已下线」的提示送达用户端。
+const presence = require("./modules/presence").getPresence();
+app.get("/api/presence/state", (req, res) => {
+  try {
+    res.set("Cache-Control", "no-store, no-cache, must-revalidate, private");
+    res.json({ ok: true, ...presence.state(getTokenFromReq(req)) });
+  } catch (e) {
+    logger.error("presence", "状态查询失败", e.message);
+    res.json({ ok: true, status: "off", pollMs: 0, serverTs: Date.now() });
+  }
+});
+app.get("/api/presence/settings", requireSentinelKey, (req, res) => {
+  res.json({ ok: true, settings: presence.getSettings() });
+});
+app.post("/api/presence/settings", requireSentinelKey, (req, res) => {
+  try {
+    const b = req.body || {};
+    const patch = {};
+    if (typeof b.enabled === "boolean") patch.enabled = b.enabled;
+    if (typeof b.onlineNotice === "boolean") patch.onlineNotice = b.onlineNotice;
+    if (typeof b.offlineNotice === "boolean") patch.offlineNotice = b.offlineNotice;
+    if (typeof b.offlineMessage === "string") patch.offlineMessage = b.offlineMessage;
+    if (b.pollMs !== undefined) patch.pollMs = b.pollMs;
+    res.json({ ok: true, settings: presence.updateSettings(patch) });
+  } catch (e) {
+    logger.error("presence", "提示开关更新失败", e.message);
+    res.status(500).json({ ok: false, msg: "提示开关更新失败" });
+  }
+});
+
+// ========== 公开内容预览（登录页展示博客文章 / 项目，激发登录欲望） ==========
+// 只读 blog/index.html 中已有的人工维护卡片：脱敏 + 限长 + 站内链接白名单。
+// 不查库、不碰用户数据、不读私有项目；未登录也能取，但只有宣传性字段。
+const publicPreview = require("./modules/public/preview").getPreview();
+app.get("/api/public/preview", (req, res) => {
+  try {
+    res.set("Cache-Control", "public, max-age=300");
+    res.json(publicPreview.get());
+  } catch (e) {
+    logger.error("preview", "内容预览生成失败", e.message);
+    res.json({ ok: true, generatedAt: Date.now(), tagline: "", posts: [], projects: [] });
+  }
+});
+
+// 用户端 presence 轮询脚本：由 blogStatic 自动注入所有 /blog HTML 文档。
+// 放在公开路由（无需登录），严格 CSP 下同源自建脚本可正常加载。
+app.get("/presence-client.js", (req, res) => {
+  res.set("Cache-Control", "public, max-age=300");
+  res.sendFile(path.join(config.blogRoot, "presence-client.js"));
+});
+
 app.use(ensureCsrfCookie);     // 确保 CSRF token cookie
 
 // 请求日志
@@ -274,6 +329,9 @@ async function start() {
 
   // 4.1 启动扫码一次性票据清理
   qrTicket.startCleanup();
+
+  // 4.2 启动在线状态提示的下线标记清理（10 分钟 TTL，定时回收）
+  presence.startCleanup();
 
   // 5. 初始化 OCR 管理器（可选自动启动）
   try {

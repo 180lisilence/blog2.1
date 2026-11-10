@@ -20,11 +20,14 @@
       position: relative;
       display: flex;
       flex-direction: column;
-      justify-content: center;
-      padding: 60px 56px;
-      overflow: hidden;
+      justify-content: flex-start;
+      padding: 40px 48px;
+      overflow-x: hidden;
+      overflow-y: auto;
       min-height: 100vh;
+      scrollbar-width: none;
     }
+    .brand-panel::-webkit-scrollbar { display: none; }
     .brand-panel::before {
       content: '';
       position: absolute;
@@ -52,32 +55,68 @@
       position: relative; z-index: 1;
     }
     .brand-title {
-      font-size: 36px; font-weight: 700; color: #fff;
-      line-height: 1.3; margin-bottom: 16px;
+      font-size: 30px; font-weight: 700; color: #fff;
+      line-height: 1.3; margin-bottom: 10px;
       position: relative; z-index: 1;
     }
     .brand-sub {
-      font-size: 16px; color: rgba(255,255,255,.8);
-      line-height: 1.8; margin-bottom: 40px;
+      font-size: 14px; color: rgba(255,255,255,.8);
+      line-height: 1.7; margin-bottom: 22px;
       position: relative; z-index: 1;
     }
-    .brand-features {
-      display: flex; flex-direction: column; gap: 14px;
-      position: relative; z-index: 1;
+
+    /* 博客内容预览：登录页也能看到文章与项目，激发登录欲望 */
+    .preview-section { position: relative; z-index: 1; margin-bottom: 18px; }
+    .preview-head {
+      display: flex; align-items: baseline; justify-content: space-between;
+      color: #fff; font-size: 13px; font-weight: 700;
+      padding-bottom: 7px; margin-bottom: 9px;
+      border-bottom: 1px solid rgba(255,255,255,.18);
     }
-    .feature-item {
-      display: flex; align-items: center; gap: 12px;
-      color: rgba(255,255,255,.9); font-size: 14px;
+    .preview-head small { font-size: 11px; font-weight: 400; color: rgba(255,255,255,.62); }
+    .preview-list { display: flex; flex-direction: column; gap: 7px; }
+    .preview-card {
+      display: block; padding: 9px 12px; border-radius: 9px;
+      background: rgba(255,255,255,.10); border: 1px solid rgba(255,255,255,.14);
+      color: #fff; text-decoration: none; cursor: pointer;
+      transition: transform .18s, background .18s, border-color .18s;
     }
-    .feature-icon {
-      width: 32px; height: 32px; border-radius: 8px;
-      background: rgba(255,255,255,.15);
-      display: flex; align-items: center; justify-content: center;
-      font-size: 16px;
+    .preview-card:hover {
+      transform: translateY(-2px); background: rgba(255,255,255,.18);
+      border-color: rgba(255,255,255,.34);
     }
+    .pc-top { display: flex; align-items: center; gap: 6px; margin-bottom: 4px; }
+    .pc-tag {
+      font-size: 10px; color: rgba(255,255,255,.78);
+      background: rgba(255,255,255,.14); padding: 2px 7px; border-radius: 20px;
+    }
+    .pc-icon { font-size: 15px; }
+    .pc-title { display: block; font-size: 13px; font-weight: 600; line-height: 1.4; margin-bottom: 3px; }
+    .pc-summary {
+      display: block; font-size: 11px; color: rgba(255,255,255,.62);
+      line-height: 1.45; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    }
+    .pc-date { display: block; font-size: 10px; color: rgba(255,255,255,.45); margin-top: 4px; }
+    .preview-skeleton { font-size: 12px; color: rgba(255,255,255,.5); padding: 8px 2px; }
+    .brand-cta {
+      display: inline-flex; align-items: center; gap: 8px; margin-top: 4px;
+      padding: 11px 20px; border: 0; border-radius: 10px;
+      background: rgba(255,255,255,.95); color: #5b45a8;
+      font-size: 14px; font-weight: 700; cursor: pointer;
+      position: relative; z-index: 1; transition: transform .18s;
+    }
+    .brand-cta:hover { background: #fff; transform: translateY(-1px); }
+    .preview-tip {
+      position: sticky; bottom: 0; left: 0; right: 0;
+      margin-top: 14px; padding: 10px 14px; border-radius: 10px;
+      background: rgba(15,10,40,.55); color: #fff; font-size: 13px;
+      text-align: center; opacity: 0; pointer-events: none;
+      transition: opacity .25s; z-index: 3;
+    }
+    .preview-tip.show { opacity: 1; }
     .brand-footer {
-      position: absolute; bottom: 32px; left: 56px;
-      font-size: 12px; color: rgba(255,255,255,.5);
+      position: relative; bottom: auto; left: auto; margin-top: 22px;
+      font-size: 12px; color: rgba(255,255,255,.45);
       z-index: 1;
     }
 
@@ -241,13 +280,6 @@
     .qr-step.active i { background: #667eea; }
     .qr-step.done i { background: #10b981; }
 
-    /* 访客入口 */
-    .guest-entry {
-      margin-top: 28px;
-      padding-top: 20px;
-      border-top: 1px solid #f3f4f6;
-      text-align: center;
-    }
     .guest-btn {
       width: 100%;
       padding: 11px;
@@ -394,15 +426,22 @@
 <!-- 左侧品牌区 -->
 <div class="brand-panel">
   <div class="brand-logo">M</div>
-  <h1 class="brand-title">项目中心<br>一站式项目管理平台</h1>
-  <p class="brand-sub">汇聚所有项目，一键直达。<br>支持扫码登录、账号密码登录，安全便捷。</p>
-  <div class="brand-features">
-    <div class="feature-item"><div class="feature-icon">🚀</div><span>多项目集中管理，快速切换</span></div>
-    <div class="feature-item"><div class="feature-icon">🔐</div><span>安全登录，7天免登录</span></div>
-    <div class="feature-item"><div class="feature-icon">📱</div><span>手机扫码，电脑端确认</span></div>
-    <div class="feature-item"><div class="feature-icon">➕</div><span>支持自定义项目导入</span></div>
+  <h1 class="brand-title">我的博客 · 项目中心</h1>
+  <p class="brand-sub" id="previewTagline">写点文字，也把生活和工作整理成每天打开的一页。<br>登录后可阅读全文、进入工作台与所有项目。</p>
+
+  <div class="preview-section">
+    <div class="preview-head"><span>📖 最新文章</span><small>登录后阅读全文</small></div>
+    <div class="preview-list" id="previewPosts"><div class="preview-skeleton">正在加载文章…</div></div>
   </div>
-  <div class="brand-footer">© 2026 项目中心 · 保留所有权利</div>
+
+  <div class="preview-section">
+    <div class="preview-head"><span>🧩 精选项目</span><small>登录后一键直达</small></div>
+    <div class="preview-list" id="previewProjects"><div class="preview-skeleton">正在加载项目…</div></div>
+  </div>
+
+  <button class="brand-cta" onclick="focusPassword()">🔐 登录后解锁全部内容 →</button>
+  <div class="preview-tip" id="previewTip">🔒 请先登录，登录后即可阅读全文与项目</div>
+  <div class="brand-footer">© 2026 我的博客 · 保留所有权利</div>
 </div>
 
 <!-- 右侧登录区 -->
@@ -508,12 +547,6 @@
       </div>
     </div>
 
-    <!-- 访客入口 -->
-    <div class="guest-entry">
-      <button class="guest-btn" onclick="guestEnter()" title="无法启动后台服务时，跳过登录直接进入博客">
-        ⚡ 无法连接服务？点此直接进入博客
-      </button>
-    </div>
   </div>
 </div>
 
@@ -523,6 +556,84 @@
   let countdownTimer = null;
   let expireAt = 0;
   let currentTab = 'password';
+
+  // ========== 登录页内容预览：公开只读接口，展示博客文章 / 项目 ==========
+  // 数据源由服务端脱敏 + 站内链接白名单处理，这里仅做渲染转义，不拼外部 URL。
+  function escHtml(s) {
+    return String(s == null ? "" : s).replace(/[&<>"']/g, c => ({
+      "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"
+    })[c]);
+  }
+  function focusPassword() {
+    switchTab('password');
+    const el = document.getElementById('pwdUser');
+    if (el) { try { el.focus({ preventScroll: true }); } catch (e) { el.focus(); } }
+    const tip = document.getElementById('previewTip');
+    if (tip) {
+      tip.classList.add('show');
+      clearTimeout(window.__previewTipTimer);
+      window.__previewTipTimer = setTimeout(() => tip.classList.remove('show'), 2600);
+    }
+  }
+  function renderPostCard(p) {
+    const href = escHtml(p.href || '/blog/');
+    const link = (p.href && /^\/blog\//.test(p.href))
+      ? `<a class="preview-card" href="${href}" onclick="return previewGate(event)">`
+      : `<div class="preview-card">`;
+    const close = (p.href && /^\/blog\//.test(p.href)) ? `</a>` : `</div>`;
+    return link +
+      `<span class="pc-top"><span class="pc-tag">${escHtml(p.tag || '文章')}</span></span>` +
+      `<span class="pc-title">${escHtml(p.title)}</span>` +
+      `<span class="pc-summary">${escHtml(p.summary)}</span>` +
+      (p.date ? `<span class="pc-date">${escHtml(p.date)}</span>` : '') + close;
+  }
+  function renderProjectCard(p) {
+    const href = escHtml(p.href || '/projects.html');
+    const link = (p.href && /^\/(?:blog\/|projects\.html)/.test(p.href))
+      ? `<a class="preview-card" href="${href}" onclick="return previewGate(event)">`
+      : `<div class="preview-card">`;
+    const close = (p.href && /^\/(?:blog\/|projects\.html)/.test(p.href)) ? `</a>` : `</div>`;
+    const tag = (p.tags && p.tags[0]) || '项目';
+    return link +
+      `<span class="pc-top"><span class="pc-icon">${escHtml(p.icon || '📦')}</span><span class="pc-tag">${escHtml(tag)}</span></span>` +
+      `<span class="pc-title">${escHtml(p.name)}</span>` +
+      `<span class="pc-summary">${escHtml(p.summary)}</span>` + close;
+  }
+  // 预览卡片点击：未登录时提示先登录，不直接把用户甩给 302 回环（那正是「点了没反应」的体验）
+  function previewGate(e) {
+    // 已登录（7 天内 valid token）由服务端鉴权决定，这里只做体验提示；
+    // token 失效时 /blog/* 会 302 回本页，届时用户会看到登录表单，符合预期。
+    const hasToken = document.cookie.split(';').some(s => s.trim().startsWith('web_token=') && s.trim().length > 11);
+    if (hasToken) return true;
+    if (e) e.preventDefault();
+    focusPassword();
+    return false;
+  }
+  function loadPreview() {
+    fetch('/api/public/preview', { credentials: 'same-origin', cache: 'no-store' })
+      .then(r => r.ok ? r.json() : Promise.reject(new Error('HTTP ' + r.status)))
+      .then(d => {
+        if (!d || !d.ok) return;
+        const posts = (d.posts || []).slice(0, 3);
+        const projects = (d.projects || []).slice(0, 3);
+        const pbox = document.getElementById('previewPosts');
+        const jbox = document.getElementById('previewProjects');
+        if (pbox) pbox.innerHTML = posts.length ? posts.map(renderPostCard).join('') : '<div class="preview-skeleton">暂无文章</div>';
+        if (jbox) jbox.innerHTML = projects.length ? projects.map(renderProjectCard).join('') : '<div class="preview-skeleton">暂无项目</div>';
+        if (d.tagline) {
+          const tag = document.getElementById('previewTagline');
+          if (tag) tag.textContent = d.tagline + ' 登录后可阅读全文、进入工作台与所有项目。';
+        }
+      })
+      .catch(() => {
+        // 预览接口失败不影响登录：保留骨架文案
+        const pbox = document.getElementById('previewPosts');
+        const jbox = document.getElementById('previewProjects');
+        if (pbox) pbox.innerHTML = '<div class="preview-skeleton">登录后查看最新文章</div>';
+        if (jbox) jbox.innerHTML = '<div class="preview-skeleton">登录后查看精选项目</div>';
+      });
+  }
+  loadPreview();
 
   // ========== CSRF 工具 ==========
   // 内存里缓存的 token：cookie 读不到时用它兜底。
@@ -701,12 +812,6 @@
       btn.style.opacity = sliderVerified ? '1' : '0.5';
       btn.style.cursor = sliderVerified ? 'pointer' : 'not-allowed';
     }
-  }
-
-  // 访客模式
-  function guestEnter() {
-    try { document.cookie = "web_guest=1; path=/; max-age=604800; SameSite=Lax"; } catch (e) {}
-    location.href = "blog/index.html";
   }
 
   // ========== 其他方式登录：直接登录（个人免密） ==========
@@ -1007,7 +1112,6 @@
           const t = cur ? decodeURIComponent(cur.split("=").slice(1).join("=")) : "";
           try { await apiFetch("/api/logout", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ token: t }) }); } catch (e) {}
           document.cookie = "web_token=; path=/; max-age=0";
-          document.cookie = "web_guest=; path=/; max-age=0";
           location.reload();
         };
         return;

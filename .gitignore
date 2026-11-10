@@ -48,3 +48,6 @@ qrcode-login/data/
 qrcode-login/_srv_pentest*.sh
 qrcode-login/_pentest_verify.js
 *.doc
+
+# 独立审计后台：独立部署、独立密钥，不随主站仓库发布
+blog-sentinel/

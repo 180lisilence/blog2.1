@@ -1,7 +1,7 @@
 # 🌍 个人博客 & 作品集（登录门禁版）
 
 > **项目状态**：🚧 开发中 / 个人使用（已部署 https://lizyi.asia）
-> **当前版本**：2.2.4（2026-11-11，工作台 AI 模型扫描）｜完整版本历史见文末
+> **当前版本**：2.2.5（2026-11-11，presence 三端联动 + 登录页内容预览）｜完整版本历史见文末
 > 本项目为个人博客与作品集系统，功能持续迭代中。已完成三轮渗透测试加固并持续在生产环境运行。
 
 一个集成了多个网页项目和游戏的个人博客系统，前面加了**登录门禁**：支持扫码登录和账号密码登录双模式，登录后才能进入博客和使用全部项目。
@@ -362,6 +362,7 @@ Docker Compose 会自动启动：
 | **2.2.2** | 2026-11-10 | `bd87837` | 第二次修复：W2/W3 系列残留、服务端 AI 代理、数据接口与缓存/CSP 收紧 |
 | **2.2.3** | 2026-11-11 | `e12c693` | 第三次修复：注册验证码与限速、移除 `?token=` 通道、登录喷洒防护、scrypt 异步化、前端全量转义 |
 | **2.2.4** | 2026-11-11 | `ffdad35` | 工作台 AI 设置新增「模型扫描」：接口地址/密钥 + 扫描按钮、去重合并模型列表、五类失败提示；模型供应商由 6 家扩充到 22 家 |
+| **2.2.5** | 2026-11-11 | 见下方提交 | presence 三端联动：后台下线弹窗、用户上线提示、提示开关与用户端同步；登录页新增文章 / 项目预览，删除失效的 guest 入口 |
 
 ### 2.2.1 — 三轮渗透报告全量修复（2026-11-10）
 
@@ -397,6 +398,15 @@ Docker Compose 会自动启动：
 - 模型供应商从 6 家扩充到 22 家（保留原有全部选项，新增 Anthropic、Gemini、硅基流动、百度千帆、腾讯混元、讯飞星火、MiniMax、阶跃星辰、零一万物、百川、Mistral、Groq、xAI、Together AI、OpenRouter、Cohere）；服务端 chat 代理同步支持 OpenAI / Anthropic / Gemini 三种协议，新供应商选中即可对话。
 - 验证：本地综合 94/94、既有测试 57/57、生产端到端 18/18。
 
+### 2.2.5 — presence 三端联动与登录页内容预览（2026-11-11）
+
+- **主站 presence 权威服务**：新增 `qrcode-login/modules/presence/index.js`，统一保存提示开关（`data/presence-settings.json`）与被强制下线的 token 标记；`GET /api/presence/state` 公开返回 `off` / `anonymous` / `online` / `kicked` / `expired` 五态，`GET|POST /api/presence/settings` 由 `x-sentinel-key` 保护，供后台读写开关。
+- **用户端下线弹窗**：`presence-client.js` 由 `blogStatic` 自动注入所有 `/blog/*` HTML（零依赖、严格 CSP、CSSOM 造样式、token 只走 Cookie）；`kicked` 时弹「你已被管理员强制下线，请重新登录」，后台关掉「下线弹窗」开关则静默清理 Cookie 回登录页。账号管理的 `rename` / `reset-password` / `kick` / `delete` 在销毁会话前调用 `presence.markKicked(token, username, reason)`，用户端下一轮询周期即感知。
+- **后台上线 / 下线提示**：`sentinel-adapter.js` 在 `createWebSession()` 成功时写 `member_online` 事件（`/api/audit/live` 只读 `events`，原登录事件只进 `logins` 不会触发提示）；看板据此弹「用户 xxx 已上线」，`member_admin(kick)` 弹下线通知。新增「上线 / 下线提示」面板可配总开关、上线提示、下线提示、下线文案与轮询间隔，保存后同步推进 live 游标避免事件时序错位；登录表单成功也显式启动 presence 轮询。
+- **登录页内容预览**：新增 `GET /api/public/preview`，解析 `blog/index.html` 的文章 / 项目卡片，脱敏 + 限长 + 站内链接白名单 + 5 分钟 mtime 缓存；登录页最多渲染 3 篇文章 + 3 个项目卡片与登录 CTA。同时删除失效的 `guestEnter()` / `web_guest` 入口（写 Cookie 但后端 token 通道不认，302 静默回环，用户感知「点击无响应」）。
+- **缓存版本补修**：看板 `index.html` 四个静态引用统一升 `?v=7`（`style.css` 本轮新增 presence 样式但曾漏升版本），两个历史验证脚本的 `?v=4` 硬编码断言改为通用正则。
+- **验证**：本地 sentinel 冒烟 75/75、主站 presence HTTP E2E 19/19、用户端弹窗浏览器 17/17、后台开关浏览器 19/19；生产逐文件 md5 一致、公网三端联动 13/13、后台上线 toast 5/5；补部署后公网 `?v=7` 四个资源均 200 且新 CSS / JS 内容命中，缓存头 `no-store`。
+
 ### 运维记录（不计入版本号）
 
 - 2026-11-10/11：独立部署 `blog-sentinel` 访问审计后台（未纳入本仓库），含态势地图与「注册 / 在线」视图。
@@ -404,3 +414,4 @@ Docker Compose 会自动启动：
 - 2026-11-11：`main` 同步推送至 GitHub 与 Gitee 双平台。
 - 2026-11-11（运维侧安全整改，未纳入代码仓库）：nginx 两个 vhost 的 HSTS 补全为 `max-age=31536000; includeSubDomains; preload`；修复 `blog-sentinel` vhost 因 `location /` 内 `add_header` 屏蔽继承导致 3100 端口实际缺失 HSTS 的问题（在该 location 内重新声明）。明文 HTTP 80 跳转块仍不下发 HSTS。
 - 2026-11-11（运维侧安全整改）：`blog-sentinel` 公开 `/health` 移除 `counts`（访问/登录/事件数不再匿名可读），只保留 `ok/status/ts`；详细计数移到需后台登录的 `GET /api/audit/health`，看板「系统·接入」三项数值不退化；静态资源版本升 `?v=5`。主站 `/health` 未改动。
+- 2026-11-11：presence 三端联动生产逐文件部署，备份 `/root/blog2.1-presence-deploy-backup-20261110T194649`（11 文件 244K）；生产 `server.js` 以生产版本为基底精确插块（md5 `8dcf8dd3b3ac5fb739db74c2a24f4c2f`），从未用本地版本整体覆盖。收尾核对发现看板 CSS 漏升版本号，补升 `?v=7` 并单独部署 3 个文件（备份同目录 `static-v7/`）。

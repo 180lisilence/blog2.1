@@ -221,23 +221,49 @@ function createBlogStatic(opts) {
     // 已登录：正常返回
     applyPrivateCacheHeaders(res);
     res.setHeader("Content-Type", contentTypeFor(target));
-    res.setHeader("Content-Length", stat.size);
-
-    const etag = `W/"${stat.size.toString(16)}-${Math.floor(stat.mtimeMs).toString(16)}"`;
-    res.setHeader("ETag", etag);
-    res.setHeader("Last-Modified", stat.mtime.toUTCString());
 
     const inm = req.headers["if-none-match"];
-    if (inm && inm === etag) return res.status(304).end();
-    if (req.method === "HEAD") return res.status(200).end();
+    function sendBody(buf, size) {
+      res.setHeader("Content-Length", size);
+      // ETag 必须反映注入后的真实字节数，否则浏览器 304 会拿回未注入的旧 HTML
+      const etag = `W/"${size.toString(16)}-${Math.floor(stat.mtimeMs).toString(16)}"`;
+      res.setHeader("ETag", etag);
+      res.setHeader("Last-Modified", stat.mtime.toUTCString());
+      if (inm && inm === etag) return res.status(304).end();
+      if (req.method === "HEAD") return res.status(200).end();
+      if (buf) return res.status(200).end(buf);
 
-    const stream = fs.createReadStream(target);
-    stream.on("error", (e) => {
-      logger.error("blog-static", `读取失败: ${target}`, e);
-      if (!res.headersSent) res.status(500).type("text/plain; charset=utf-8").end("500");
-      else res.end();
-    });
-    stream.pipe(res);
+      const stream = fs.createReadStream(target);
+      stream.on("error", (e) => {
+        logger.error("blog-static", `读取失败: ${target}`, e);
+        if (!res.headersSent) res.status(500).type("text/plain; charset=utf-8").end("500");
+        else res.end();
+      });
+      stream.pipe(res);
+    }
+
+    // 在线状态提示：所有 /blog HTML 文档注入 presence 轮询脚本，一处改动全站生效。
+    // 用户在博客任意页面被管理员下线都能收到弹窗；非 HTML 资源与未登录请求不受影响。
+    // 脚本同源、零外部依赖，严格 CSP（script-src 'self'）下可正常加载。
+    if (/\.(?:html?|htm)$/i.test(target)) {
+      return fs.readFile(target, "utf8", (err, raw) => {
+        if (err) {
+          logger.error("blog-static", `读取失败: ${target}`, err);
+          return res.status(500).type("text/plain; charset=utf-8").end("500");
+        }
+        const tag = '<script src="/presence-client.js?v=1" defer></script>';
+        let injected = raw;
+        if (raw.indexOf("/presence-client.js") === -1) {
+          injected = /<\/body\s*>/i.test(raw)
+            ? raw.replace(/<\/body\s*>/i, tag + "</body>")
+            : raw + tag;
+        }
+        const buf = Buffer.from(injected, "utf8");
+        sendBody(buf, buf.length);
+      });
+    }
+
+    sendBody(null, stat.size);
   };
 }
 

@@ -21,6 +21,9 @@ function createMembersAdmin(deps = {}) {
   const model = deps.model || require("../auth/model");
   const session = deps.session || require("../auth/session");
   const users = deps.users || model.users; // Map: username -> { salt, hash, createdAt, builtin }
+  // presence：记录「被管理员强制下线」的 token 凭据，供用户端轮询弹窗。
+  // 测试可注入 mock；生产复用单例，与 server.js 的提示开关同源。
+  const presence = deps.presence || require("../presence").getPresence();
 
   function hashPassword(password, salt) {
     return new Promise((resolve, reject) => {
@@ -43,10 +46,20 @@ function createMembersAdmin(deps = {}) {
     if (user.builtin) throw errors.forbidden(`内置账号禁止${action}`);
   }
 
-  function destroySessionsOf(username) {
+  /**
+   * 销毁目标账号的全部 Web 会话。
+   * 删除前先把 token 记入 presence 的「被强制下线」表 —— 用户端下次轮询
+   * /api/presence/state 时凭这个标记区分「管理员下线」与「主动登出 / 过期」。
+   * reason 只在管理员写操作里传；主动登出路径不经过这里，不会被误标。
+   */
+  function destroySessionsOf(username, reason) {
     let n = 0;
     for (const [token, s] of session.webSessions) {
       if (s && s.username === username) {
+        if (reason) {
+          try { presence.markKicked(token, username, reason); }
+          catch (e) { logger.warn("members-admin", "下线标记写入失败（不影响会话失效）", e.message); }
+        }
         session.webSessions.delete(token);
         n++;
       }
@@ -99,7 +112,7 @@ function createMembersAdmin(deps = {}) {
 
     users.delete(username);
     users.set(newUsername, user); // 同一对象引用，createdAt / builtin / hash 保持不变
-    const sessions = destroySessionsOf(username);
+    const sessions = destroySessionsOf(username, "rename");
     logger.info("members-admin", `账号重命名: ${username} -> ${newUsername}（会话失效 ${sessions}）`);
     return { action: "rename", from: username, to: newUsername, sessionsDestroyed: sessions };
   }
@@ -118,15 +131,15 @@ function createMembersAdmin(deps = {}) {
 
     user.salt = salt;
     user.hash = hash;
-    const sessions = destroySessionsOf(username);
+    const sessions = destroySessionsOf(username, "reset-password");
     logger.info("members-admin", `重置密码: ${username}（会话失效 ${sessions}）`);
     return { action: "reset-password", username, sessionsDestroyed: sessions };
   }
 
-  /** 强制下线：销毁该账号所有 Web 会话（不动密码） */
+  /** 强制下线：销毁该账号所有 Web 会话（不动密码），并留下用户端可识别的下线标记 */
   async function kick(rawName) {
     const { username } = requireUser(rawName);
-    const sessions = destroySessionsOf(username);
+    const sessions = destroySessionsOf(username, "kick");
     logger.info("members-admin", `强制下线: ${username}（会话失效 ${sessions}）`);
     return { action: "kick", username, sessionsDestroyed: sessions };
   }
@@ -142,7 +155,7 @@ function createMembersAdmin(deps = {}) {
     });
 
     users.delete(username);
-    const sessions = destroySessionsOf(username);
+    const sessions = destroySessionsOf(username, "delete");
     logger.warn("members-admin", `删除账号: ${username}（会话失效 ${sessions}）`);
     return { action: "delete", username, sessionsDestroyed: sessions };
   }
