@@ -33,23 +33,81 @@
     return m ? decodeURIComponent(m[1]) : '';
   }
 
-  // 统一的 API 请求：自动带 CSRF token
+  // CSRF token 内存兜底
+  // cookie 不一定读得到：Secure cookie 走 http 会被浏览器丢弃、隐私模式会拦截、
+  // cookie 也可能在页面开着的时候过期。只靠 document.cookie 拿 token，
+  // 一旦拿不到就会带着空 token 发请求，直接被 403 打回"CSRF 验证失败"。
+  var csrfCache = '';
+  function getCsrf() {
+    var v = getCookie('csrf_token');
+    if (v && v !== 'null' && v !== 'undefined') {
+      csrfCache = v;
+      return v;
+    }
+    return csrfCache;
+  }
+
+  // 主动向服务端要 token：GET 接口不过 verifyCsrfToken，响应体里直接带 token
+  // force=true 时带 ?fresh=1 强制换发新 token，用于失效重试
+  var csrfPending = null;
+  function refreshCsrf(force) {
+    if (csrfPending) return csrfPending;
+    var url = '/api/csrf-token' + (force ? '?fresh=1&_t=' + Date.now() : '');
+    csrfPending = fetch(url, { credentials: 'same-origin', cache: 'no-store' })
+      .then(function (r) { return r.json(); })
+      .then(function (d) {
+        if (d && d.ok && d.csrfToken) { csrfCache = d.csrfToken; return d.csrfToken; }
+        return '';
+      })
+      .catch(function () { return ''; })
+      .then(function (t) { csrfPending = null; return t; });
+    return csrfPending;
+  }
+
+  function parseJson(r) {
+    return r.json().catch(function () {
+      return { ok: false, msg: '服务器返回异常（HTTP ' + r.status + '）' };
+    });
+  }
+
+  // 统一的 API 请求：自动带 CSRF token，拿不到就先补，403 时补一次再重试
   function api(method, path, body) {
     var headers = {};
     if (body !== undefined) headers['Content-Type'] = 'application/json';
-    var csrf = getCookie('csrf_token');
-    if (csrf) headers['X-CSRF-Token'] = csrf;
 
-    return fetch(path, {
-      method: method,
-      headers: headers,
-      credentials: 'same-origin',
-      body: body === undefined ? undefined : JSON.stringify(body)
-    }).then(function (r) {
-      return r.json().catch(function () {
-        return { ok: false, msg: '服务器返回异常（HTTP ' + r.status + '）' };
+    var isWrite = String(method).toUpperCase() !== 'GET';
+
+    function send(token) {
+      var h = {};
+      for (var k in headers) h[k] = headers[k];
+      if (token) h['X-CSRF-Token'] = token;
+      return fetch(path, {
+        method: method,
+        headers: h,
+        credentials: 'same-origin',
+        body: body === undefined ? undefined : JSON.stringify(body)
       });
-    });
+    }
+
+    if (!isWrite) {
+      return send(null).then(parseJson);
+    }
+
+    var token = getCsrf();
+    return (token ? Promise.resolve(token) : refreshCsrf())
+      .then(send)
+      .then(function (r) {
+        if (r.status !== 403) return r;
+        // 可能是 token 失效，补一个重试一次（只一次，防死循环）
+        return parseJson(r.clone()).then(function (d) {
+          if (!d || String(d.msg || '').indexOf('CSRF') < 0) return r;
+          return refreshCsrf(true).then(function (fresh) {
+            if (!fresh) return r;
+            return send(fresh);
+          });
+        });
+      })
+      .then(parseJson);
   }
 
   // 时间格式化：刚刚 / N 分钟前 / N 小时前 / 日期

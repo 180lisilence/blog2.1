@@ -310,17 +310,68 @@
   }
 
   // CSRF 工具
+  // 内存兜底：cookie 读不到时（Secure cookie 走 http 被丢弃 / 隐私模式拦截 /
+  // cookie 已过期但页面还开着）还能用缓存的 token，不至于直接发 null 被 403。
+  let csrfTokenCache = null;
+
   function getCsrfToken() {
     const match = document.cookie.match(/(?:^|; )csrf_token=([^;]+)/);
-    return match ? decodeURIComponent(match[1]) : null;
+    if (match) {
+      const v = decodeURIComponent(match[1]);
+      if (v && v !== "null" && v !== "undefined") {
+        csrfTokenCache = v;
+        return v;
+      }
+    }
+    return csrfTokenCache;
   }
+
+  // 主动向服务端要 token。GET 接口不走 verifyCsrfToken，响应体直接带 token，
+  // 不依赖 document.cookie 是否可读。
+  // force=true 时带 ?fresh=1，强制换发新 token，用于失效重试。
+  let csrfPromise = null;
+  function refreshCsrfToken(force) {
+    if (csrfPromise) return csrfPromise;
+    const url = "/api/csrf-token" + (force ? "?fresh=1&_t=" + Date.now() : "");
+    csrfPromise = fetch(url, { credentials: "same-origin", cache: "no-store" })
+      .then(r => r.json())
+      .then(d => {
+        if (d && d.ok && d.csrfToken) { csrfTokenCache = d.csrfToken; return d.csrfToken; }
+        return null;
+      })
+      .catch(() => null)
+      .finally(() => { csrfPromise = null; });
+    return csrfPromise;
+  }
+
   async function apiFetch(url, options = {}) {
     const method = (options.method || "GET").toUpperCase();
-    if (method !== "GET" && method !== "HEAD") {
-      options.headers = options.headers || {};
-      options.headers["X-CSRF-Token"] = getCsrfToken();
+    if (method === "GET" || method === "HEAD") return fetch(url, options);
+
+    options.credentials = options.credentials || "same-origin";
+
+    let token = getCsrfToken();
+    if (!token) token = await refreshCsrfToken();
+
+    options.headers = options.headers || {};
+    if (token) options.headers["X-CSRF-Token"] = token;
+
+    let resp = await fetch(url, options);
+
+    // token 失效时补一个再重试一次，只重试一次防死循环
+    if (resp.status === 403) {
+      let body = null;
+      try { body = await resp.clone().json(); } catch (e) { body = null; }
+      if (body && typeof body.msg === "string" && body.msg.indexOf("CSRF") >= 0) {
+        const fresh = await refreshCsrfToken(true);
+        if (fresh) {
+          const retryHeaders = Object.assign({}, options.headers, { "X-CSRF-Token": fresh });
+          resp = await fetch(url, Object.assign({}, options, { headers: retryHeaders }));
+        }
+      }
     }
-    return fetch(url, options);
+
+    return resp;
   }
 
   async function doLogout() {

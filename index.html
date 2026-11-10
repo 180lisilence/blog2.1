@@ -514,18 +514,79 @@
   let currentTab = 'password';
 
   // ========== CSRF 工具 ==========
+  // 内存里缓存的 token：cookie 读不到时用它兜底。
+  // 浏览器在几种情况下读不到 csrf_token cookie（Secure cookie 走 http 被丢弃、
+  // 隐私模式拦截、cookie 已过期但页面还开着），此时 document.cookie 取不到值，
+  // 直接发 X-CSRF-Token: null 必然 403。所以必须有一个不走 cookie 的兜底通道。
+  let csrfTokenCache = null;
+
   function getCsrfToken() {
     const match = document.cookie.match(/(?:^|; )csrf_token=([^;]+)/);
-    return match ? decodeURIComponent(match[1]) : null;
+    if (match) {
+      const v = decodeURIComponent(match[1]);
+      if (v && v !== "null" && v !== "undefined") {
+        csrfTokenCache = v;
+        return v;
+      }
+    }
+    return csrfTokenCache;
   }
+
+  // 主动向服务端要一个 token。
+  // /api/csrf-token 是 GET，不经过 verifyCsrfToken，且响应体里直接带 token，
+  // 不依赖 document.cookie 可读 —— 这就是兜底通道。
+  // force=true 时带 ?fresh=1，强制服务端换发一枚新 token 并覆盖 cookie，
+  // 用于 token 已失效/两端不同步的重试场景。
+  let csrfPromise = null;
+  function refreshCsrfToken(force) {
+    if (csrfPromise) return csrfPromise;
+    const url = "/api/csrf-token" + (force ? "?fresh=1&_t=" + Date.now() : "");
+    csrfPromise = fetch(url, { credentials: "same-origin", cache: "no-store" })
+      .then(r => r.json())
+      .then(d => {
+        if (d && d.ok && d.csrfToken) {
+          csrfTokenCache = d.csrfToken;
+          return d.csrfToken;
+        }
+        return null;
+      })
+      .catch(() => null)
+      .finally(() => { csrfPromise = null; });
+    return csrfPromise;
+  }
+
   // 带 CSRF token 的 fetch 封装
+  // 策略：先拿本地 token；没有就先补；仍是 403 说明 token 失效，补一次再重试。
+  // 只重试一次，避免服务端异常时死循环。
   async function apiFetch(url, options = {}) {
     const method = (options.method || "GET").toUpperCase();
-    if (method !== "GET" && method !== "HEAD") {
-      options.headers = options.headers || {};
-      options.headers["X-CSRF-Token"] = getCsrfToken();
+    if (method === "GET" || method === "HEAD") return fetch(url, options);
+
+    options.credentials = options.credentials || "same-origin";
+
+    let token = getCsrfToken();
+    if (!token) token = await refreshCsrfToken();
+
+    options.headers = options.headers || {};
+    if (token) options.headers["X-CSRF-Token"] = token;
+
+    let resp = await fetch(url, options);
+
+    // token 失效/不匹配：补一个新的，重试一次
+    if (resp.status === 403) {
+      let body = null;
+      try { body = await resp.clone().json(); } catch (e) { body = null; }
+      const isCsrf = body && typeof body.msg === "string" && body.msg.indexOf("CSRF") >= 0;
+      if (isCsrf) {
+        const fresh = await refreshCsrfToken(true);
+        if (fresh) {
+          const retryHeaders = Object.assign({}, options.headers, { "X-CSRF-Token": fresh });
+          resp = await fetch(url, Object.assign({}, options, { headers: retryHeaders }));
+        }
+      }
     }
-    return fetch(url, options);
+
+    return resp;
   }
 
   // Tab 切换

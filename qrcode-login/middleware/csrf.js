@@ -34,16 +34,35 @@ function generateToken() {
 //   1. 显式 COOKIE_SECURE=true/false 优先
 //   2. 有 PUBLIC_BASE_URL 且以 https:// 开头 → 开启
 //   3. 生产环境默认开启
-function isSecureRequest() {
+//
+// 但有一个必须踩住的坑：带 Secure 的 Cookie 在 http 连接上会被浏览器直接丢弃，
+// 不写入 document.cookie。此时前端读不到 csrf_token，POST 一律 403。
+// 备用地址 http://<ip>/ 、反代漏传 X-Forwarded-Proto 的内网直连都属于这种情况。
+// 所以这里再看一眼实际请求协议：确认是 http 且没走 TLS，就不要加 Secure ——
+// 加了等于让 Cookie 彻底失效，反而不如不加。
+function isSecureRequest(req) {
   const explicit = String(process.env.COOKIE_SECURE || "").toLowerCase();
-  if (explicit === "true") return true;
-  if (explicit === "false") return false;
+  const decided = (() => {
+    if (explicit === "true") return true;
+    if (explicit === "false") return false;
+    const base = String(process.env.PUBLIC_BASE_URL || "");
+    if (base.startsWith("https://")) return true;
+    if (base.startsWith("http://")) return false;
+    return process.env.NODE_ENV === "production";
+  })();
 
-  const base = String(process.env.PUBLIC_BASE_URL || "");
-  if (base.startsWith("https://")) return true;
-  if (base.startsWith("http://")) return false;
+  if (!decided) return false;
+  if (!req) return decided;
 
-  return process.env.NODE_ENV === "production";
+  // 已经明确是 https 请求 → 保持 Secure
+  if (req.secure) return true;
+  // 反代场景下看 X-Forwarded-Proto（受 TRUST_PROXY 控制，Nginx 会覆盖伪造值）
+  const proto = String(req.headers?.["x-forwarded-proto"] || "").split(",")[0].trim().toLowerCase();
+  if (proto === "https") return true;
+  // 确认走的是明文 http：加了 Secure 也存不下来，索性不加，保证功能可用
+  if (req.protocol === "http") return false;
+
+  return decided;
 }
 
 // 确保请求有 CSRF token cookie（没有则生成）
@@ -53,7 +72,7 @@ function ensureCsrfCookie(req, res, next) {
     token = generateToken();
     res.cookie(CSRF_COOKIE_NAME, token, {
       httpOnly: false, // 前端需要读取
-      secure: isSecureRequest(),
+      secure: isSecureRequest(req),
       sameSite: "lax",
       path: "/",
       maxAge: 24 * 60 * 60 * 1000 // 24 小时
@@ -89,7 +108,34 @@ function verifyCsrfToken(req, res, next) {
 }
 
 // 提供给前端获取 token 的接口（可选，前端也可以直接读 cookie）
+//
+// 这是前端拿不到 cookie 时的兜底通道，所以必须禁缓存：
+// 一旦被浏览器/CDN 缓存住，前端反复拿到的是过期 token，
+// 补 token 重试的逻辑就永远修不好问题。
+//
+// ?fresh=1 时强制重新生成一枚 token 并覆盖 cookie。
+// 场景：前端内存里的 token 与 cookie 不同步，导致 403 后重试仍失败。
+// 强制换发新 token 能让两端重新对齐。
 function getCsrfToken(req, res) {
+  res.set({
+    "Cache-Control": "no-store, no-cache, must-revalidate, private",
+    Pragma: "no-cache",
+    Expires: "0"
+  });
+
+  const wantFresh = String(req.query?.fresh || "") === "1";
+  if (wantFresh) {
+    const token = generateToken();
+    res.cookie(CSRF_COOKIE_NAME, token, {
+      httpOnly: false,
+      secure: isSecureRequest(req),
+      sameSite: "lax",
+      path: "/",
+      maxAge: 24 * 60 * 60 * 1000
+    });
+    req.csrfToken = token;
+  }
+
   res.json({ ok: true, csrfToken: req.csrfToken });
 }
 
