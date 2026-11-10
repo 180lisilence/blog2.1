@@ -57,8 +57,24 @@ Router.registerRoute('setting', async (root) => {
         ]);
 
         const aiCfg = cfg.ai || { ...Store.Config.defaults.ai };
+        // 扫描结果随 ai 配置持久化；页面重载后仍是「已合并」状态。
+        const scannedModels = Array.isArray(aiCfg.scannedModels)
+            ? aiCfg.scannedModels
+                .filter(m => m && typeof m.value === 'string' && m.value.trim())
+                .map(m => ({ value: m.value.trim(), label: String(m.label || m.value).slice(0, 80) }))
+            : [];
+        // 旧实现每次 renderConfig 都 append 一个同 id 的 datalist，浏览器只会关联
+        // 到第一个，新增的选项因此看不见。先清掉历史节点，保持下拉可用。
+        document.querySelectorAll('datalist#ai-model-list').forEach(n => n.remove());
+
         const aiProviderEl = U.el('select', { class: 'form-input', style: 'max-width:200px' },
-            Object.entries(AIMod.AI_PROVIDERS).map(([k, p]) => U.el('option', { value: k, text: p.label, selected: aiCfg.provider === k }))
+            Object.entries(AIMod.AI_PROVIDERS).map(([k, p]) => U.el('option', {
+                value: k,
+                text: p.label,
+                // U.el 走 setAttribute，false 也会被写成 "false" 而让 option 视为选中；
+                // 这里只在命中时给 true，保证已保存的服务商正确回填。
+                selected: aiCfg.provider === k ? true : undefined
+            }))
         );
         // W3-02 / N-06：输入框永不回填内存 Key，避免明文重新出现在 DOM 里。
         // 留空 = 保持已配置的 Key；填写 = 覆盖（只进受控内存容器，不落盘）。
@@ -74,6 +90,28 @@ Router.registerRoute('setting', async (root) => {
         const aiSystemPromptEl = U.el('textarea', { class: 'form-input', rows: 2, placeholder: 'System Prompt（可选）', text: aiCfg.systemPrompt || '' });
         aiModelInput.value = aiCfg.model || '';
 
+        // ===== 模型扫描：新增的两个输入项、按钮、状态与结果区 =====
+        const initialProvider = AIMod.AI_PROVIDERS[aiCfg.provider] || AIMod.AI_PROVIDERS.doubao;
+        const aiScanUrlEl = U.el('input', {
+            class: 'form-input', type: 'text', spellcheck: 'false',
+            placeholder: 'https://.../v1  或  https://.../v1/models'
+        });
+        let suggestedUrl = String(aiCfg.apiUrl || initialProvider.defaultUrl || '').trim();
+        aiScanUrlEl.value = suggestedUrl;
+        const aiScanKeyEl = U.el('input', {
+            class: 'form-input', type: 'password', value: '',
+            placeholder: '留空沿用已配置的 Key；仅用于本次扫描，不保存'
+        });
+        const aiScanBtn = U.el('button', { class: 'btn btn-ghost btn-sm', text: '🔍 扫描模型' });
+        const aiScanStatusEl = U.el('div', {
+            class: 'setting-label',
+            style: 'flex:1;min-width:0;font-size:12px;font-weight:500;line-height:1.6;white-space:normal;word-break:break-word;',
+            text: scannedModels.length
+                ? `已有 ${scannedModels.length} 个扫描模型，可直接选择或再次扫描`
+                : '尚未扫描模型'
+        });
+        const aiScanChipsEl = U.el('div', { style: 'display:flex;flex-wrap:wrap;gap:6px;margin-top:4px;' });
+
         function providerLabel(key) {
             return (AIMod.AI_PROVIDERS[key] || AIMod.AI_PROVIDERS.doubao).label;
         }
@@ -84,21 +122,154 @@ Router.registerRoute('setting', async (root) => {
         }
         const aiKeyStatusEl = U.el('div', { class: 'setting-label', text: aiKeyStatusText(aiCfg.provider) });
 
+        // 内置模型永远先加入；扫描结果只做「去重追加」，不覆盖、不删除任何已有项。
         function refreshModelOptions() {
-            const providerKey = aiProviderEl.value;
-            const provider = AIMod.AI_PROVIDERS[providerKey];
+            const provider = AIMod.AI_PROVIDERS[aiProviderEl.value] || AIMod.AI_PROVIDERS.doubao;
             aiModelList.innerHTML = '';
-            provider.models.forEach(m => {
-                aiModelList.appendChild(U.el('option', { value: m.value, text: m.label }));
-            });
-            const current = aiModelInput.value;
-            if (current && !provider.models.some(m => m.value === current)) {
-                const exists = Array.from(aiModelList.children).some(o => o.value === current);
-                if (!exists) aiModelList.appendChild(U.el('option', { value: current }));
+            const seen = new Set();
+            function add(v, l) {
+                const value = String(v == null ? '' : v).trim();
+                if (!value) return;
+                const key = value.toLowerCase();
+                if (seen.has(key)) return;
+                seen.add(key);
+                aiModelList.appendChild(U.el('option', {
+                    value,
+                    text: String(l == null || l === '' ? value : l)
+                }));
             }
+            (provider.models || []).forEach(m => add(m.value, m.label));
+            scannedModels.forEach(m => add(m.value, m.label));
+            add(aiModelInput.value); // 当前手填的模型也保留在下拉里
         }
         refreshModelOptions();
-        aiProviderEl.addEventListener('change', refreshModelOptions);
+        aiProviderEl.addEventListener('change', () => {
+            refreshModelOptions();
+            // 未被手动改过的地址随服务商切换自动预填；手动改过的原样保留。
+            const p = AIMod.AI_PROVIDERS[aiProviderEl.value] || AIMod.AI_PROVIDERS.doubao;
+            if (aiScanUrlEl.value.trim() === suggestedUrl) {
+                suggestedUrl = p.defaultUrl || '';
+                aiScanUrlEl.value = suggestedUrl;
+            }
+        });
+
+        const MAX_CHIPS = 40;
+        function renderScanChips() {
+            aiScanChipsEl.innerHTML = '';
+            scannedModels.slice(0, MAX_CHIPS).forEach(m => {
+                aiScanChipsEl.appendChild(U.el('button', {
+                    class: 'badge', type: 'button',
+                    style: 'cursor:pointer;border:0;font-size:12px;',
+                    title: '点击选用 ' + m.value,
+                    text: m.value,
+                    onclick: () => {
+                        aiModelInput.value = m.value;
+                        UI.Toast.ok('已选择模型：' + m.value);
+                    }
+                }));
+            });
+            if (scannedModels.length > MAX_CHIPS) {
+                aiScanChipsEl.appendChild(U.el('span', {
+                    class: 'setting-label', style: 'font-size:12px;',
+                    text: `另有 ${scannedModels.length - MAX_CHIPS} 个模型可在上方输入框下拉选择`
+                }));
+            }
+        }
+        renderScanChips();
+
+        // 五类失败 + 成功，图标 / 文案 / 颜色 / Toast 级别各自区分
+        const SCAN_HINT = {
+            EMPTY_INPUT:    { icon: '⚠️', color: '#e8a317', toast: 'warn', title: '输入不完整' },
+            INVALID_URL:    { icon: '🔗', color: 'var(--danger, #ff5c72)', toast: 'err',  title: '接口地址格式错误' },
+            INVALID_KEY:    { icon: '🔑', color: 'var(--danger, #ff5c72)', toast: 'err',  title: '接口密钥无效' },
+            REQUEST_FAILED: { icon: '🌐', color: 'var(--danger, #ff5c72)', toast: 'err',  title: '接口请求失败' },
+            EMPTY_RESULT:   { icon: '📭', color: '#e8a317', toast: 'warn', title: '扫描结果为空' },
+            OK:             { icon: '✅', color: '#35c47d', toast: 'ok',   title: '扫描完成' }
+        };
+        function showScanResult(code, detail) {
+            const hint = SCAN_HINT[code] || SCAN_HINT.REQUEST_FAILED;
+            const line = hint.icon + ' ' + hint.title + (detail ? '：' + detail : '');
+            aiScanStatusEl.textContent = line;
+            aiScanStatusEl.style.color = hint.color;
+            UI.Toast[hint.toast](line.length > 120 ? line.slice(0, 120) + '…' : line);
+        }
+        function setScanLoading(on) {
+            aiScanBtn.disabled = !!on;
+            aiScanBtn.textContent = on ? '⏳ 扫描中…' : '🔍 扫描模型';
+            aiScanUrlEl.disabled = !!on;
+            aiScanKeyEl.disabled = !!on;
+            if (on) {
+                aiScanStatusEl.textContent = '⏳ 正在从模型服务接口获取可用模型…';
+                aiScanStatusEl.style.color = 'var(--text-secondary, #8a8f98)';
+            }
+        }
+        function persistScannedModels() {
+            // 只追加 scannedModels 字段：其余保持「已保存」的配置原样，
+            // 不把当前表单里尚未保存的输入写进磁盘。
+            const latest = Store.Config.get('ai', Store.Config.defaults.ai) || {};
+            Store.Config.set('ai', { ...latest, scannedModels: scannedModels.slice() });
+            cfg.ai = { ...cfg.ai, scannedModels: scannedModels.slice() };
+        }
+
+        let scanning = false;
+        async function scanModels() {
+            if (scanning) return;
+            const url = aiScanUrlEl.value.trim();
+            // 密钥优先级：扫描专用输入框 → 上方 API Key 输入框 → 本次会话已配置的 Key
+            const key = aiScanKeyEl.value.trim() || aiApiKeyEl.value.trim() || Store.AIKey.get();
+
+            // —— 本地预校验：不发起请求，也不触碰已有模型列表 / 已填配置 ——
+            if (!url || !key) {
+                showScanResult('EMPTY_INPUT', !url && !key
+                    ? '请填写「模型服务接口地址」和「接口密钥」'
+                    : !url ? '请填写「模型服务接口地址」'
+                        : '请填写「接口密钥」，或先在上方配置 API Key');
+                return;
+            }
+            let parsed;
+            try { parsed = new URL(url); }
+            catch (e) { showScanResult('INVALID_URL', '不是合法的 URL，请填写完整的 https:// 地址'); return; }
+            if (parsed.protocol !== 'https:') { showScanResult('INVALID_URL', '必须使用 https://'); return; }
+            if (parsed.port && parsed.port !== '443') { showScanResult('INVALID_URL', '不允许使用非标准端口 ' + parsed.port); return; }
+            if (parsed.username || parsed.password) { showScanResult('INVALID_URL', '不允许包含用户名/密码'); return; }
+            try { AIMod.validateApiKey(key); }
+            catch (e) { showScanResult('INVALID_KEY', e.message); return; }
+
+            scanning = true;
+            setScanLoading(true);
+            try {
+                const models = await AIMod.AI.scanModels({
+                    provider: aiProviderEl.value, apiUrl: url, apiKey: key
+                });
+                if (!models.length) {
+                    showScanResult('EMPTY_RESULT', '接口未返回可用模型，原有模型列表保持不变');
+                    return;
+                }
+                const existing = new Set(scannedModels.map(m => m.value.toLowerCase()));
+                let added = 0;
+                models.forEach(m => {
+                    const v = String((m && m.value) || '').trim();
+                    if (!v) return;
+                    const k = v.toLowerCase();
+                    if (existing.has(k)) return;
+                    existing.add(k);
+                    scannedModels.push({ value: v, label: String((m && m.label) || v).slice(0, 80) });
+                    added++;
+                });
+                // 只有成功才重建下拉；内置模型依旧在最前面，一个都不少。
+                refreshModelOptions();
+                renderScanChips();
+                persistScannedModels();
+                showScanResult('OK', `新增 ${added} 个，累计 ${scannedModels.length} 个；已合并进模型下拉，可直接选择`);
+            } catch (e) {
+                // 任何失败：不重建下拉、不改 scannedModels、不清空输入、不写盘、不调用保存
+                showScanResult(e.code || 'REQUEST_FAILED', e.message || '扫描失败，原有模型列表与配置保持不变');
+            } finally {
+                scanning = false;
+                setScanLoading(false);
+            }
+        }
+        aiScanBtn.addEventListener('click', scanModels);
 
         function saveAiCfg() {
             const typed = aiApiKeyEl.value.trim();
@@ -110,9 +281,11 @@ Router.registerRoute('setting', async (root) => {
             cfg.ai = {
                 provider: aiProviderEl.value,
                 apiKey: '',
-                apiUrl: '',
+                // 扫描用的接口地址随配置一起保存（地址不是密钥，可持久化）
+                apiUrl: aiScanUrlEl.value.trim(),
                 model: aiModelInput.value.trim(),
                 systemPrompt: aiSystemPromptEl.value.trim(),
+                scannedModels: scannedModels.slice(),
                 __keySet: Store.AIKey.has()
             };
             Store.Config.set('ai', cfg.ai);
@@ -148,10 +321,28 @@ Router.registerRoute('setting', async (root) => {
                 U.el('div', { class: 'setting-label', text: '模型（或 Endpoint ID）' }),
                 aiModelInput
             ]),
-            // W3-01 / W3-02：端点不再由前端决定，改走服务端代理；原「自定义 API 地址」输入框移除
+            U.el('div', { class: 'setting-row' }, [
+                U.el('div', { class: 'setting-label', text: '模型服务接口地址' }),
+                aiScanUrlEl
+            ]),
+            U.el('div', { class: 'setting-row' }, [
+                U.el('div', { class: 'setting-label', text: '接口密钥' }),
+                U.el('div', { style: 'display:flex;gap:8px;align-items:center;' }, [
+                    aiScanKeyEl,
+                    U.el('button', { class: 'btn btn-ghost btn-sm', text: '👁', title: '显示/隐藏', onclick: () => { aiScanKeyEl.type = aiScanKeyEl.type === 'password' ? 'text' : 'password'; } })
+                ])
+            ]),
+            U.el('div', { class: 'setting-row', style: 'flex-direction:column;align-items:stretch;gap:6px;' }, [
+                U.el('div', { style: 'display:flex;gap:8px;align-items:center;justify-content:space-between;' }, [
+                    aiScanStatusEl,
+                    aiScanBtn
+                ]),
+                aiScanChipsEl
+            ]),
+            // W3-01 / W3-02：端点不再由前端决定，对话与扫描都走服务端代理
             U.el('div', { class: 'setting-row' }, [
                 U.el('div', { class: 'setting-label', text: '请求通道' }),
-                U.el('div', { class: 'setting-label', style: 'color:#8a8f98;font-size:12px;line-height:1.6;', text: "经本站服务端代理 /api/ai/chat 转发，目标端点由服务端白名单固定；浏览器不直连第三方，CSP 保持 connect-src 'self'" })
+                U.el('div', { class: 'setting-label', style: 'color:#8a8f98;font-size:12px;line-height:1.6;', text: "对话经本站 /api/ai/chat 代理，扫描经 /api/ai/models 代理；目标端点由服务端白名单固定，浏览器不直连第三方，CSP 保持 connect-src 'self'" })
             ]),
             U.el('div', { class: 'setting-row', style: 'flex-direction:column;align-items:stretch;gap:8px;' }, [
                 U.el('div', { class: 'setting-label', text: 'System Prompt（人设）' }),

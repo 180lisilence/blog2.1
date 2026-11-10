@@ -22,6 +22,9 @@ const UI = window.UI;
 
 // AI 服务商配置表（label / model 用于 UI；defaultUrl 仅用于展示与本地预校验，
 // 真正的转发目标由服务端决定）
+// 注意：这里的 defaultUrl 只用于展示、本地预校验与扫描地址预填；
+// 真正的转发目标由服务端 qrcode-login/modules/ai/routes.js 的 AI_ENDPOINTS 决定。
+// 扩充供应商时必须两边同步加 host，否则扫描会被域名白名单拦下。
 const AI_PROVIDERS = {
     doubao: {
         label: '豆包 (Doubao)',
@@ -80,6 +83,166 @@ const AI_PROVIDERS = {
             { value: 'glm-4-flash', label: 'GLM-4 Flash（免费）' },
             { value: 'glm-4-plus', label: 'GLM-4 Plus' },
             { value: 'glm-4-air', label: 'GLM-4 Air' }
+        ]
+    },
+    anthropic: {
+        label: 'Anthropic Claude',
+        defaultModel: 'claude-sonnet-4-5',
+        defaultUrl: 'https://api.anthropic.com/v1/messages',
+        models: [
+            { value: 'claude-sonnet-4-5', label: 'Claude Sonnet 4.5' },
+            { value: 'claude-opus-4-1', label: 'Claude Opus 4.1' },
+            { value: 'claude-haiku-4-5', label: 'Claude Haiku 4.5' }
+        ]
+    },
+    gemini: {
+        label: 'Google Gemini',
+        defaultModel: 'gemini-2.5-flash',
+        defaultUrl: 'https://generativelanguage.googleapis.com/v1beta/models',
+        models: [
+            { value: 'gemini-2.5-pro', label: 'Gemini 2.5 Pro' },
+            { value: 'gemini-2.5-flash', label: 'Gemini 2.5 Flash' },
+            { value: 'gemini-2.0-flash', label: 'Gemini 2.0 Flash' }
+        ]
+    },
+    siliconflow: {
+        label: '硅基流动 (SiliconFlow)',
+        defaultModel: 'deepseek-ai/DeepSeek-V3',
+        defaultUrl: 'https://api.siliconflow.cn/v1/chat/completions',
+        models: [
+            { value: 'deepseek-ai/DeepSeek-V3', label: 'DeepSeek V3' },
+            { value: 'Qwen/Qwen3-8B', label: 'Qwen3 8B' },
+            { value: 'THUDM/glm-4-9b-chat', label: 'GLM-4 9B Chat' }
+        ]
+    },
+    qianfan: {
+        label: '百度千帆 (ERNIE)',
+        defaultModel: 'ernie-4.0-8k',
+        defaultUrl: 'https://qianfan.bce.baidu.com/v2/chat/completions',
+        models: [
+            { value: 'ernie-4.0-8k', label: 'ERNIE 4.0 8K' },
+            { value: 'ernie-3.5-8k', label: 'ERNIE 3.5 8K' },
+            { value: 'ernie-speed-8k', label: 'ERNIE Speed 8K' }
+        ]
+    },
+    hunyuan: {
+        label: '腾讯混元 (Hunyuan)',
+        defaultModel: 'hunyuan-turbo',
+        defaultUrl: 'https://api.hunyuan.cloud.tencent.com/v1/chat/completions',
+        models: [
+            { value: 'hunyuan-turbo', label: 'Hunyuan Turbo' },
+            { value: 'hunyuan-standard', label: 'Hunyuan Standard' },
+            { value: 'hunyuan-pro', label: 'Hunyuan Pro' }
+        ]
+    },
+    spark: {
+        label: '讯飞星火 (Spark)',
+        defaultModel: 'generalv3.5',
+        defaultUrl: 'https://spark-api-open.xf-yun.com/v1/chat/completions',
+        models: [
+            { value: 'generalv3.5', label: 'Spark 3.5' },
+            { value: '4.0Ultra', label: 'Spark 4.0 Ultra' },
+            { value: 'lite', label: 'Spark Lite' }
+        ]
+    },
+    minimax: {
+        label: 'MiniMax',
+        defaultModel: 'MiniMax-Text-01',
+        defaultUrl: 'https://api.minimax.chat/v1/chat/completions',
+        models: [
+            { value: 'MiniMax-Text-01', label: 'MiniMax Text 01' },
+            { value: 'abab6.5s-chat', label: 'abab6.5s Chat' },
+            { value: 'abab6.5g-chat', label: 'abab6.5g Chat' }
+        ]
+    },
+    stepfun: {
+        label: '阶跃星辰 (StepFun)',
+        defaultModel: 'step-2-16k',
+        defaultUrl: 'https://api.stepfun.com/v1/chat/completions',
+        models: [
+            { value: 'step-2-16k', label: 'Step 2 16K' },
+            { value: 'step-1-8k', label: 'Step 1 8K' },
+            { value: 'step-1v-8k', label: 'Step 1V 8K（视觉）' }
+        ]
+    },
+    yi: {
+        label: '零一万物 (Yi)',
+        defaultModel: 'yi-large',
+        defaultUrl: 'https://api.lingyiwanwu.com/v1/chat/completions',
+        models: [
+            { value: 'yi-large', label: 'Yi Large' },
+            { value: 'yi-medium', label: 'Yi Medium' },
+            { value: 'yi-spark', label: 'Yi Spark' }
+        ]
+    },
+    baichuan: {
+        label: '百川智能 (Baichuan)',
+        defaultModel: 'Baichuan4',
+        defaultUrl: 'https://api.baichuan-ai.com/v1/chat/completions',
+        models: [
+            { value: 'Baichuan4', label: 'Baichuan 4' },
+            { value: 'Baichuan3-Turbo', label: 'Baichuan 3 Turbo' },
+            { value: 'Baichuan2-Turbo', label: 'Baichuan 2 Turbo' }
+        ]
+    },
+    mistral: {
+        label: 'Mistral AI',
+        defaultModel: 'mistral-large-latest',
+        defaultUrl: 'https://api.mistral.ai/v1/chat/completions',
+        models: [
+            { value: 'mistral-large-latest', label: 'Mistral Large' },
+            { value: 'mistral-small-latest', label: 'Mistral Small' },
+            { value: 'open-mistral-nemo', label: 'Mistral Nemo' }
+        ]
+    },
+    groq: {
+        label: 'Groq',
+        defaultModel: 'llama-3.3-70b-versatile',
+        defaultUrl: 'https://api.groq.com/openai/v1/chat/completions',
+        models: [
+            { value: 'llama-3.3-70b-versatile', label: 'Llama 3.3 70B' },
+            { value: 'llama-3.1-8b-instant', label: 'Llama 3.1 8B' },
+            { value: 'mixtral-8x7b-32768', label: 'Mixtral 8x7B' }
+        ]
+    },
+    xai: {
+        label: 'xAI (Grok)',
+        defaultModel: 'grok-3',
+        defaultUrl: 'https://api.x.ai/v1/chat/completions',
+        models: [
+            { value: 'grok-4', label: 'Grok 4' },
+            { value: 'grok-3', label: 'Grok 3' },
+            { value: 'grok-3-mini', label: 'Grok 3 Mini' }
+        ]
+    },
+    together: {
+        label: 'Together AI',
+        defaultModel: 'meta-llama/Llama-3.3-70B-Instruct-Turbo',
+        defaultUrl: 'https://api.together.xyz/v1/chat/completions',
+        models: [
+            { value: 'meta-llama/Llama-3.3-70B-Instruct-Turbo', label: 'Llama 3.3 70B Turbo' },
+            { value: 'deepseek-ai/DeepSeek-V3', label: 'DeepSeek V3' },
+            { value: 'Qwen/Qwen2.5-72B-Instruct-Turbo', label: 'Qwen2.5 72B Turbo' }
+        ]
+    },
+    openrouter: {
+        label: 'OpenRouter',
+        defaultModel: 'openai/gpt-4o',
+        defaultUrl: 'https://openrouter.ai/api/v1/chat/completions',
+        models: [
+            { value: 'openai/gpt-4o', label: 'OpenAI GPT-4o' },
+            { value: 'anthropic/claude-3.5-sonnet', label: 'Claude 3.5 Sonnet' },
+            { value: 'google/gemini-2.0-flash-001', label: 'Gemini 2.0 Flash' }
+        ]
+    },
+    cohere: {
+        label: 'Cohere',
+        defaultModel: 'command-r-plus',
+        defaultUrl: 'https://api.cohere.com/compatibility/v1/chat/completions',
+        models: [
+            { value: 'command-r-plus', label: 'Command R+' },
+            { value: 'command-r', label: 'Command R' },
+            { value: 'command', label: 'Command' }
         ]
     }
 };
@@ -227,7 +390,12 @@ function aiFetch(path, body) {
         })
         .then(parseJson)
         .then(function (d) {
-            if (!d || !d.ok) throw new Error((d && d.msg) || 'AI 请求失败');
+            if (!d || !d.ok) {
+                const err = new Error((d && d.msg) || 'AI 请求失败');
+                // 模型扫描的失败原因靠 code 区分（空输入 / 地址 / 密钥 / 请求 / 空结果）
+                err.code = (d && d.code) || 'REQUEST_FAILED';
+                throw err;
+            }
             return d;
         });
 }
@@ -256,6 +424,22 @@ const AI = {
             temperature: opts.temperature ?? 0.7
         });
         return String(data.content);
+    },
+    /**
+     * 扫描可用模型：只连本站同源 /api/ai/models，由服务端按域名白名单代取。
+     * 失败时抛出带 code 的 Error（EMPTY_INPUT / INVALID_URL / INVALID_KEY /
+     * REQUEST_FAILED / EMPTY_RESULT），调用方据此给出可区分提示并保留原列表。
+     */
+    async scanModels(opts = {}) {
+        const aiCfg = Store.Config.get('ai', Store.Config.defaults.ai);
+        const provider = AI_PROVIDERS[opts.provider || aiCfg.provider]
+            ? (opts.provider || aiCfg.provider) : 'doubao';
+        const data = await aiFetch('/api/ai/models', {
+            provider,
+            apiUrl: String(opts.apiUrl || '').trim(),
+            apiKey: String(opts.apiKey || '').trim()
+        });
+        return Array.isArray(data.models) ? data.models : [];
     },
     buildMessages(systemPrompt, history, userText) {
         const msgs = [];

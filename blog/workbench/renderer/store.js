@@ -255,6 +255,7 @@ const Config = {
             apiKey: '',
             model: 'doubao-seed-evolving',
             apiUrl: 'https://ark.cn-beijing.volces.com/api/v3/chat/completions',
+            scannedModels: [],
             systemPrompt: '你是一个友好、专业的 AI 助手。请用中文回答用户的问题，回答要简洁准确。'
         }
     },
