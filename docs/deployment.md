@@ -2,7 +2,8 @@
 
 > 部署日期：2026-11-10
 > 服务器：206.187.214.190
-> 访问地址：http://206.187.214.190
+> **访问地址：https://lizyi.asia**
+> 备用（IP 直连，仅排查用）：http://206.187.214.190
 
 ---
 
@@ -10,12 +11,16 @@
 
 | 项 | 状态 | 说明 |
 |---|---|---|
-| 服务地址 | ✅ 运行中 | http://206.187.214.190 |
+| 主站地址 | ✅ 运行中 | **https://lizyi.asia** |
+| 证书 | ✅ 有效 | Let's Encrypt ECC，`www.lizyi.asia` 同证书，2027-02-08 到期 |
+| 协议 | ✅ HTTP/2 | TLS 1.2 / 1.3，HSTS 已开 |
+| HTTP 跳转 | ✅ 301 | `http://lizyi.asia` → `https://lizyi.asia` |
 | 健康检查 | ✅ ok | `GET /health`，数据库 status=up |
 | 数据库 | ✅ MySQL 5.7.43 | 库名 `myself_blog2`，已建 users / user_data |
 | 进程守护 | ✅ pm2 | `blog2.1`，已配置开机自启 |
-| 反向代理 | ✅ Nginx 1.30.6 | 80 → 127.0.0.1:3000 |
+| 反向代理 | ✅ Nginx 1.30.6 | 443/80 → 127.0.0.1:3000 |
 | 登录门禁 | ✅ 生效 | 未登录访问 /projects.html、/blog/ 均 302 |
+| Cookie Secure | ✅ TRUE | `csrf_token` 仅 https 发送 |
 | 站内项目 | 10 个 | /api/projects 返回正常 |
 | 外链作品 | 10 个 | /api/links 返回正常 |
 
@@ -34,6 +39,66 @@ MySQL     5.7.43（宝塔 /www/server/mysql）
 Nginx     1.30.6（宝塔 /www/server/nginx，配置目录 /www/server/panel/vhost/nginx/）
 Python    3.10.12
 面板      宝塔 13.2.0，https://206.187.214.190:22682/langlangy
+证书工具  acme.sh v3.1.7（/root/.acme.sh）
+```
+
+---
+
+## 二·五、HTTPS 配置详解
+
+### 域名
+
+```
+lizyi.asia        A 记录 → 206.187.214.190
+www.lizyi.asia    A 记录 → 206.187.214.190
+```
+
+### 证书
+
+```
+CA        Let's Encrypt（免费，90 天有效期）
+类型      ECC P-256
+覆盖      lizyi.asia + www.lizyi.asia
+签发时间  2026-11-10
+到期时间  2027-02-08
+自动续期  每天 0/6/12/18 点检查，到期前 30 天自动续
+```
+
+证书文件位置：
+
+```
+/etc/letsencrypt/live/lizyi.asia/fullchain.pem   # 证书链
+/etc/letsencrypt/live/lizyi.asia/privkey.pem     # 私钥（chmod 600）
+/etc/letsencrypt/live/lizyi.asia/chain.pem       # 中间证书
+```
+
+续期后会自动执行 `nginx -s reload`，无需人工干预。
+
+### 为什么用 acme.sh 而不是 certbot
+
+宝塔环境里 `apt-get install snapd` 会卡死（系统源问题）。acme.sh 是纯 shell 脚本，无依赖，用 webroot 模式验证，几秒就能签完。同样支持自动续期。
+
+### 关键配置分工
+
+| 层 | 职责 |
+|---|---|
+| Nginx | 终止 TLS、80→443 跳转、ACME 验证目录、静态缓存、gzip |
+| Node 应用 | 只处理业务，监听 127.0.0.1:3000，不再做 HTTPS 跳转 |
+
+> ⚠️ `FORCE_HTTPS` 必须为 `false`。Nginx 已经负责跳转，如果应用层也跳，会出现双层跳转甚至死循环。
+
+### 自动续期验证方法
+
+```bash
+# 查看证书状态
+~/.acme.sh/acme.sh --list
+
+# 手动触发续期测试
+~/.acme.sh/acme.sh --renew -d lizyi.asia --ecc --force
+
+# 检查线上证书到期时间
+echo | openssl s_client -connect lizyi.asia:443 -servername lizyi.asia 2>/dev/null \
+  | openssl x509 -noout -enddate
 ```
 
 ---
@@ -256,6 +321,11 @@ pm2 restart blog2.1
 
 | 检查项 | 结果 |
 |---|---|
+| HTTPS 传输加密 | ✅ 已启用（Let's Encrypt + HTTP/2） |
+| 证书链有效性 | ✅ `Verify return code: 0` |
+| HTTP 强制跳转 | ✅ 301 → https |
+| HSTS | ✅ max-age=31536000 |
+| Cookie Secure 标记 | ✅ TRUE |
 | 免密登录公网可调 | ✅ 已封（403） |
 | 公开注册 | ✅ 已封（403） |
 | 默认弱密码 123456 | ✅ 已换强密码 |
@@ -264,14 +334,16 @@ pm2 restart blog2.1
 | 应用监听地址 | ✅ 127.0.0.1（仅 Nginx 可达） |
 | CSRF 防护 | ✅ 生效（无 token 的 POST 被 403） |
 | 登录失败锁定 | ✅ 生效（错误 5 次锁定） |
-| 敏感文件（.env） | ✅ chmod 600 |
+| 敏感文件（.env / 私钥） | ✅ chmod 600 |
 
 ### 仍未处理的风险
 
-1. **无 HTTPS**：当前 HTTP 明文传输，登录密码、token 在公网可被嗅探。有域名后应立刻配 Let's Encrypt。
+1. ~~**无 HTTPS**~~ → ✅ **已解决**：现已启用 Let's Encrypt 证书，全站 HTTPS + HSTS + HTTP/2。
 2. **`web_token` 无 HttpOnly**：前端用 `document.cookie` 写入，XSS 可直接窃取登录态。这是架构级问题，改动需要调整前后端配合。
+   - 注：`csrf_token` 已带 Secure 标记，但 `web_token` 由前端 JS 写入，无法加 HttpOnly。要解决必须改为服务端 `Set-Cookie` 下发 + HttpOnly。
 3. **CSP 宽松**：`unsafe-inline` + `unsafe-eval`，XSS 防护实质失效。
 4. **宝塔面板 22682 端口对公网开放**，且使用默认路径 `/langlangy`。
+5. **HSTS 已开启但无 preload**：首次访问仍可能被劫持，不过由于是从 HTTP 301 到 HTTPS，风险较低。
 
 ---
 

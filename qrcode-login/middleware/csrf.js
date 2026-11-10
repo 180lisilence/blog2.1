@@ -20,10 +20,29 @@ function generateToken() {
 }
 
 // 判断是否应给 Cookie 加 Secure 标记
-// 只有真正跑在 HTTPS 上时才加，否则浏览器会直接丢弃该 Cookie，
-// 导致 CSRF 校验永远失败（纯 HTTP 部署的典型症状）。
+//
+// 注意：这里必须独立判断，不能复用 FORCE_HTTPS。
+// 两者语义完全不同：
+//   FORCE_HTTPS  = 应用层是否主动把 http 跳转到 https
+//   Secure Cookie = 浏览器是否只在 https 下发送该 Cookie
+//
+// 典型场景：Nginx 已经负责跳转（应用层 FORCE_HTTPS=false），
+// 但站点实际跑在 HTTPS 上，此时 Cookie 仍然必须带 Secure，否则
+// Cookie 会以明文在 http 请求中传输，失去保护意义。
+//
+// 判断顺序：
+//   1. 显式 COOKIE_SECURE=true/false 优先
+//   2. 有 PUBLIC_BASE_URL 且以 https:// 开头 → 开启
+//   3. 生产环境默认开启
 function isSecureRequest() {
-  if (String(process.env.FORCE_HTTPS || "").toLowerCase() === "false") return false;
+  const explicit = String(process.env.COOKIE_SECURE || "").toLowerCase();
+  if (explicit === "true") return true;
+  if (explicit === "false") return false;
+
+  const base = String(process.env.PUBLIC_BASE_URL || "");
+  if (base.startsWith("https://")) return true;
+  if (base.startsWith("http://")) return false;
+
   return process.env.NODE_ENV === "production";
 }
 
