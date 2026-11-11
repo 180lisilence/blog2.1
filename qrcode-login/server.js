@@ -74,6 +74,36 @@ app.use(cookieParser());
 // 现在收到 1MB，配合 /api/data/all 的 2MB 总配额足够用。
 app.use(express.json({ limit: "1mb" }));
 
+// ========== 缓存语义默认值（RISK-07） ==========
+// 旧实现：首页 / 返回 public,max-age=0；多数 /api/* 无 Cache-Control、无 Vary:Cookie。
+// 带登录态的响应一旦被浏览器 / 共享代理缓存，可能串味给下一个访客。
+// 这里给「所有 API + 页面」统一打 private,no-store + Vary:Cookie 作为安全默认；
+// 路由若显式设置（如 /api/public/preview 的 public,max-age=300、/api/data/all 的
+// no-store）会覆盖这里的默认值 —— 因为 Express 的 res.set 后写覆盖先写。
+app.use((req, res, next) => {
+  const p = req.path || "";
+  // 明确列举「公开静态资源」扩展名，这些走各路由自带的 public + ?v= 版本控制
+  // （session-kicked.js / presence-client.js 等各自显式设 public,max-age=300）。
+  // 其余一律按私密内容处理：
+  //   - 所有 /api/*
+  //   - 所有 HTML 页面：包括 /projects.html、/settings.html 这类带 .html 后缀的
+  //     受保护页面，也包括 "/" "/login" 等无后缀路由页
+  // RISK-07 复核发现：旧判断 !/\.[A-Za-z0-9]+$/.test(p) 会把 /projects.html
+  // 当成静态资源排除，导致登录后页面 Cache-Control 为空、无 Vary:Cookie，
+  // 可能被浏览器 / 共享代理缓存串味给下一个访客。改为按「是否公开静态扩展名」
+  // 白名单判断，HTML 页面不再漏网。
+  const isPublicStaticAsset = /\.(?:js|mjs|css|png|jpe?g|gif|svg|ico|webp|avif|woff2?|ttf|otf|eot|map|txt)$/i.test(p);
+  if (!isPublicStaticAsset) {
+    if (!res.getHeader("Cache-Control")) {
+      res.set("Cache-Control", "private, no-store, no-cache, must-revalidate");
+    }
+    if (!res.getHeader("Vary")) {
+      res.set("Vary", "Cookie");
+    }
+  }
+  next();
+});
+
 // ========== blog-sentinel 访问审计适配器（可选，零侵入） ==========
 // 仅在 qrcode-login/.env 配置了 INGEST_KEY 时启用；
 // 未配置或加载失败都不会影响博客原有功能。
@@ -146,7 +176,15 @@ const presence = require("./modules/presence").getPresence();
 app.get("/api/presence/state", (req, res) => {
   try {
     res.set("Cache-Control", "no-store, no-cache, must-revalidate, private");
-    res.json({ ok: true, ...presence.state(getTokenFromReq(req)) });
+    const state = presence.state(getTokenFromReq(req));
+    // R4-03：web_token 已 HttpOnly，用户端 JS 清不掉。会话已真实失效
+    // （被顶号 kicked / 过期 expired）时，服务端主动清全套登录 Cookie，
+    // 避免浏览器继续携带失效 token 反复轮询。前端收到 kicked 即弹窗跳登录页。
+    if (state.status === "kicked" || state.status === "expired") {
+      try { require("./modules/auth/loginCookies").clearLoginCookies(res); }
+      catch (e) { /* 不影响状态响应本身 */ }
+    }
+    res.json({ ok: true, ...state });
   } catch (e) {
     logger.error("presence", "状态查询失败", e.message);
     res.json({ ok: true, status: "off", pollMs: 0, serverTs: Date.now() });
@@ -192,6 +230,13 @@ app.get("/presence-client.js", (req, res) => {
   res.sendFile(path.join(config.blogRoot, "presence-client.js"));
 });
 
+// 会话被顶号提示脚本：顶层页面（index / projects / settings）在 apiFetch 里调用
+// window.__handleKicked 处理 401 KICKED。公开只读、同源，严格 CSP 可加载。
+app.get("/session-kicked.js", (req, res) => {
+  res.set("Cache-Control", "public, max-age=300");
+  res.sendFile(path.join(config.blogRoot, "session-kicked.js"));
+});
+
 app.use(ensureCsrfCookie);     // 确保 CSRF token cookie
 
 // 请求日志
@@ -200,14 +245,27 @@ app.use((req, res, next) => {
   next();
 });
 
-// ========== 健康检查（无需登录，无需 CSRF） ==========
-app.get("/health", async (req, res) => {
-  const result = await health.fullHealthCheck();
-  const statusCode = result.status === "ok" ? 200 : 503;
-  res.status(statusCode).json(result);
+// ========== 健康检查 ==========
+// RISK-09：匿名 /health 旧实现泄露 database(host/port/库名)、OCR 端口、
+// 系统平台 / Node 版本 / CPU / 内存等内网拓扑，为后续攻击提供情报。
+// 现在对外只回最小存活信号；详细检查移到带 x-sentinel-key 的 /health/detail，
+// 供本机 / 内网监控系统（已握有 INGEST_KEY）调用。
+app.get("/health", (req, res) => {
+  res.set("Cache-Control", "no-store");
+  res.status(200).json({ status: "ok", timestamp: new Date().toISOString() });
 });
 app.get("/health/live", (req, res) => {
+  res.set("Cache-Control", "no-store");
   res.json({ status: "ok", timestamp: new Date().toISOString() });
+});
+app.get("/health/detail", requireSentinelKey, async (req, res) => {
+  try {
+    const result = await health.fullHealthCheck();
+    res.status(result.status === "ok" ? 200 : 503).json(result);
+  } catch (e) {
+    logger.error("health", "详细健康检查失败", e.message);
+    res.status(503).json({ status: "degraded", timestamp: new Date().toISOString() });
+  }
 });
 
 // CSRF token 获取接口
@@ -235,7 +293,14 @@ function loginFirstGuard(req, res, next) {
   if (PUBLIC_WRITE_PATHS.has(req.path)) return next();
   const token = getTokenFromReq(req);
   const ws = token ? authSession.getWebSession(token) : null;
-  if (!ws) return res.status(401).json({ ok: false, msg: "请先登录" });
+  if (!ws) {
+    // VULN-CONCURRENT-01：被顶号 / 被撤销的会话在所有写接口统一返回 KICKED，
+    // 前端 apiFetch 捕获后弹「账号已在其他设备登录」，而不是静默 401。
+    // 注意：PUBLIC_WRITE_PATHS（登录/注册/扫码等）已在上面放行，不会被误伤。
+    const st = token ? authSession.getSessionStatus(token) : null;
+    if (st && st.status === "kicked") return require("./middleware/auth").sendKicked(res, st);
+    return res.status(401).json({ ok: false, msg: "请先登录" });
+  }
   next();
 }
 

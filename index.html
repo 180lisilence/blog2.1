@@ -550,6 +550,7 @@
   </div>
 </div>
 
+<script src="/session-kicked.js"></script>
 <script>
   let qid = null;
   let pollTimer = null;
@@ -603,7 +604,9 @@
   function previewGate(e) {
     // 已登录（7 天内 valid token）由服务端鉴权决定，这里只做体验提示；
     // token 失效时 /blog/* 会 302 回本页，届时用户会看到登录表单，符合预期。
-    const hasToken = document.cookie.split(';').some(s => s.trim().startsWith('web_token=') && s.trim().length > 11);
+    // R4-03：web_token 已 HttpOnly，JS 读不到。改用服务端下发的非敏感标记
+    // web_auth=1 判断"登录过"（不含凭据，伪造它后端鉴权仍会兜底）。
+    const hasToken = document.cookie.split(';').some(s => s.trim().startsWith('web_auth='));
     if (hasToken) return true;
     if (e) e.preventDefault();
     focusPassword();
@@ -693,6 +696,13 @@
     if (token) options.headers["X-CSRF-Token"] = token;
 
     let resp = await fetch(url, options);
+
+    // VULN-CONCURRENT-01：已登录态被顶号 / 被撤销 → 401 KICKED。
+    // 登录页是最终落地页，弹窗告知原因后停留在登录表单即可。
+    if (resp.status === 401 && window.__handleKicked) {
+      const kicked = await window.__handleKicked(resp);
+      if (kicked) return resp;
+    }
 
     // token 失效/不匹配：补一个新的，重试一次
     if (resp.status === 403) {
@@ -1079,12 +1089,13 @@
     }
   }
 
-  // 统一写 web_token Cookie
-  // 注意：https 页面才能带 Secure，否则浏览器直接丢弃；http 备用地址不加。
+  // R4-03：web_token 已改由服务端 Set-Cookie 下发并标记 HttpOnly，
+  // 前端 JS 不再（也不能）写 web_token。保留此函数仅为兼容旧调用点，
+  // 现为 no-op —— 登录响应体仍返回 webToken 给非浏览器客户端，但浏览器
+  // 的登录态完全由服务端 Cookie 承载，XSS 读不到长期凭据。
   function writeTokenCookie(token) {
-    const secure = location.protocol === "https:" ? "; Secure" : "";
-    document.cookie = "web_token=" + encodeURIComponent(token)
-      + "; path=/; max-age=604800; SameSite=Lax" + secure;
+    // no-op：登录 Cookie 由服务端 finalizeLogin() 统一下发
+    void token;
   }
 
   // 回车快捷登录/注册
@@ -1108,10 +1119,11 @@
           '<button class="btn-switch" id="switchAcc">退出/换号</button></div>';
         box.insertBefore(bar, box.firstChild);
         document.getElementById("switchAcc").onclick = async () => {
-          const cur = document.cookie.split(";").map(s => s.trim()).find(s => s.startsWith("web_token="));
-          const t = cur ? decodeURIComponent(cur.split("=").slice(1).join("=")) : "";
-          try { await apiFetch("/api/logout", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ token: t }) }); } catch (e) {}
-          document.cookie = "web_token=; path=/; max-age=0";
+          // R4-03：web_token 已 HttpOnly，JS 读不到也不必读 —— 服务端 logout
+          // 只认请求自带的 Cookie（F-03：请求体 token 一律忽略）。这里只负责
+          // 调 logout（服务端 clearCookie）+ 清本地可见的体验标记。
+          try { await apiFetch("/api/logout", { method: "POST", headers: { "Content-Type": "application/json" }, body: "{}" }); } catch (e) {}
+          document.cookie = "web_auth=; path=/; max-age=0";
           location.reload();
         };
         return;

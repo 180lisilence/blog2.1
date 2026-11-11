@@ -179,6 +179,7 @@
   <a href="/projects.html" class="back-link">← 返回项目中心</a>
 </div>
 
+<script src="/session-kicked.js"></script>
 <script>
 // CSRF 工具
 // 内存兜底：cookie 读不到时（Secure cookie 走 http 被丢弃 / 隐私模式拦截 /
@@ -227,10 +228,16 @@ async function apiFetch(url, options = {}) {
   options.headers = options.headers || {};
   if (token) options.headers["X-CSRF-Token"] = token;
 
-  let resp = await fetch(url, options);
+    let resp = await fetch(url, options);
 
-  // token 失效时补一个再重试一次，只重试一次防死循环
-  if (resp.status === 403) {
+    // VULN-CONCURRENT-01：被顶号 / 会话被撤销 → 401 KICKED，弹窗并回登录页
+    if (resp.status === 401 && window.__handleKicked) {
+      const kicked = await window.__handleKicked(resp);
+      if (kicked) return resp;
+    }
+
+    // token 失效时补一个再重试一次，只重试一次防死循环
+    if (resp.status === 403) {
     let body = null;
     try { body = await resp.clone().json(); } catch (e) { body = null; }
     if (body && typeof body.msg === "string" && body.msg.indexOf("CSRF") >= 0) {

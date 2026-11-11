@@ -14,8 +14,10 @@ const { errors, asyncHandler, ok, fail } = require("../../core/errors");
 const { validateUsername, validatePassword } = require("../../core/security");
 const userModel = require("./model");
 const sessionMgr = require("./session");
+const sessionPolicy = require("./sessionPolicy");
 const qrTicket = require("./qrTicket");
-const { getTokenFromReq } = require("../../middleware/auth");
+const { finalizeLogin, clearLoginCookies } = require("./loginCookies");
+const { getTokenFromReq, sendKicked } = require("../../middleware/auth");
 const { loginLockCheck, recordFailure, failureResponse, clearFailure } = require("../../middleware/loginLock");
 const { createIpWhitelist } = require("../../middleware/ipWhitelist");
 const captcha = require("../../middleware/captcha");
@@ -83,11 +85,15 @@ setInterval(() => {
 // 这是全站唯一需要 IP 限制的入口。原因：该接口不需要任何凭据即可签发
 // 会话，一旦公网可达，等于任何人点一下就能进站。所以必须锁死。
 //
-// 环境变量 DIRECT_LOGIN_IPS，留空时按 DIRECT_LOGIN_IPS_ALLOW_EMPTY 决定放行/拒绝
-// （生产环境应显式设为 false，即"白名单为空 = 一律拒绝"，fail-closed）
+// 环境变量 DIRECT_LOGIN_IPS，留空时按 DIRECT_LOGIN_IPS_ALLOW_EMPTY 决定放行/拒绝。
+//
+// 4-5-02 / F-05（P1）：旧实现 allowAllWhenEmpty 默认 true，生产未显式写
+// DIRECT_LOGIN_IPS_ALLOW_EMPTY=false 时，白名单为空 = 公网任何人都能无凭据
+// 签发 local 会话。这里把默认值整体翻转为 fail-closed：默认拒绝，只有显式
+// 设 DIRECT_LOGIN_IPS_ALLOW_EMPTY=true 才恢复"空白名单放行"（仅供本机开发）。
 const directLoginGuard = createIpWhitelist({
   envKey: "DIRECT_LOGIN_IPS",
-  allowAllWhenEmpty: process.env.DIRECT_LOGIN_IPS_ALLOW_EMPTY !== "false",
+  allowAllWhenEmpty: process.env.DIRECT_LOGIN_IPS_ALLOW_EMPTY === "true",
   label: "direct-login"
 });
 
@@ -185,6 +191,11 @@ router.post("/qrcode/redeem", (req, res) => {
   // 换取成功后二维码会话使命完成，立即销毁
   sessionMgr.destroyQrSession(String(qid || ""));
   qrTicket.clearTicketCookie(req, res);
+  // VULN-CONCURRENT-01：把会话画像刷新为 PC 端真实设备（confirm 阶段是手机画像）
+  sessionPolicy.adopt(req, r.webToken);
+  // R4-02/R4-03：redeem 是 PC 端真正落地登录态的地方，服务端在此下发
+  // HttpOnly web_token + 轮换 CSRF；confirm 阶段不签发 Cookie（那是手机端）。
+  finalizeLogin(req, res, r.webToken);
   logger.info("auth-route", `扫码会话已换取: ${r.username}, ip=${req.ip}`);
   ok(res, { webToken: r.webToken, username: r.username });
 });
@@ -206,19 +217,36 @@ router.get("/qrcode/scanned", (req, res) => {
 // 同时带 confirmLimiter：复用 /api/login 的锁定计数（N-01/N-02/N-11）。
 // 旧实现这里直接调 verifyPassword 且完全不计数，等于给了一条
 // 绕过 /api/login 限速的无限爆破通道。
-router.post("/qrcode/confirm", confirmLimiter, (req, res) => {
+//
+// BUG-02 / 4-5-01（P0）：旧实现 `const user = userModel.verifyPassword(u, p);`
+// 漏了 await。verifyPassword 是 async，返回 Promise，而 Promise 恒 truthy，
+// 于是 `if (!user)` 永远不成立 —— 任意密码都能通过确认，攻击者可匿名把任意
+// qid 的归属账号伪造成 admin 等任意账号，redeem 后拿到合法 webToken，构成
+// 完整的身份伪造链（4-5 专项已实测复现）。
+//
+// 修复三处：
+//   1. 改 asyncHandler(async …) + await verifyPassword，让校验真正生效；
+//   2. R4-01：严格 typeof 断言，拒绝数组/对象/数字等隐式转换（String(["x"])
+//      会把数组拼成字符串，是类型混淆的入口）；
+//   3. subject 用通过密码校验后的规范账号 u，绝不直接信任未经校验的请求体原值。
+router.post("/qrcode/confirm", confirmLimiter, asyncHandler(async (req, res) => {
   const { qid, username, password } = req.body || {};
-  const u = String(username || "").trim();
-  const p = String(password || "");
   const ip = req.loginIp || req.ip;
 
+  // 严格类型：三者都必须是字符串，避免 String() 隐式转换造成类型混淆
+  if (typeof qid !== "string" || typeof username !== "string" || typeof password !== "string") {
+    return fail(res, 400, "账号或密码错误");
+  }
+  const u = username.trim();
+  const p = password;
   if (!qid || !u || !p) return fail(res, 400, "账号或密码错误");
 
   const session = sessionMgr.getQrSession(qid);
   if (!session) return fail(res, 400, "会话失效，请刷新二维码后重试");
   if (session.status === "confirmed") return fail(res, 400, "二维码已经使用过");
 
-  const user = userModel.verifyPassword(u, p);
+  // BUG-02 核心：必须 await，否则 Promise 恒 truthy，密码校验形同虚设
+  const user = await userModel.verifyPassword(u, p);
   if (!user) {
     // 失败计数与 /api/login 完全共用同一个 store，两边互相消耗（N-11）
     const r = failureResponse(ip, u);
@@ -230,13 +258,19 @@ router.post("/qrcode/confirm", confirmLimiter, (req, res) => {
   // 成功：清掉该 IP+账号的失败记录（与 /api/login 一致）
   clearFailure(ip, u);
 
+  // u 已通过 verifyPassword（账号存在 + 密码正确 + 精确匹配库中账号名），
+  // 即服务端校验后的规范 subject，安全可用于签发会话。
+  const subject = u;
   session.status = "confirmed";
-  session.username = u;
-  session.webToken = sessionMgr.createWebSession(u);
-  logger.info("auth-route", `二维码确认登录: ${u}, ip=${ip}`);
+  session.username = subject;
+  // VULN-CONCURRENT-01：统一走 sessionPolicy 签发，触发同账号并发策略。
+  // 此时画像来自手机确认端； redeem 阶段会用 PC 端 requestProfile 覆盖为真实登录设备。
+  const issued = sessionPolicy.issue(req, subject);
+  session.webToken = issued.webToken;
+  logger.info("auth-route", `二维码确认登录: ${subject}, ip=${ip}, 顶掉旧会话=${issued.evicted.length}`);
   // 确认端不返回 webToken —— 它属于 PC 端，走一次性 ticket 换发
-  ok(res, { username: u, status: "confirmed" });
-});
+  ok(res, { username: subject, status: "confirmed" });
+}));
 
 // ========== 账号注册/登录 ==========
 
@@ -269,7 +303,12 @@ router.post("/register", asyncHandler(async (req, res) => {
   }
 
   const { username, password } = req.body || {};
-  const u = String(username || "").trim();
+  // R4-01 / BUG-03：注册也强制字符串类型，避免数组/对象被 String() 隐式转换后
+  // 绕过账号格式校验、把畸形值写进 MySQL。
+  if (typeof username !== "string" || typeof password !== "string") {
+    return fail(res, 400, "账号或密码格式错误");
+  }
+  const u = username.trim();
 
   const userErr = validateUsername(u);
   if (userErr) return fail(res, 400, userErr);
@@ -308,9 +347,13 @@ router.post("/register", asyncHandler(async (req, res) => {
 // 现在改为「先算密码再决定」：密码对的永远放行并清空计数，密码错的才吃锁。
 router.post("/login", loginLockCheck, asyncHandler(async (req, res) => {
   const { username, password } = req.body || {};
-  const u = String(username || "").trim();
-  const p = String(password || "");
   const ip = req.loginIp || req.ip;
+  // R4-01：严格类型断言，拒绝数组/对象/数字，避免 String() 隐式转换的类型混淆
+  if (typeof username !== "string" || typeof password !== "string") {
+    return fail(res, 400, "请输入账号和密码");
+  }
+  const u = username.trim();
+  const p = password;
   if (!u || !p) return fail(res, 400, "请输入账号和密码");
 
   // P-10：scrypt 改异步，密码校验不再阻塞事件循环
@@ -328,16 +371,22 @@ router.post("/login", loginLockCheck, asyncHandler(async (req, res) => {
   if (req.loginLocked?.locked) {
     logger.info("login-lock", `锁定期间正确密码登录成功，已解锁: ip=${ip}, username=${u}`);
   }
-  const webToken = sessionMgr.createWebSession(u);
-  logger.info("auth-route", `账号密码登录: ${u}`);
-  ok(res, { webToken, username: u });
+  // VULN-CONCURRENT-01：统一走 sessionPolicy 签发 + 并发策略 + 顶号标记
+  const issued = sessionPolicy.issue(req, u);
+  // R4-02/R4-03：服务端下发 HttpOnly web_token + 轮换 CSRF
+  finalizeLogin(req, res, issued.webToken);
+  logger.info("auth-route", `账号密码登录: ${u}, 顶掉旧会话=${issued.evicted.length}`);
+  ok(res, { webToken: issued.webToken, username: u });
 }));
 
 // 直接登录（个人免密入口：仅受信任 IP 可调用，公网默认拒绝）
 router.post("/direct-login", directLoginGuard, (req, res) => {
-  const webToken = sessionMgr.createWebSession("local");
-  logger.info("auth-route", `直接登录（个人免密）来源IP=${req.ip} trusted=${req.ipTrusted}`);
-  ok(res, { webToken, username: "local" });
+  // 免密入口同样纳入会话注册表：否则 local 账号会绕过并发治理与审计。
+  const issued = sessionPolicy.issue(req, "local");
+  // R4-02/R4-03：免密登录也由服务端下发 HttpOnly web_token + 轮换 CSRF
+  finalizeLogin(req, res, issued.webToken);
+  logger.info("auth-route", `直接登录（个人免密）来源IP=${req.ip} trusted=${req.ipTrusted}, 顶掉旧会话=${issued.evicted.length}`);
+  ok(res, { webToken: issued.webToken, username: "local" });
 });
 
 // 登出
@@ -355,7 +404,8 @@ router.post("/logout", (req, res) => {
       logger.info("auth-route", `用户登出: ${ws.username}`);
     }
   }
-  res.clearCookie("web_token", { path: "/" });
+  // R4-03：HttpOnly web_token JS 清不掉，必须由服务端清理全套 Cookie
+  clearLoginCookies(res);
   ok(res, null, "已退出登录");
 });
 
@@ -363,10 +413,15 @@ router.post("/logout", (req, res) => {
 router.get("/me", (req, res) => {
   const token = getTokenFromReq(req);
   const ws = sessionMgr.getWebSession(token);
-  // 4-01 / 报告5：全站未授权响应统一为 401 + 同一句文案，
-  // 不再让 /me 的「未登录」与其它接口的「请先登录」形成接口地图差异。
-  if (!ws) return fail(res, 401, "请先登录");
-  ok(res, { username: ws.username });
+  // VULN-CONCURRENT-01：被并发登录顶掉 / 被撤销的旧会话，返回 401 KICKED
+  // 专用码，前端据此立即弹「账号已在其他设备登录」，而不是笼统跳登录页。
+  if (!ws) {
+    const st = sessionMgr.getSessionStatus(token);
+    if (st.status === "kicked") return sendKicked(res, st);
+    // 4-01 / 报告5：普通未授权统一为 401 + 同一句文案，避免接口地图差异
+    return fail(res, 401, "请先登录");
+  }
+  ok(res, { username: ws.username, sessionId: ws.id });
 });
 
 // 修改密码
@@ -375,20 +430,108 @@ router.post("/change-password", asyncHandler(async (req, res) => {
   const ws = sessionMgr.getWebSession(token);
   if (!ws) return fail(res, 401, "请先登录");
   const { oldPassword, newPassword } = req.body || {};
+  // R4-01：拒绝非字符串类型，避免 String() 隐式转换影响 scrypt 校验
+  if (typeof oldPassword !== "string" || typeof newPassword !== "string") {
+    return fail(res, 400, "请输入旧密码和新密码");
+  }
   if (!oldPassword || !newPassword) return fail(res, 400, "请输入旧密码和新密码");
   const passErr = validatePassword(newPassword);
   if (passErr) return fail(res, 400, passErr);
   try {
     await userModel.changePassword(ws.username, oldPassword, newPassword);
-    // 密码修改后，使当前 token 失效，要求重新登录
-    sessionMgr.destroyWebSession(token);
-    ok(res, null, "密码修改成功，请重新登录");
+    // 改密后销毁该账号全部会话：旧密码已泄露的场景下，只踢当前 token
+    // 会让攻击者持有的其它会话继续有效（VULN-CONCURRENT-01 会话治理要求）。
+    for (const [t, s] of sessionMgr.webSessions) {
+      if (s.username === ws.username && s.status === "active") {
+        sessionMgr.destroyWebSession(t, "password_changed");
+      }
+    }
+    ok(res, null, "密码修改成功，全部设备已下线，请重新登录");
   } catch (e) {
     if (e.isOperational) return fail(res, e.statusCode, e.message);
     logger.error("auth-route", "修改密码失败", e);
     fail(res, 500, "修改密码失败");
   }
 }));
+
+// ========== 会话管理（VULN-CONCURRENT-01） ==========
+// 这三个端点走 server.js 的 /api 全局守卫：loginFirstGuard 保证已登录、
+// verifyCsrfToken 防跨站；本文件内再用当前 token 二次确认归属，绝不信任请求体里的账号。
+
+// 登录设备列表：只返回当前账号名下的活跃会话，脱敏（短 ID + 掩码 IP）
+router.get("/sessions", (req, res) => {
+  const token = getTokenFromReq(req);
+  const ws = sessionMgr.getWebSession(token);
+  if (!ws) {
+    const st = sessionMgr.getSessionStatus(token);
+    if (st.status === "kicked") return sendKicked(res, st);
+    return fail(res, 401, "请先登录");
+  }
+  res.set("Cache-Control", "no-store, no-cache, must-revalidate, private");
+  ok(res, {
+    sessions: sessionMgr.listSessions(ws.username, token),
+    policy: String(process.env.SESSION_POLICY || "single").toLowerCase(),
+    maxSessions: String(process.env.SESSION_POLICY || "single").toLowerCase() === "limit"
+      ? (Number(process.env.MAX_ACTIVE_SESSIONS) || 3)
+      : 1
+  });
+});
+
+// 强制下线某台设备（按短 ID）。不能撤销当前会话（要走 /api/logout）
+router.post("/sessions/revoke", (req, res) => {
+  const token = getTokenFromReq(req);
+  const ws = sessionMgr.getWebSession(token);
+  if (!ws) {
+    const st = sessionMgr.getSessionStatus(token);
+    if (st.status === "kicked") return sendKicked(res, st);
+    return fail(res, 401, "请先登录");
+  }
+  const id = req.body?.sessionId;
+  if (typeof id !== "string" || !/^[0-9a-f]{12}$/i.test(id)) {
+    return fail(res, 400, "设备标识无效");
+  }
+  const out = sessionPolicy.revoke(ws.username, id, token);
+  if (!out) return fail(res, 404, "设备不存在或已下线");
+  logger.info("auth-route", `用户撤销设备: ${ws.username}, session=${id}`);
+  ok(res, { revoked: id }, "该设备已下线");
+});
+
+// 撤销当前账号全部其它设备
+router.post("/sessions/revoke-others", (req, res) => {
+  const token = getTokenFromReq(req);
+  const ws = sessionMgr.getWebSession(token);
+  if (!ws) {
+    const st = sessionMgr.getSessionStatus(token);
+    if (st.status === "kicked") return sendKicked(res, st);
+    return fail(res, 401, "请先登录");
+  }
+  let n = 0;
+  for (const [t, s] of sessionMgr.webSessions) {
+    if (t === token || s.username !== ws.username || s.status !== "active") continue;
+    s.status = "revoked";
+    s.revokeReason = "session_revoked";
+    s.revokedAt = Date.now();
+    try { require("../presence").getPresence().markKicked(t, ws.username, "session_revoked"); }
+    catch (e) { logger.warn("auth-route", "批量撤销标记失败", e.message); }
+    n++;
+  }
+  logger.info("auth-route", `用户撤销全部其它设备: ${ws.username}, count=${n}`);
+  ok(res, { revoked: n }, n ? `已下线 ${n} 台设备` : "没有其它在线设备");
+});
+
+// 当前账号的登录 / 顶号 / 撤销审计（内存环形缓冲，完整历史在 3100 审计后台）
+router.get("/sessions/audit", (req, res) => {
+  const token = getTokenFromReq(req);
+  const ws = sessionMgr.getWebSession(token);
+  if (!ws) {
+    const st = sessionMgr.getSessionStatus(token);
+    if (st.status === "kicked") return sendKicked(res, st);
+    return fail(res, 401, "请先登录");
+  }
+  const limit = Math.min(100, Math.max(1, Number(req.query.limit) || 50));
+  res.set("Cache-Control", "no-store, no-cache, must-revalidate, private");
+  ok(res, { events: sessionMgr.getSessionAudit(ws.username, limit) });
+});
 
 // ========== 用户业务数据（MySQL，按用户隔离） ==========
 

@@ -276,6 +276,7 @@
   </div>
 </div>
 
+<script src="/session-kicked.js"></script>
 <script>
   let allProjects = [];
   let allLinks = [];
@@ -312,9 +313,10 @@
     `;
   }
 
+  // R4-03：web_token 已 HttpOnly，前端读不到也不必读。登出由服务端
+  // clearCookie 清理，请求体 token 服务端一律忽略（F-03）。
   function getToken() {
-    const c = document.cookie.split(";").map(s => s.trim()).find(s => s.startsWith("web_token="));
-    return c ? decodeURIComponent(c.split("=").slice(1).join("=")) : "";
+    return "";
   }
 
   // CSRF 工具
@@ -366,6 +368,14 @@
 
     let resp = await fetch(url, options);
 
+    // VULN-CONCURRENT-01：被顶号 / 会话被撤销 → 401 KICKED 专用码。
+    // 立即弹窗告知「账号已在其他设备登录」，清本地态后回登录页，
+    // 避免用户对着一个已经失效的会话继续操作、却只看到笼统的 401。
+    if (resp.status === 401 && window.__handleKicked) {
+      const kicked = await window.__handleKicked(resp);
+      if (kicked) return resp;
+    }
+
     // token 失效时补一个再重试一次，只重试一次防死循环
     if (resp.status === 403) {
       let body = null;
@@ -383,9 +393,10 @@
   }
 
   async function doLogout() {
-    const token = getToken();
-    try { await apiFetch("/api/logout", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ token }) }); } catch (e) {}
-    document.cookie = "web_token=; path=/; max-age=0";
+    // R4-03：HttpOnly web_token 由服务端 logout 的 clearCookie 清理；
+    // 前端只清本地可见的体验/访客标记。
+    try { await apiFetch("/api/logout", { method: "POST", headers: { "Content-Type": "application/json" }, body: "{}" }); } catch (e) {}
+    document.cookie = "web_auth=; path=/; max-age=0";
     document.cookie = "web_guest=; path=/; max-age=0";
     location.href = "/login.html";
   }

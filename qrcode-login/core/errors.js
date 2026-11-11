@@ -63,6 +63,28 @@ function errorHandler(err, req, res, _next) {
     return fail(res, err.statusCode, err.message, details);
   }
 
+  // BUG-01：把「客户端输入错误」从 500 里摘出来，避免畸形输入被记成服务端故障。
+  // - express.json() 解析畸形 JSON 会抛 err.type="entity.parse.failed"，
+  //   body-parser 的 SyntaxError 自带 status=400 / type。
+  // - URIError（畸形百分号解码）此处兜底（主防线是 parseCookies 的 safeDecode）。
+  // - 其它携带 4xx status 的错误（query 解析、payload 超限等）按原状态码回。
+  // 只有真正无法归类的异常才落到下面的 500。
+  const rawStatus = Number(err?.status ?? err?.statusCode);
+  const isParseFailed = err?.type === "entity.parse.failed";
+  const isClientError =
+    isParseFailed ||
+    err instanceof URIError ||
+    (Number.isInteger(rawStatus) && rawStatus >= 400 && rawStatus < 500);
+  if (isClientError) {
+    const status = isParseFailed || err instanceof URIError ? 400 : rawStatus;
+    const msg = status === 400 ? "请求格式错误"
+      : status === 413 ? "请求内容过大"
+      : status === 429 ? "请求过于频繁，请稍后再试"
+      : "请求无效";
+    logger.warn("errorHandler", `[${status}] 客户端输入错误 ${req.method} ${req.url} - ${err.message} (requestId=${requestId})`);
+    return fail(res, status, msg);
+  }
+
   // 未知错误
   logger.error("errorHandler", `未捕获异常 ${req.method} ${req.url} (requestId=${requestId})`, err);
   // 生产环境返回通用错误，不暴露内部信息

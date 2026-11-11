@@ -1,8 +1,8 @@
 # 🌍 个人博客 & 作品集（登录门禁版）
 
 > **项目状态**：🚧 开发中 / 个人使用（已部署 https://lizyi.asia）
-> **当前版本**：2.2.5（2026-11-11，presence 三端联动 + 登录页内容预览）｜完整版本历史见文末
-> 本项目为个人博客与作品集系统，功能持续迭代中。已完成三轮渗透测试加固并持续在生产环境运行。
+> **当前版本**：2.2.6（2026-11-11，第四次测试缺陷修复与会话治理）｜完整版本历史见文末
+> 本项目为个人博客与作品集系统，功能持续迭代中。已完成四轮渗透测试加固并持续在生产环境运行。
 
 一个集成了多个网页项目和游戏的个人博客系统，前面加了**登录门禁**：支持扫码登录和账号密码登录双模式，登录后才能进入博客和使用全部项目。
 
@@ -363,6 +363,18 @@ Docker Compose 会自动启动：
 | **2.2.3** | 2026-11-11 | `e12c693` | 第三次修复：注册验证码与限速、移除 `?token=` 通道、登录喷洒防护、scrypt 异步化、前端全量转义 |
 | **2.2.4** | 2026-11-11 | `ffdad35` | 工作台 AI 设置新增「模型扫描」：接口地址/密钥 + 扫描按钮、去重合并模型列表、五类失败提示；模型供应商由 6 家扩充到 22 家 |
 | **2.2.5** | 2026-11-11 | `f6bc4f6` | presence 三端联动：后台下线弹窗、用户上线提示、提示开关与用户端同步；登录页新增文章 / 项目预览，删除失效的 guest 入口 |
+| **2.2.6** | 2026-11-11 | `待回填` | 第四次测试修复：扫码 confirm 身份伪造、畸形输入 500、同账号并发互踢、会话 Cookie HttpOnly/Secure 与 CSRF 轮换、direct-login fail-closed、/health 最小化、缓存语义 |
+
+### 2.2.6 — 第四次测试缺陷修复与会话治理（2026-11-11）
+
+- **P0 扫码身份伪造（BUG-02 / 4-5-01）**：`/api/qrcode/confirm` 的 `verifyPassword` 漏 `await`，Promise 恒真导致任意密码可确认任意账号；补齐 `await`、严格字符串断言，subject 只取库中校验通过的规范用户名，改走 `sessionPolicy.issue()`；redeem 阶段同步下发 PC 端登录 Cookie。
+- **P0 畸形输入 500（BUG-01）**：`parseCookies()` 的 `decodeURIComponent` 增加 `safeDecode` 兜底；全局错误处理器把 `entity.parse.failed` / `URIError` / 4xx 正确映射为 4xx，畸形 JSON 返回 400。
+- **P0 同账号并发登录（VULN-CONCURRENT-01）**：`webSessions` 升级为带 `id/ip/ua/device/status/revokeReason` 的注册表；新增 `SESSION_POLICY=single|limit|off`（默认 `single`）、`401 KICKED`、顶层 `session-kicked.js` 自动跳转、presence 顶号强制弹窗；新增 `/api/sessions`、`/api/sessions/revoke`、`/api/sessions/revoke-others`、`/api/sessions/audit`；修复页面守卫与在线人数误计 `revoked` 会话。
+- **P1/P2 会话 Cookie 与 CSRF（R4-02 / R4-03）**：`web_token` 改由服务端 `Set-Cookie` 下发 `HttpOnly; Secure; SameSite=Lax`，前端不再用 JS 写；登录成功轮换 `csrf_token`；新增非敏感体验标记 `web_auth`；logout / KICKED / presence 过期均主动清 HttpOnly Cookie；响应体保留 `webToken` 兼容 Bearer 与探针。
+- **P1 其它**：`/api/direct-login` 默认 fail-closed（空白名单拒绝，仅显式 `DIRECT_LOGIN_IPS_ALLOW_EMPTY=true` 放行）；匿名 `/health` 只回 `status/timestamp`，详细检查移到 `x-sentinel-key` 保护的 `/health/detail`；全局 API / 页面默认 `private, no-store` + `Vary: Cookie`；登录 / 注册 / 改密补齐严格类型断言。
+- **报告误判核实**：RISK-01/04 AI 同源代理已在位、`ALLOWED_HOSTS` 可变引用与 `__aiKeyMem` 已移除；RISK-05 总配额 2MB / 500 键已实现；RISK-06 `boot.js showFatalError` 已改 `textContent`；`validateApiKey` 已收紧。
+- **验证**：本地语法全通过、单测 63/63、本地黑盒 37/37；生产 15 文件 md5 一致、Node 18 语法 12/12、`server.js` 以生产版本精确插 5 块；公网黑盒 43/43、服务器内直连 `direct-login` 非白名单 IP 403/403 且 loopback 200；`:3100` 审计后台在线。
+- **清理**：生产 2 个 `r4pub_*`、本地 4 个 `r4fix_*` 临时账号已删除，生产用户数回到 8。
 
 ### 2.2.1 — 三轮渗透报告全量修复（2026-11-10）
 
@@ -415,3 +427,4 @@ Docker Compose 会自动启动：
 - 2026-11-11（运维侧安全整改，未纳入代码仓库）：nginx 两个 vhost 的 HSTS 补全为 `max-age=31536000; includeSubDomains; preload`；修复 `blog-sentinel` vhost 因 `location /` 内 `add_header` 屏蔽继承导致 3100 端口实际缺失 HSTS 的问题（在该 location 内重新声明）。明文 HTTP 80 跳转块仍不下发 HSTS。
 - 2026-11-11（运维侧安全整改）：`blog-sentinel` 公开 `/health` 移除 `counts`（访问/登录/事件数不再匿名可读），只保留 `ok/status/ts`；详细计数移到需后台登录的 `GET /api/audit/health`，看板「系统·接入」三项数值不退化；静态资源版本升 `?v=5`。主站 `/health` 未改动。
 - 2026-11-11：presence 三端联动生产逐文件部署，备份 `/root/blog2.1-presence-deploy-backup-20261110T194649`（11 文件 244K）；生产 `server.js` 以生产版本为基底精确插块（md5 `8dcf8dd3b3ac5fb739db74c2a24f4c2f`），从未用本地版本整体覆盖。收尾核对发现看板 CSS 漏升版本号，补升 `?v=7` 并单独部署 3 个文件（备份同目录 `static-v7/`）。
+- 2026-11-11：第四次测试修复生产部署，备份 `/root/blog2.1-r4fix-backup-20261111T124721`；15 个文件逐文件 md5 一致，`server.js` 仅精确插 5 个修复块（保留 `SENTINEL_BASE_URL=3101` 等生产差异），公网黑盒 43/43、生产用户数回到 8。修复报告见 `E:/workaddress/cs/fourth/第四次测试修复报告_lizyi.asia_博客.md`。

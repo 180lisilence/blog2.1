@@ -38,6 +38,9 @@
   function clearCookie(name) {
     document.cookie = name + "=; path=/; max-age=0; SameSite=Lax";
     document.cookie = name + "=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; SameSite=Lax";
+    // R4-03：HttpOnly web_token 由服务端 presence/kicked 响应 clearCookie；
+    // 这里顺带清掉非 HttpOnly 的体验标记，避免页面残留"已登录"假象。
+    document.cookie = "web_auth=; path=/; max-age=0; SameSite=Lax";
   }
 
   function applyStyle(node, styles) {

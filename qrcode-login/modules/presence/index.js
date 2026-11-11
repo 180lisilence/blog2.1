@@ -144,12 +144,25 @@ function createPresence(deps = {}) {
     const k = kicked.get(t);
     const now = clock();
     if (k && now - k.at <= kickTtlMs) {
+      // VULN-CONCURRENT-01：并发顶号 / 手动撤销指定设备属于「账号安全事件」，
+      // 必须让用户在被顶设备上明确看到原因，不能被后台「下线弹窗」总开关静默吞掉
+      // （只有管理员主动 kick 才跟随 offlineNotice 开关）。这样被顶号的用户不会
+      // 误以为掉线，能立刻知道是同账号在别处登录/被撤销。
+      const isSecurityKick = k.reason === "concurrent_login" || k.reason === "session_revoked";
+      let message;
+      if (isSecurityKick) {
+        message = k.reason === "concurrent_login"
+          ? "你的账号已在其他设备登录，当前设备已下线。如非本人操作，请立即修改密码。"
+          : "你的会话已在另一台设备上被撤销，当前设备已下线。";
+      } else {
+        message = settings.offlineNotice ? settings.offlineMessage : "";
+      }
       return {
         ...base,
         status: "kicked",
         reason: k.reason,
-        message: settings.offlineNotice ? settings.offlineMessage : "",
-        showDialog: Boolean(settings.offlineNotice),
+        message,
+        showDialog: isSecurityKick ? true : Boolean(settings.offlineNotice),
         at: k.at
       };
     }

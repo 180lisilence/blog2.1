@@ -31,7 +31,10 @@ function onlineSessions() {
   const byUser = new Map();
   let validSessions = 0;
   for (const [token, s] of authSession.webSessions) {
-    if (!s || Number(s.expireAt) <= now) continue; // 过期会话未清理前也不计入在线
+    // VULN-CONCURRENT-01：必须排除被顶号 / 手动撤销的会话。
+    // 这些会话以 status="revoked" 在 Map 里保留至多 10 分钟供 KICKED 判定，
+    // 旧实现只判 expireAt，会把已下线设备误报成在线。
+    if (!s || s.status !== "active" || Number(s.expireAt) <= now) continue;
     validSessions++;
     const name = String(s.username || "-");
     const cur = byUser.get(name);
