@@ -151,3 +151,84 @@ input:focus, textarea:focus, select:focus {
     font-weight: 600 !important;
     padding: 2px 10px !important;
 }
+
+/* ===== 浅色主题适配（修复「浅底浅字」对比度失效） =====
+   背景：本增强层是深色专用——标题写死「白色→浅紫渐变 + text-fill-color:transparent」，
+   卡片写死 rgba(255,255,255,.04) 半透明玻璃。切到浅色主题后，styles.css 的 :root
+   把 .content / 卡片变成白底，但增强层的白色渐变文字不随 data-theme 变化，
+   结果就是白底白字、整页发灰看不清。
+   处理：仅在 [data-theme="light"] 下把「内容区 + 模态框」的前景/卡片背景改回可读值；
+   顶栏、侧栏、AI 面板头部恒为深色或彩色渐变，保留原白色渐变文字，避免误改成深字。 */
+[data-theme="light"] {
+    --text-muted: #6b6b85;
+    --text-faint: #8a8aa5;
+}
+[data-theme="light"] body {
+    background: var(--bg-page) !important;
+    background-attachment: fixed !important;
+}
+[data-theme="light"] .card,
+[data-theme="light"] [class*="card"],
+[data-theme="light"] .panel,
+[data-theme="light"] [class*="panel"] {
+    background: var(--bg-card) !important;
+    border-color: var(--border) !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+}
+[data-theme="light"] .content h1,
+[data-theme="light"] .content h2,
+[data-theme="light"] .content h3,
+[data-theme="light"] .content [class*="title"],
+[data-theme="light"] .modal h1,
+[data-theme="light"] .modal h2,
+[data-theme="light"] .modal h3,
+[data-theme="light"] .modal [class*="title"] {
+    background: none !important;
+    -webkit-text-fill-color: var(--text-primary) !important;
+    color: var(--text-primary) !important;
+}
+[data-theme="light"] input,
+[data-theme="light"] textarea,
+[data-theme="light"] select {
+    background: var(--bg-input) !important;
+    border-color: var(--border-strong) !important;
+    color: var(--text-primary) !important;
+}
+
+/* ===== 浅色主题下的「强调卡」.hook-card 修复 =====
+   .hook-card 在 styles.css 里本就是 linear-gradient(靛→紫) + color:#fff 的强调卡，
+   卡内数字/标签/副标题/按钮全部是白色。上面通用的 [class*="card"] 浅色规则
+   把它一并刷成白底，导致白字数字/标签在白底上消失（首页第一张卡数字看不见）。
+   这里按原设计恢复「彩底白字」——既保证对比度，也保留视觉冲击力。 */
+[data-theme="light"] .hook-card {
+    background: linear-gradient(135deg, #6366f1, #8b5cf6) !important;
+    border-color: transparent !important;
+    box-shadow: 0 8px 30px rgba(99,102,241,0.28) !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+}
+[data-theme="light"] .hook-card .hook-head h3,
+[data-theme="light"] .hook-card .hook-sub,
+[data-theme="light"] .hook-card .hook-num,
+[data-theme="light"] .hook-card .hook-lbl {
+    background: none !important;
+    -webkit-text-fill-color: #fff !important;
+    color: #fff !important;
+}
+[data-theme="light"] .hook-card .hook-stat.hot .hook-num {
+    -webkit-text-fill-color: #ffe066 !important;
+    color: #ffe066 !important;
+}
+[data-theme="light"] .hook-card .hook-actions .btn {
+    background: rgba(255,255,255,0.2) !important;
+    -webkit-text-fill-color: #fff !important;
+    color: #fff !important;
+    border-color: rgba(255,255,255,0.4) !important;
+    box-shadow: none !important;
+}
+[data-theme="light"] .hook-card .hook-actions .btn-primary {
+    background: #fff !important;
+    -webkit-text-fill-color: #4f46e5 !important;
+    color: #4f46e5 !important;
+}
