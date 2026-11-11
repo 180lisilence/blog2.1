@@ -43,6 +43,11 @@
   function showDialog(msg, reason) {
     var old = document.getElementById(OVERLAY_ID);
     if (old && old.parentNode) old.parentNode.removeChild(old);
+    // 2.2.8：presence-client.js（轮询触发）与本脚本（401 KICKED 触发）
+    // 可能同时命中同一次顶号，两个遮罩叠在一起会互相遮挡。
+    // 这里把对方的遮罩一并清掉，保证任意时刻只有一个下线提示。
+    var peer = document.getElementById("__blog_presence_overlay");
+    if (peer && peer.parentNode) peer.parentNode.removeChild(peer);
 
     var title = reason === "session_revoked" ? "会话已撤销" : "账号已在其他设备登录";
     var body = msg || (reason === "session_revoked"

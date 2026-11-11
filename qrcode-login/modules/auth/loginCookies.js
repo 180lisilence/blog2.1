@@ -23,6 +23,20 @@ const csrf = require("../../middleware/csrf");
 
 const WEB_TOKEN_COOKIE = "web_token";
 const WEB_AUTH_COOKIE = "web_auth"; // 非 HttpOnly，仅体验判断，不含凭据
+// 顶号标记 Cookie（2.2.8 新增）
+//
+// 为什么需要它：sendKicked() 在返回 401 KICKED 的同时必须清掉 web_token
+// （HttpOnly，前端清不掉；不清会陷入「401 KICKED → 弹窗 → 再 401」死循环）。
+// 但 web_token 一旦被清，presence 端点就再也拿不到 token，
+// 而 presence 的「被顶号」记录正是以 token 为 key 的 —— 查不到就降级成
+// anonymous，下线提示永久丢失（实测 X1：先 /api/me 后 presence → anonymous）。
+//
+// 于是把「本设备已被顶号」这一事实单独落到一个短时效 Cookie 上：
+//   - 不含任何凭据（只有 reason 字符串），HttpOnly 也不影响（服务端自读）
+//   - 由 sendKicked 在清 Cookie 之后补写，presence 端点据此仍能判定 kicked
+//   - 登录成功 / presence 送达提示 / 登出时清除，不会误报
+const BLOG_KICK_COOKIE = "blog_kick";
+const BLOG_KICK_MAX_AGE = 10 * 60 * 1000; // 与 presence 的 KICK_TTL_MS 对齐
 const WEB_TOKEN_MAX_AGE = 7 * 24 * 3600 * 1000; // 与 config.webTokenExpireMs 对齐
 
 /**
@@ -46,6 +60,9 @@ function finalizeLogin(req, res, webToken) {
   // R4-02：轮换 CSRF（写 Cookie，前端下次从 document.cookie 读到新值）
   const freshCsrf = csrf.issueToken();
   csrf.writeCsrfCookie(req, res, freshCsrf);
+  // 2.2.8：登录成功即清掉顶号标记 —— 否则这台设备刚登进去就被 presence
+  // 认成「刚被顶号」，会立刻弹一个下线提示把新会话也搅了。
+  try { res.clearCookie(BLOG_KICK_COOKIE, { path: "/" }); } catch (e) { /* 忽略 */ }
   return freshCsrf;
 }
 
@@ -56,4 +73,52 @@ function clearLoginCookies(res) {
   res.clearCookie(WEB_AUTH_COOKIE, opt);
 }
 
-module.exports = { finalizeLogin, clearLoginCookies, WEB_TOKEN_COOKIE, WEB_AUTH_COOKIE };
+/**
+ * 标记「本设备刚刚被顶号」（2.2.8）
+ *
+ * 由 sendKicked 在 clearLoginCookies 之后调用：web_token 已被清掉，
+ * presence 端点再也拿不到 token，无法查到自己被顶过号。这个 Cookie
+ * 携带 reason，让 presence 端点仍能判定 kicked 并把提示送到用户端。
+ *
+ * 不含任何凭据（只有 reason 字符串），且是短时效的 —— 即使漏清，
+ * 10 分钟后自动失效，不会造成长期误报。
+ */
+function markKickedCookie(req, res, reason) {
+  const r = String(reason || "concurrent_login").slice(0, 32);
+  res.cookie(BLOG_KICK_COOKIE, r, {
+    httpOnly: true,
+    secure: csrf.isSecureRequest(req),
+    sameSite: "lax",
+    path: "/",
+    maxAge: BLOG_KICK_MAX_AGE
+  });
+}
+
+/**
+ * 读取本设备的顶号标记（presence 端点用）
+ * @returns {string} reason；没有标记返回空串
+ */
+function readKickedCookie(req) {
+  try {
+    const raw = req.headers?.cookie || "";
+    for (const part of raw.split(";")) {
+      const p = part.trim();
+      const eq = p.indexOf("=");
+      if (eq <= 0) continue;
+      if (p.slice(0, eq) === BLOG_KICK_COOKIE) {
+        return decodeURIComponent(p.slice(eq + 1)).slice(0, 32);
+      }
+    }
+  } catch (e) { /* 畸形编码按无标记处理 */ }
+  return "";
+}
+
+module.exports = {
+  finalizeLogin,
+  clearLoginCookies,
+  markKickedCookie,
+  readKickedCookie,
+  WEB_TOKEN_COOKIE,
+  WEB_AUTH_COOKIE,
+  BLOG_KICK_COOKIE
+};

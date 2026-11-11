@@ -176,12 +176,27 @@ const presence = require("./modules/presence").getPresence();
 app.get("/api/presence/state", (req, res) => {
   try {
     res.set("Cache-Control", "no-store, no-cache, must-revalidate, private");
-    const state = presence.state(getTokenFromReq(req));
+    const loginCookies = require("./modules/auth/loginCookies");
+    // 2.2.8：把「本设备被顶号」的事实也带进判定。
+    // 旧实现只看 token —— 而 sendKicked 在返回 401 KICKED 时已经把 web_token
+    // 清掉了（HttpOnly，前端清不掉），于是后续 presence 轮询拿到空 token，
+    // kicked Map（以 token 为 key）查不到 → 降级 anonymous → 下线提示永久丢失。
+    // 实测对照：先 /api/me 后 presence = anonymous；只走 presence = kicked。
+    // 现在用服务端自读的 blog_kick 标记补判，提示不再依赖凭据是否还在。
+    const kickHint = loginCookies.readKickedCookie(req);
+    const state = presence.state(getTokenFromReq(req), kickHint);
     // R4-03：web_token 已 HttpOnly，用户端 JS 清不掉。会话已真实失效
     // （被顶号 kicked / 过期 expired）时，服务端主动清全套登录 Cookie，
     // 避免浏览器继续携带失效 token 反复轮询。前端收到 kicked 即弹窗跳登录页。
     if (state.status === "kicked" || state.status === "expired") {
-      try { require("./modules/auth/loginCookies").clearLoginCookies(res); }
+      try { loginCookies.clearLoginCookies(res); }
+      catch (e) { /* 不影响状态响应本身 */ }
+    }
+    // 2.2.8：提示已送达（本次响应即携带 kicked），清掉顶号标记。
+    // 否则用户回到登录页后 presence 仍会一直判定 kicked → 反复弹窗，
+    // 而登录成功后 finalizeLogin 又会清它，两处都会清，幂等无副作用。
+    if (state.status === "kicked") {
+      try { res.clearCookie(loginCookies.BLOG_KICK_COOKIE, { path: "/" }); }
       catch (e) { /* 不影响状态响应本身 */ }
     }
     res.json({ ok: true, ...state });
@@ -298,7 +313,7 @@ function loginFirstGuard(req, res, next) {
     // 前端 apiFetch 捕获后弹「账号已在其他设备登录」，而不是静默 401。
     // 注意：PUBLIC_WRITE_PATHS（登录/注册/扫码等）已在上面放行，不会被误伤。
     const st = token ? authSession.getSessionStatus(token) : null;
-    if (st && st.status === "kicked") return require("./middleware/auth").sendKicked(res, st);
+    if (st && st.status === "kicked") return require("./middleware/auth").sendKicked(req, res, st);
     return res.status(401).json({ ok: false, msg: "请先登录" });
   }
   next();
@@ -397,6 +412,20 @@ async function start() {
 
   // 4.2 启动在线状态提示的下线标记清理（10 分钟 TTL，定时回收）
   presence.startCleanup();
+
+  // 4.3 修复存量孤儿回复（2.2.8）
+  // 旧口径下「已软删但还有活回复」的父评论仍计入 total，页面显示「评论 1」
+  // 而列表里那条却是已删除的占位。新口径不再计入软删父评论，
+  // 它下面的回复必须提升为顶层，否则会一起从页面消失。
+  try {
+    const commentsModel = require("./modules/comments/model");
+    const fixed = await commentsModel.repairOrphanReplies();
+    if (fixed > 0) {
+      logger.info("startup", `修复孤儿回复 ${fixed} 条（父评论已软删，提升为顶层）`);
+    }
+  } catch (e) {
+    logger.warn("startup", `孤儿回复修复失败（不影响启动）: ${e.message}`);
+  }
 
   // 5. 初始化 OCR 管理器（可选自动启动）
   try {

@@ -1,7 +1,7 @@
 # 🌍 个人博客 & 作品集（登录门禁版）
 
 > **项目状态**：🚧 开发中 / 个人使用（已部署 https://lizyi.asia   ）
-> **当前版本**：2.2.7（2026-11-11，同浏览器多窗口下线感知）｜完整版本历史见文末
+> **当前版本**：2.2.8（2026-11-11，评论口径统一 / 删除权限收紧 / 顶号提示修复）｜完整版本历史见文末
 > 本项目为个人博客与作品集系统，功能持续迭代中。已完成四轮渗透测试加固并持续在生产环境运行。
 
 一个集成了多个网页项目和游戏的个人博客系统，前面加了**登录门禁**：支持扫码登录和账号密码登录双模式，登录后才能进入博客和使用全部项目。
@@ -365,6 +365,38 @@ Docker Compose 会自动启动：
 | **2.2.5** | 2026-11-11 | `f6bc4f6` | presence 三端联动：后台下线弹窗、用户上线提示、提示开关与用户端同步；登录页新增文章 / 项目预览，删除失效的 guest 入口 |
 | **2.2.6** | 2026-11-11 | `151a582` | 第四次测试修复：扫码 confirm 身份伪造、畸形输入 500、同账号并发互踢、会话 Cookie HttpOnly/Secure 与 CSRF 轮换、direct-login fail-closed、/health 最小化、缓存语义 |
 | **2.2.7** | 2026-11-11 | `b41b03a` | 同浏览器多窗口下线感知：顶层页接入 presence 轮询、`localStorage` 登录纪元互斥解决共享 Cookie 导致的「两窗口同显已登录/后台只 1 设备」、被顶窗口弹窗且不误踢新窗口 |
+| **2.2.8** | 2026-11-11 | `PENDING` | 评论计数与列表口径统一（删除后计数立即同步、回复不再随父评论消失）、评论删除权限收紧为仅内置管理员、多端登录顶号提示断链修复（被顶设备必弹下线提示，正常刷新不误判登出） |
+
+### 2.2.8 — 评论口径统一 / 删除权限收紧 / 顶号提示断链修复（2026-11-11）
+
+**问题1：评论计数与列表不同步（页面显示「评论 1」，实际该评论已被删除）**
+
+- **根因（三层，均有实测证据）**：
+  ① **SQL 口径分裂** —— `listByPost` 的可见顶层条件是 `post_slug=? AND parent_id IS NULL AND (status=1 OR EXISTS(活子回复))`，即「已软删但底下还有活回复」的父评论仍计入 `total`；而 `countByPost` / `countsByPosts` 用的是 `status=1`（含回复），与列表口径完全不同；`stats()` 又是第三套口径。
+  ② **前端吞回复** —— `blog/assets/js/comments.js` 的 `renderOne()` 对 `c.deleted` **提前 return**，只渲染「该评论已删除」占位，**完全不渲染 `c.replies`** → 真实存在的回复在页面上彻底不可见。
+  ③ **生产数据实证** —— 生产库 `woldvein-project` 的 comments 表仅 2 行：id=1（`parent_id=NULL`, `status=0`, 已软删）与 id=2（`parent_id=1`, `status=1`, 真实回复）。旧口径 `total=1`，而这个 1 指的正是**已删除的父评论**，回复被算作「挂在占位下面」。
+- **修复**：`model.js` 把可见顶层条件提升为模块级常量 `VISIBLE_TOP = post_slug=? AND parent_id IS NULL AND status=1`，计数与取 id 单一来源；`softDelete()` 先调新增的 `promoteReplies()` 把子回复提升为顶层（回复不丢、不变孤儿）再软删；新增 `repairOrphanReplies()` 在启动期一次性修复存量孤儿回复（幂等）；DELETE 接口删除后直接返回最新 `total`，前端用它立即同步标题数字。
+- **前端**：`renderOne()` 不再吞回复——占位与回复一起渲染，回复仍可见可回复。
+
+**问题2：评论删除权限控制（普通访客不应有删除权）**
+
+- **根因**：旧 DELETE 接口只校验 `row.username !== req.username` → 任何访客都能删掉自己的评论，全站没有管理员维度；前端 `canDelete` 同一口径，等于把「作者本人」当成了删除授权。
+- **判断依据（站内既有机制，不新造角色体系）**：MySQL `users.is_builtin` → `authModel.users` Map 的 `builtin` 标记。同一份数据已被三处复用 —— ① `blog-sentinel` 成员快照对外输出 `isBuiltin`；② `qrcode-login/modules/audit/members-admin.js` 的 `assertNotBuiltin` 用它保护内置账号禁改名/删除；③ 生产库实测仅 `admin` 一个账号 `is_builtin=1`，其余 6 个为普通注册账号。因此 **builtin 管理员 = 站长本人**，普通访客（含评论作者本人）只保留「生成项目、登录与访问、新增与回复评论」。
+- **修复**：后端 DELETE 前置 `if (!req.viewer.isAdmin) return fail(res, 403, "普通用户无权删除评论，删除权限仅限管理员")`，**后端强制鉴权是唯一防线**，不依赖前端隐藏；DTO 的 `canDelete` 改为 `Boolean(!deleted && v.isAdmin)`，前端据此不渲染删除按钮（体验优化，非安全边界）；列表响应新增 `isAdmin` 供前端使用。
+
+**问题3：多端登录会话管理（电脑端登录后手机端未被踢、刷新反而被退出、无下线提示）**
+
+- **根因（三层，均实测确认）**：
+  ① **服务端顶号本身生效** —— `sessionPolicy.issue()` → `createWebSession` → `applyConcurrentPolicy`（`SESSION_POLICY` 默认 `single`）→ 旧会话 `status="revoked"` + `revokeReason="concurrent_login"` → `presence.markKicked(oldToken,...)`。实测 A（手机端先登录）→ B（电脑端后登录）→ A 的 `/api/me` **立刻** `401 {code:"KICKED", reason:"concurrent_login"}`。用户描述的「未被踢出」是**感知问题**而非状态问题。
+  ② **断点在提示送达** —— `middleware/auth.js` 的 `sendKicked()` 在返回 401 KICKED 的同时下发 `Set-Cookie: web_token=; Expires=1970` 清掉 HttpOnly token。此后 presence 端点 `state("")` 走 `if (!t) return {status:"anonymous"}` 提前返回，而 kicked Map 的 key 就是 token → **顶号记录再也查不到，下线提示永久丢失**。对照实验（X1 先 `/api/me` → `anonymous`；X2 只走 presence → `kicked` + `showDialog:true`）决定性证明这一点。
+  ③ **前端层缺口** —— `comments.js` 的 `api()` helper 无 401 KICKED 分支，且文章页此前**未引入** `session-kicked.js`（只有顶层三页有 `window.__handleKicked`），故收到 401 只显示「请先登录后再发表评论」。
+- **「刷新被强制退出」的直接原因**：KICKED 响应的 `Set-Cookie` 已把 `web_token` 删掉 → 刷新时页面守卫判定未登录 → 302 到登录页。**正常刷新本身无误判**：实测 B 连续三次 `/api/me` 均 200、presence `online`。
+- **修复**：
+  - 新增短时效 `blog_kick` Cookie（`loginCookies.js` 的 `markKickedCookie` / `readKickedCookie`）：**不含任何凭据**（只有 reason 字符串）、HttpOnly、10 分钟 TTL。由 `sendKicked` 在清完凭据之后补写，presence 端点据此在无 token 时仍判定 `kicked` → 提示不再依赖凭据是否还在；`finalizeLogin()` 登录成功即清（不误报「刚被顶号」）；presence 送达提示后清（不反复弹窗）。
+  - `presence.state(token, kickHint)` 新增第二参数，token 命中 kicked Map 与「只有顶号标记」两条路径共用同一个 `buildKicked()`，提示文案 / `showDialog` 判定只有一份实现；有效会话优先，残留标记不会误伤。
+  - `blogStatic.js` 给所有 `/blog` HTML 同时注入 `presence-client.js?v=3` 与 `session-kicked.js?v=2`（文章页此前没有后者）；`comments.js` 的 `api()` 补 401 KICKED 分支转交 `window.__handleKicked`。
+  - 两个下线弹窗（presence 轮询触发 / 401 KICKED 触发）互相清理对方遮罩，任意时刻只有一个提示。
+- **验证**：本地单元 77/77（新增 `tests/presence.test.js` 9 项 + `login-cookies` 5 项）；端到端三场景 48/48（`.workbuddy/wb-fix-228-verify.js`：删除后计数同步、访客越权删除 403、多端顶号 + 刷新不误判，含存量孤儿回复修复幂等验证）；生产直连验收见下方部署记录。
 
 ### 2.2.7 — 同浏览器多窗口下线感知（2026-11-11）
 

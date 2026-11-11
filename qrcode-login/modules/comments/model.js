@@ -5,20 +5,32 @@
 const pool = require("../../db/pool");
 
 /**
+ * 可见顶层评论的统一筛选条件（计数与取 id 必须共用同一份，否则总页数会算歪）
+ *
+ * 口径变更（2.2.8 修复「计数与列表不同步」）：
+ *   旧口径 = status=1 OR EXISTS(活着的子回复)
+ *   新口径 = status=1
+ *
+ * 旧口径的问题：一条被软删的父评论（status=0）只要底下还有活着的子回复，
+ * 就会被计入 total，于是页面显示「评论 1」，点进去看到的却是一个
+ * 「该评论已删除」的占位 —— 用户看到的计数与列表完全对不上。
+ * 典型现场：生产 comments 表里 woldvein-project 只有两行
+ *   id=1（顶层，status=0，已软删）
+ *   id=2（回复 id=1，status=1，真实存在）
+ * 旧口径 total=1，列表里那条顶层却是已删除的占位，真实回复 id=2 被算作
+ * 「回复」挂在占位下面 —— 计数 1 指的是一个已删除的评论。
+ *
+ * 新口径下「计数 = 列表里真实存在的顶层评论数」，删除后立即同步。
+ * 子回复不丢：softDelete 会把子回复提升为顶层（见 promoteReplies），
+ * 所以不会出现「回复的父被删 → 回复变孤儿 → 回复也不显示」。
+ */
+const VISIBLE_TOP = `post_slug = ? AND parent_id IS NULL AND status = 1`;
+
+/**
  * 分页查询某篇文章的评论（顶层评论分页，回复全量带出）
  *
  * 分页策略：先按顶层评论分页，再把本页顶层评论的所有回复一次捞出。
  * 这样既不会因为回复多而撑爆单页，也不会出现"父评论不在本页"的断裂。
- *
- * 可见顶层评论的判定（关键）：
- *   status = 1                              —— 正常评论
- *   OR 存在 status = 1 的子回复              —— 已被软删除但底下还有活着的回复
- *
- * 第二条不能省。父评论被软删除时（status=0，content 已清空），如果这里只认
- * status=1，它的 id 就进不了 topIds，后面 parent_id IN (...) 自然也捞不到子回复，
- * 结果是"接口返回 soft:true 说回复会保留"、"用户却一条都看不到"。加上这条
- * EXISTS 之后，软删的父评论会以占位形态留在时间线里（DTO 层把内容置空并标
- * deleted，前端渲染成"该评论已删除"），回复链才真正保住。
  *
  * @param {string} postSlug
  * @param {number} page   1-based
@@ -30,12 +42,6 @@ async function listByPost(postSlug, page, size) {
   const safeSize = Math.min(Math.max(parseInt(size, 10) || 20, 1), 50);
   const safePage = Math.max(parseInt(page, 10) || 1, 1);
   const offset = (safePage - 1) * safeSize;
-
-  // 可见顶层评论的统一筛选条件，计数与取 id 必须用同一套，否则总页数会算歪
-  const VISIBLE_TOP = `post_slug = ? AND parent_id IS NULL AND (
-      status = 1
-      OR EXISTS (SELECT 1 FROM comments c2 WHERE c2.parent_id = comments.id AND c2.status = 1)
-    )`;
 
   // 顶层评论总数
   const [countRows] = await pool.query(
@@ -100,12 +106,52 @@ async function create({ postSlug, parentId, username, content, ip, userAgent }) 
 
 /**
  * 软删除：status 置 0，内容清空，保留行以维系回复链
+ *
+ * 2.2.8：软删的父评论不再计入列表与计数（口径见 VISIBLE_TOP），
+ * 所以它的子回复必须被"提升"成顶层，否则回复会因为父评论不在可见集合里
+ * 而一起从页面上消失（用户会看到"删了父评论，回复也没了"）。
+ *
+ * promoteReplies 把直接子回复的 parent_id 置为 NULL（提升为顶层）。
+ * 只做一层：回复的回复在入库时已被统一挂到顶层（见 routes.js 的 parentId 归一），
+ * 所以直接子回复就是这一条链上的全部下游，提升一层即可覆盖。
  */
 async function softDelete(id) {
+  await promoteReplies(id);
   await pool.execute(
     "UPDATE comments SET status = 0, content = '', updated_at = ? WHERE id = ?",
     [Date.now(), id]
   );
+}
+
+/**
+ * 把某条评论的直接子回复提升为顶层评论（parent_id 置 NULL）
+ */
+async function promoteReplies(id) {
+  await pool.execute(
+    "UPDATE comments SET parent_id = NULL, updated_at = ? WHERE parent_id = ? AND status = 1",
+    [Date.now(), id]
+  );
+}
+
+/**
+ * 修复存量孤儿回复：父评论已被软删（status=0）或行已不存在，
+ * 但子回复仍是 status=1 且 parent_id 仍指向那个已删父评论。
+ *
+ * 2.2.8 起软删父评论不再计入可见集合，这些回复若不提升就会一起从页面消失。
+ * 启动时跑一次即可把存量数据归位（幂等，重复执行无副作用）。
+ *
+ * 生产实证：woldvein-project 只有两行 —— id=1（顶层，status=0）、
+ * id=2（parent_id=1，status=1），修复后 id=2 提升为顶层并正常计数/显示。
+ */
+async function repairOrphanReplies() {
+  const [result] = await pool.execute(
+    `UPDATE comments c
+     JOIN comments p ON p.id = c.parent_id
+     SET c.parent_id = NULL, c.updated_at = ?
+     WHERE c.status = 1 AND c.parent_id IS NOT NULL AND p.status = 0`,
+    [Date.now()]
+  );
+  return Number(result?.affectedRows || 0);
 }
 
 /**
@@ -156,10 +202,14 @@ async function stats() {
 
 /**
  * 某篇文章的评论数（列表页显示用）
+ *
+ * 2.2.8：口径与 listByPost 的 total 对齐 —— 统计「真实可见的顶层评论」。
+ * 旧口径 status=1（含回复）会把回复也算进去，和列表里显示的条目数对不上；
+ * 旧口径同时也没排除软删父评论。现在两者完全一致：列表显示几条，计数就是几。
  */
 async function countByPost(postSlug) {
   const [rows] = await pool.query(
-    "SELECT COUNT(*) AS c FROM comments WHERE post_slug = ? AND status = 1",
+    `SELECT COUNT(*) AS c FROM comments WHERE ${VISIBLE_TOP}`,
     [postSlug]
   );
   return Number(rows[0]?.c || 0);
@@ -167,13 +217,14 @@ async function countByPost(postSlug) {
 
 /**
  * 批量取多篇文章的评论数（首页列表用，避免 N+1 查询）
+ * 口径与 countByPost / listByPost 完全一致。
  */
 async function countsByPosts(slugs) {
   if (!Array.isArray(slugs) || slugs.length === 0) return {};
   const placeholders = slugs.map(() => "?").join(",");
   const [rows] = await pool.query(
     `SELECT post_slug, COUNT(*) AS c FROM comments
-     WHERE status = 1 AND post_slug IN (${placeholders})
+     WHERE ${VISIBLE_TOP.replace("post_slug = ?", `post_slug IN (${placeholders})`)}
      GROUP BY post_slug`,
     slugs
   );
@@ -188,6 +239,8 @@ module.exports = {
   getById,
   create,
   softDelete,
+  promoteReplies,
+  repairOrphanReplies,
   hardDelete,
   countReplies,
   lastCommentAt,

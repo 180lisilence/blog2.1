@@ -97,5 +97,46 @@ test("clearLoginCookies: 清除 web_token 与 web_auth", () => {
   for (const c of res.clears) assert.strictEqual(c.opt.path, "/");
 });
 
+// ========== 2.2.8 顶号标记 Cookie（blog_kick） ==========
+
+test("markKickedCookie: 下发带 reason 的 HttpOnly 顶号标记", () => {
+  const res = mockRes();
+  loginCookies.markKickedCookie(mockReq(), res, "concurrent_login");
+  const k = res.cookies.find(c => c.name === "blog_kick");
+  assert.ok(k, "应下发 blog_kick Cookie");
+  assert.strictEqual(k.value, "concurrent_login");
+  assert.strictEqual(k.opt.httpOnly, true, "顶号标记必须 HttpOnly");
+  assert.strictEqual(k.opt.path, "/");
+  assert.ok(k.opt.maxAge > 0, "应有 maxAge（短时效）");
+  assert.ok(k.opt.maxAge <= 10 * 60 * 1000, "不应超过 10 分钟");
+});
+
+test("markKickedCookie: reason 截断防超长注入", () => {
+  const res = mockRes();
+  loginCookies.markKickedCookie(mockReq(), res, "x".repeat(500));
+  const k = res.cookies.find(c => c.name === "blog_kick");
+  assert.strictEqual(k.value.length, 32, "reason 应截断到 32 字符");
+});
+
+test("readKickedCookie: 能从 Cookie 头读回 reason", () => {
+  const req = mockReq({ headers: { cookie: "web_auth=1; blog_kick=concurrent_login; csrf_token=abc" } });
+  assert.strictEqual(loginCookies.readKickedCookie(req), "concurrent_login");
+});
+
+test("readKickedCookie: 无标记 / 畸形编码返回空串", () => {
+  assert.strictEqual(loginCookies.readKickedCookie(mockReq({ headers: { cookie: "web_auth=1" } })), "");
+  assert.strictEqual(loginCookies.readKickedCookie(mockReq({ headers: {} })), "");
+  // 畸形百分号编码必须按无标记处理，不能抛异常
+  assert.strictEqual(loginCookies.readKickedCookie(mockReq({ headers: { cookie: "blog_kick=%" } })), "");
+});
+
+test("finalizeLogin: 登录成功即清掉顶号标记（不误报刚被顶号）", () => {
+  const res = mockRes();
+  loginCookies.finalizeLogin(mockReq(), res, "NEW_TOKEN");
+  const cleared = res.clears.find(c => c.name === "blog_kick");
+  assert.ok(cleared, "登录成功必须清掉 blog_kick");
+  assert.strictEqual(cleared.opt.path, "/");
+});
+
 console.log(`\n  结果: ${passed} 通过, ${failed} 失败`);
 module.exports = { passed, failed };

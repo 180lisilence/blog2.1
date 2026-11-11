@@ -103,8 +103,15 @@ function validateContent(raw) {
 
 /**
  * 把数据库行转成前端需要的结构
+ *
+ * @param {object} row      数据库行
+ * @param {object} viewer   查看者信息 { name: string|null, isAdmin: boolean }
+ *   - name：当前登录用户名（未登录为 null）
+ *   - isAdmin：是否为内置管理员（builtin）。删除权限只认 builtin 管理员，
+ *     普通访客即便评论是自己的也不能删 —— 判断依据见 routes.js 的说明。
  */
-function toDTO(row, viewerName) {
+function toDTO(row, viewer) {
+  const v = viewer && typeof viewer === "object" ? viewer : { name: viewer || null, isAdmin: false };
   const deleted = row.status === 0;
   return {
     id: Number(row.id),
@@ -115,22 +122,24 @@ function toDTO(row, viewerName) {
     createdAt: Number(row.created_at),
     updatedAt: Number(row.updated_at),
     deleted,
-    // 前端据此决定是否显示删除按钮
-    // 注意必须用 Boolean() 包一层：viewerName 为 null 时
-    // `null && ...` 会短路返回 null，前端拿到 null 虽能当假值用但不干净
-    canDelete: Boolean(!deleted && viewerName && row.username === viewerName)
+    // 前端据此决定是否显示删除按钮。
+    // 2.2.8：删除权限收紧为「仅内置管理员」。旧口径是「评论作者本人」，
+    // 等于任何访客都能删自己的评论 —— 与站内权限模型不符。
+    // 注意必须用 Boolean() 包一层：viewer.name 为 null 时
+    // `null && ...` 会短路返回 null，前端拿到 null 虽能当假值用但不干净。
+    canDelete: Boolean(!deleted && v.isAdmin)
   };
 }
 
 /**
  * 把扁平列表组装成树：顶层评论带 replies 数组
  */
-function buildTree(rows, viewerName) {
+function buildTree(rows, viewer) {
   const map = new Map();
   const roots = [];
 
   for (const row of rows) {
-    const dto = toDTO(row, viewerName);
+    const dto = toDTO(row, viewer);
     dto.replies = [];
     map.set(dto.id, dto);
   }

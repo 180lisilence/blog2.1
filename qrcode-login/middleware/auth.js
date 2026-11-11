@@ -73,7 +73,7 @@ function createAuthGate(webSessions) {
     // 被顶号 / 撤销：API 统一返回 KICKED，让前端 apiFetch 弹「已在其他设备登录」。
     // 页面请求则重定向登录页（presence-client.js 负责在用户端弹出下线提示）。
     if (ws && ws.status === "revoked" && req.path.startsWith("/api/")) {
-      return sendKicked(res, { reason: ws.revokeReason });
+      return sendKicked(req, res, { reason: ws.revokeReason });
     }
     // 未登录：API 返回 401，页面跳转登录页（根目录登录页是 index.html）
     if (req.path.startsWith("/api/")) {
@@ -99,14 +99,25 @@ function createAuthParser(webSessions) {
  * 被顶号 / 会话被撤销时的 401 专用响应（VULN-CONCURRENT-01）。
  * 普通「未登录」仍沿用统一的「请先登录」文案，不做接口地图差异；
  * 只有已认证会话被并发策略撤销时才带 code=KICKED，供前端立即弹窗引导重登。
+ *
+ * 2.2.8 修复「多端登录后手机端收不到下线提示」：
+ *   sendKicked 必须在清掉 web_token 之后补写一个短时效的顶号标记 Cookie，
+ *   否则 presence 端点再也拿不到 token，kicked Map 查不到 → 降级 anonymous
+ *   → 下线提示永久丢失（实测：先 /api/me 后 presence 返回 anonymous）。
+ *   标记只含 reason 字符串、不含任何凭据，登录成功时会被清掉，不会误报。
  */
-function sendKicked(res, status) {
+function sendKicked(req, res, status) {
   const reason = status?.reason || "concurrent_login";
   // R4-03：web_token 已是 HttpOnly，前端 JS 清不掉。服务端必须在此主动
   // 清理全套登录 Cookie，否则被顶号设备会一直带着失效 token 轮询 /api/me，
   // 陷入「401 KICKED -> 弹窗 -> 再 401」的死循环。
-  try { require("../modules/auth/loginCookies").clearLoginCookies(res); }
+  let cookies = null;
+  try { cookies = require("../modules/auth/loginCookies"); } catch (e) { /* 兜底 */ }
+  try { if (cookies) cookies.clearLoginCookies(res); }
   catch (e) { /* 兜底：模块加载失败也不能影响 KICKED 响应本身 */ }
+  // 清完凭据再补写顶号标记 —— 顺序不能反，否则标记会被上面的清理误删
+  try { if (cookies && req) cookies.markKickedCookie(req, res, reason); }
+  catch (e) { /* 兜底：标记写失败不影响 KICKED 响应本身 */ }
   return res.status(401).json({
     ok: false,
     code: "KICKED",

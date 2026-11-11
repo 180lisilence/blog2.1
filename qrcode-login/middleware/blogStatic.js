@@ -242,21 +242,33 @@ function createBlogStatic(opts) {
       stream.pipe(res);
     }
 
-    // 在线状态提示：所有 /blog HTML 文档注入 presence 轮询脚本，一处改动全站生效。
+    // 在线状态提示 + 顶号提示：所有 /blog HTML 文档注入这两个脚本，一处改动全站生效。
     // 用户在博客任意页面被管理员下线都能收到弹窗；非 HTML 资源与未登录请求不受影响。
     // 脚本同源、零外部依赖，严格 CSP（script-src 'self'）下可正常加载。
+    //
+    // 2.2.8：session-kicked.js 此前只挂在顶层三页（index / projects / settings），
+    // 文章页（/blog/posts/*.html）没有它 —— 评论接口返回 401 KICKED 时没人接手，
+    // 用户只看到「请先登录后再发表评论」。现在一并注入，
+    // 保证「被顶号」这件事在任何页面都能立刻弹窗，而不是等 presence 轮询。
     if (/\.(?:html?|htm)$/i.test(target)) {
       return fs.readFile(target, "utf8", (err, raw) => {
         if (err) {
           logger.error("blog-static", `读取失败: ${target}`, err);
           return res.status(500).type("text/plain; charset=utf-8").end("500");
         }
-        const tag = '<script src="/presence-client.js?v=2" defer></script>';
         let injected = raw;
-        if (raw.indexOf("/presence-client.js") === -1) {
-          injected = /<\/body\s*>/i.test(raw)
-            ? raw.replace(/<\/body\s*>/i, tag + "</body>")
-            : raw + tag;
+        // 版本号必须随脚本改动同步升号，否则浏览器 / 代理缓存会继续用旧脚本
+        if (injected.indexOf("/presence-client.js") === -1) {
+          const tag = '<script src="/presence-client.js?v=3" defer></script>';
+          injected = /<\/body\s*>/i.test(injected)
+            ? injected.replace(/<\/body\s*>/i, tag + "</body>")
+            : injected + tag;
+        }
+        if (injected.indexOf("/session-kicked.js") === -1) {
+          const tag = '<script src="/session-kicked.js?v=2" defer></script>';
+          injected = /<\/body\s*>/i.test(injected)
+            ? injected.replace(/<\/body\s*>/i, tag + "</body>")
+            : injected + tag;
         }
         const buf = Buffer.from(injected, "utf8");
         sendBody(buf, buf.length);

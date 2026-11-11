@@ -70,6 +70,28 @@
     });
   }
 
+  // ========== 顶号（401 KICKED）处理 ==========
+  //
+  // 2.2.8：文章页此前完全没接 401 KICKED 分支 —— 被顶号后收到 401 只显示
+  // 「请先登录后再发表评论」，用户以为是自己掉线了。现在统一转交给
+  // session-kicked.js（顶层三页已有）弹「账号已在其他设备登录」。
+  // 文章页不引 session-kicked.js 时退化为一次性提示 + 回登录页。
+  var kickedHandled = false;
+  function handleKicked(resp) {
+    if (!resp || resp.status !== 401) return false;
+    if (typeof window.__handleKicked === 'function') {
+      try {
+        var p = window.__handleKicked(resp);
+        if (p && typeof p.then === 'function') {
+          p.then(function (hit) { if (hit) kickedHandled = true; });
+          return true;
+        }
+        if (p) { kickedHandled = true; return true; }
+      } catch (e) { /* 落到下面的兜底 */ }
+    }
+    return false;
+  }
+
   // 统一的 API 请求：自动带 CSRF token，拿不到就先补，403 时补一次再重试
   function api(method, path, body) {
     var headers = {};
@@ -89,8 +111,22 @@
       });
     }
 
+    // 2.2.8：先把 401 KICKED 摘出来处理，再走原有 JSON 解析。
+    // 这里用 clone()，因为 __handleKicked 内部也会读 body。
+    function catchKicked(r) {
+      if (r && r.status === 401) {
+        try {
+          var c = r.clone();
+          c.json().then(function (d) {
+            if (d && d.code === 'KICKED') handleKicked(r);
+          }).catch(function () {});
+        } catch (e) { /* 忽略 */ }
+      }
+      return r;
+    }
+
     if (!isWrite) {
-      return send(null).then(parseJson);
+      return send(null).then(catchKicked).then(parseJson);
     }
 
     var token = getCsrf();
@@ -107,6 +143,7 @@
           });
         });
       })
+      .then(catchKicked)
       .then(parseJson);
   }
 
@@ -313,9 +350,24 @@
         esc(c.username || '') + '">回复</button>'
       : '';
 
+    // 2.2.8：已删除的评论不再吞掉它的回复。
+    // 旧实现对 c.deleted 直接 return，只渲染一个占位 —— 它下面的真实回复
+    // （服务端的 replies 数组）被整段丢弃，页面上完全看不见，
+    // 于是出现「评论数 1，但点开只有一个『该评论已删除』占位」的现象。
+    // 现在占位与回复都要渲染：回复仍然可见、可回复。
+    var repliesHtml = '';
+    if (c.replies && c.replies.length) {
+      repliesHtml = '<div class="cm-replies">';
+      for (var ri = 0; ri < c.replies.length; ri++) {
+        repliesHtml += this.renderOne(c.replies[ri], true);
+      }
+      repliesHtml += '</div>';
+    }
+
     if (c.deleted) {
       return '<div class="cm-item cm-deleted' + (isReply ? ' cm-is-reply' : '') + '">' +
         '<div class="cm-body"><div class="cm-text cm-gone">该评论已删除</div></div>' +
+        repliesHtml +
       '</div>';
     }
 
@@ -332,14 +384,7 @@
         '</div>' +
       '</div>';
 
-    if (c.replies && c.replies.length) {
-      html += '<div class="cm-replies">';
-      for (var i = 0; i < c.replies.length; i++) {
-        html += this.renderOne(c.replies[i], true);
-      }
-      html += '</div>';
-    }
-    return html;
+    return html + repliesHtml;
   };
 
   // 渲染整个列表
@@ -378,6 +423,14 @@
         btn.disabled = true;
         api('DELETE', '/api/comments/' + id).then(function (res) {
           if (res && res.ok) {
+            // 2.2.8：服务端在删除响应里直接返回最新计数（口径与列表完全一致），
+            // 先用它把标题上的数字改掉，做到「删除后计数立即同步」，
+            // 再拉列表刷新内容 —— 不再等列表请求回来才纠正数字。
+            if (typeof res.total === 'number') {
+              self.total = res.total;
+              var cEl = self.root.querySelector('#cmCount');
+              if (cEl) cEl.textContent = String(self.total);
+            }
             if (res.soft) alert(res.msg || '评论已删除');
             self.load(self.page);
           } else {

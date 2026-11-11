@@ -417,7 +417,7 @@ router.get("/me", (req, res) => {
   // 专用码，前端据此立即弹「账号已在其他设备登录」，而不是笼统跳登录页。
   if (!ws) {
     const st = sessionMgr.getSessionStatus(token);
-    if (st.status === "kicked") return sendKicked(res, st);
+    if (st.status === "kicked") return sendKicked(req, res, st);
     // 4-01 / 报告5：普通未授权统一为 401 + 同一句文案，避免接口地图差异
     return fail(res, 401, "请先登录");
   }
@@ -464,7 +464,7 @@ router.get("/sessions", (req, res) => {
   const ws = sessionMgr.getWebSession(token);
   if (!ws) {
     const st = sessionMgr.getSessionStatus(token);
-    if (st.status === "kicked") return sendKicked(res, st);
+    if (st.status === "kicked") return sendKicked(req, res, st);
     return fail(res, 401, "请先登录");
   }
   res.set("Cache-Control", "no-store, no-cache, must-revalidate, private");
@@ -483,7 +483,7 @@ router.post("/sessions/revoke", (req, res) => {
   const ws = sessionMgr.getWebSession(token);
   if (!ws) {
     const st = sessionMgr.getSessionStatus(token);
-    if (st.status === "kicked") return sendKicked(res, st);
+    if (st.status === "kicked") return sendKicked(req, res, st);
     return fail(res, 401, "请先登录");
   }
   const id = req.body?.sessionId;
@@ -502,7 +502,7 @@ router.post("/sessions/revoke-others", (req, res) => {
   const ws = sessionMgr.getWebSession(token);
   if (!ws) {
     const st = sessionMgr.getSessionStatus(token);
-    if (st.status === "kicked") return sendKicked(res, st);
+    if (st.status === "kicked") return sendKicked(req, res, st);
     return fail(res, 401, "请先登录");
   }
   let n = 0;
@@ -525,7 +525,7 @@ router.get("/sessions/audit", (req, res) => {
   const ws = sessionMgr.getWebSession(token);
   if (!ws) {
     const st = sessionMgr.getSessionStatus(token);
-    if (st.status === "kicked") return sendKicked(res, st);
+    if (st.status === "kicked") return sendKicked(req, res, st);
     return fail(res, 401, "请先登录");
   }
   const limit = Math.min(100, Math.max(1, Number(req.query.limit) || 50));

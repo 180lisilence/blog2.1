@@ -67,6 +67,11 @@
     try {
       var old = document.getElementById("__blog_presence_overlay");
       if (old && old.parentNode) old.parentNode.removeChild(old);
+      // 2.2.8：session-kicked.js（401 KICKED 触发）与本脚本（presence 轮询触发）
+      // 可能同时命中同一次顶号，两个弹窗叠在一起会互相遮挡。
+      // 这里把对方的遮罩一并清掉，保证任意时刻只有一个下线提示。
+      var peer = document.getElementById("__session_kicked_overlay");
+      if (peer && peer.parentNode) peer.parentNode.removeChild(peer);
 
       var overlay = el("div", {
         position: "fixed", left: "0", top: "0", right: "0", bottom: "0",

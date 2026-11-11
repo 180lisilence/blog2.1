@@ -127,44 +127,37 @@ function createPresence(deps = {}) {
    * 用户端轮询：传当前请求携带的 webToken。
    * 返回 JSON 可序列化对象，不含任何 token / 凭据 / 隐私数据。
    *
+   * @param {string} token        当前请求携带的 webToken（可能为空）
+   * @param {string} kickHint     顶号标记（来自 blog_kick Cookie，仅 reason 字符串）。
+   *   2.2.8 新增：sendKicked 清掉 web_token 后，presence 拿不到 token，
+   *   kicked Map（以 token 为 key）就查不到 → 降级 anonymous → 下线提示永久丢失。
+   *   这里用服务端自读的标记补判，保证「已被顶号」这一事实不会因为凭据被清而丢失。
+   *
    * status 取值：
    *   - "off"       总开关关闭，前端应停止轮询
    *   - "anonymous" 匿名（无 token），无需提示
    *   - "online"    会话有效
-   *   - "kicked"    被管理员强制下线 —— 前端据此弹窗
+   *   - "kicked"    被管理员强制下线 / 被并发登录顶掉 —— 前端据此弹窗
    *   - "expired"   会话过期 / 主动登出 / 被改密或删除（无踢标记）—— 前端静默跳登录
    */
-  function state(token) {
+  function state(token, kickHint) {
     const base = { status: "off", pollMs: settings.pollMs, serverTs: clock() };
     if (!settings.enabled) return base;
 
     const t = String(token || "");
+    const hint = String(kickHint || "");
+    const now = clock();
+
+    // 2.2.8：没有 token，但本设备带着顶号标记 → 判定为 kicked。
+    // 这是「凭据已被清理、提示仍要送达」的唯一通道。
+    if (!t && hint) {
+      return buildKicked(base, hint, now);
+    }
     if (!t) return { ...base, status: "anonymous" };
 
     const k = kicked.get(t);
-    const now = clock();
     if (k && now - k.at <= kickTtlMs) {
-      // VULN-CONCURRENT-01：并发顶号 / 手动撤销指定设备属于「账号安全事件」，
-      // 必须让用户在被顶设备上明确看到原因，不能被后台「下线弹窗」总开关静默吞掉
-      // （只有管理员主动 kick 才跟随 offlineNotice 开关）。这样被顶号的用户不会
-      // 误以为掉线，能立刻知道是同账号在别处登录/被撤销。
-      const isSecurityKick = k.reason === "concurrent_login" || k.reason === "session_revoked";
-      let message;
-      if (isSecurityKick) {
-        message = k.reason === "concurrent_login"
-          ? "你的账号已在其他设备登录，当前设备已下线。如非本人操作，请立即修改密码。"
-          : "你的会话已在另一台设备上被撤销，当前设备已下线。";
-      } else {
-        message = settings.offlineNotice ? settings.offlineMessage : "";
-      }
-      return {
-        ...base,
-        status: "kicked",
-        reason: k.reason,
-        message,
-        showDialog: isSecurityKick ? true : Boolean(settings.offlineNotice),
-        at: k.at
-      };
+      return buildKicked(base, k.reason, k.at);
     }
     if (k) kicked.delete(t); // 过期记录回收
 
@@ -173,6 +166,34 @@ function createPresence(deps = {}) {
       return { ...base, status: "online" };
     }
     return { ...base, status: "expired" };
+  }
+
+  /**
+   * 构造 kicked 响应。token 命中 kicked Map 与「只有顶号标记」两条路径共用，
+   * 保证提示文案 / showDialog 判定只有一份实现。
+   */
+  function buildKicked(base, reason, at) {
+    // VULN-CONCURRENT-01：并发顶号 / 手动撤销指定设备属于「账号安全事件」，
+    // 必须让用户在被顶设备上明确看到原因，不能被后台「下线弹窗」总开关静默吞掉
+    // （只有管理员主动 kick 才跟随 offlineNotice 开关）。这样被顶号的用户不会
+    // 误以为掉线，能立刻知道是同账号在别处登录/被撤销。
+    const isSecurityKick = reason === "concurrent_login" || reason === "session_revoked";
+    let message;
+    if (isSecurityKick) {
+      message = reason === "concurrent_login"
+        ? "你的账号已在其他设备登录，当前设备已下线。如非本人操作，请立即修改密码。"
+        : "你的会话已在另一台设备上被撤销，当前设备已下线。";
+    } else {
+      message = settings.offlineNotice ? settings.offlineMessage : "";
+    }
+    return {
+      ...base,
+      status: "kicked",
+      reason,
+      message,
+      showDialog: isSecurityKick ? true : Boolean(settings.offlineNotice),
+      at
+    };
   }
 
   /**

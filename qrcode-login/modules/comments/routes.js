@@ -14,10 +14,36 @@ const logger = require("../../core/logger");
 const { asyncHandler, ok, fail } = require("../../core/errors");
 const { getTokenFromReq } = require("../../middleware/auth");
 const sessionMgr = require("../auth/session");
+const authModel = require("../auth/model");
 const model = require("./model");
 const service = require("./service");
 
 const router = express.Router();
+
+/**
+ * 删除权限判定：仅内置管理员（builtin）可删除评论。
+ *
+ * 判断依据（站内既有机制，不新造角色体系）：
+ *   MySQL users.is_builtin → authModel.users Map 的 builtin 标记。
+ *   同一份数据已被三处复用：
+ *     ① blog-sentinel 成员快照对外输出 isBuiltin 字段；
+ *     ② modules/audit/members-admin.js 的 assertNotBuiltin 用它保护内置账号禁改名/删除；
+ *     ③ 生产库实测仅 admin 一个账号 is_builtin=1，其余 6 个为普通注册账号。
+ *   因此 builtin 管理员 = 站长本人，普通访客（含评论作者本人）无删除权。
+ *
+ * 2.2.8 之前的口径是「row.username === req.username」即可删除，
+ * 等于任何普通访客都能删掉自己的评论 —— 与站内权限模型不符（访客只应能
+ * 生成项目、登录与访问、新增与回复评论）。
+ */
+function isAdminUser(username) {
+  if (!username) return false;
+  try {
+    const u = authModel.users.get(username);
+    return Boolean(u && u.builtin);
+  } catch (e) {
+    return false;
+  }
+}
 
 // 本模块所有接口都需要登录
 router.use((req, res, next) => {
@@ -25,6 +51,8 @@ router.use((req, res, next) => {
   const ws = sessionMgr.getWebSession(token);
   if (!ws) return fail(res, 401, "请先登录");
   req.username = ws.username;
+  // 查看者身份：名字用于展示，isAdmin 决定删除按钮显隐与删除接口放行
+  req.viewer = { name: ws.username, isAdmin: isAdminUser(ws.username) };
   next();
 });
 
@@ -50,16 +78,17 @@ router.get("/:slug", asyncHandler(async (req, res) => {
   if (size > service.MAX_PAGE_SIZE) size = service.MAX_PAGE_SIZE;
 
   const { rows, total, totalPages } = await model.listByPost(slug, page, size);
-  const tree = service.buildTree(rows, req.username);
+  const tree = service.buildTree(rows, req.viewer);
 
-  // 当前登录用户的展示名（前端发表框用）
+  // 当前登录用户的展示名（前端发表框用）+ 是否管理员（前端删除入口显隐用）
   ok(res, {
     slug,
     comments: tree,
     total,
     page,
     size,
-    totalPages
+    totalPages,
+    isAdmin: req.viewer.isAdmin
   });
 }));
 
@@ -112,36 +141,52 @@ router.post("/:slug", asyncHandler(async (req, res) => {
   const row = await model.getById(id);
   logger.info("comments-route", `${req.username} 评论 ${slug}#${id}${parentId ? ` 回复@${parentId}` : ""}`);
 
-  ok(res, { comment: service.toDTO(row, req.username) }, "评论已发布");
+  ok(res, { comment: service.toDTO(row, req.viewer) }, "评论已发布");
 }));
 
-// ========== 删除自己的评论 ==========
+// ========== 删除评论（仅内置管理员） ==========
+// 2.2.8：权限从「评论作者本人」收紧为「内置管理员」。
+// 前端入口显隐只是体验优化，真正的防线在这里 —— 即使有人绕过前端直接
+// 调接口，普通访客也会被明确拒绝（403），不依赖前端隐藏作为唯一防线。
 router.delete("/:id", asyncHandler(async (req, res) => {
   const id = Number(req.params.id);
   if (!Number.isInteger(id) || id <= 0) {
     return fail(res, 400, "评论 ID 不合法");
   }
 
+  if (!req.viewer.isAdmin) {
+    logger.warn(
+      "comments-route",
+      `拒绝非管理员删除评论: user=${req.username}, id=${id}`
+    );
+    return fail(res, 403, "普通用户无权删除评论，删除权限仅限管理员");
+  }
+
   const row = await model.getById(id);
   if (!row || row.status === 0) {
     return fail(res, 404, "评论不存在或已删除");
   }
-  if (row.username !== req.username) {
-    return fail(res, 403, "只能删除自己的评论");
-  }
 
   const replyCount = await model.countReplies(id);
+  // 2.2.8：删除后立刻返回最新计数，前端无需再发一次列表请求即可同步。
+  // 计数口径与 listByPost 的 total 完全一致（见 model.js 的 VISIBLE_TOP）。
+  const postSlug = row.post_slug;
   if (replyCount > 0) {
-    // 有回复：软删除，保留占位，回复链不断
+    // 有回复：软删除父评论并把子回复提升为顶层，回复不丢、也不会变孤儿
     await model.softDelete(id);
-    logger.info("comments-route", `${req.username} 软删除评论 #${id}（有 ${replyCount} 条回复）`);
-    return ok(res, { soft: true }, "评论已删除（该评论下的回复会保留）");
+    const total = await model.countByPost(postSlug);
+    logger.info(
+      "comments-route",
+      `${req.username} 软删除评论 #${id}（有 ${replyCount} 条回复，已提升为顶层），剩余计数=${total}`
+    );
+    return ok(res, { soft: true, total }, "评论已删除（该评论下的回复会保留）");
   }
 
   // 无回复：直接删行
   await model.hardDelete(id);
-  logger.info("comments-route", `${req.username} 删除评论 #${id}`);
-  ok(res, { soft: false }, "评论已删除");
+  const total = await model.countByPost(postSlug);
+  logger.info("comments-route", `${req.username} 删除评论 #${id}，剩余计数=${total}`);
+  ok(res, { soft: false, total }, "评论已删除");
 }));
 
 module.exports = router;
