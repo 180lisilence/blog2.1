@@ -1,7 +1,7 @@
 # 🌍 个人博客 & 作品集（登录门禁版）
 
 > **项目状态**：🚧 开发中 / 个人使用（已部署 https://lizyi.asia   ）
-> **当前版本**：2.2.6（2026-11-11，第四次测试缺陷修复与会话治理）｜完整版本历史见文末
+> **当前版本**：2.2.7（2026-11-11，同浏览器多窗口下线感知）｜完整版本历史见文末
 > 本项目为个人博客与作品集系统，功能持续迭代中。已完成四轮渗透测试加固并持续在生产环境运行。
 
 一个集成了多个网页项目和游戏的个人博客系统，前面加了**登录门禁**：支持扫码登录和账号密码登录双模式，登录后才能进入博客和使用全部项目。
@@ -364,6 +364,15 @@ Docker Compose 会自动启动：
 | **2.2.4** | 2026-11-11 | `ffdad35` | 工作台 AI 设置新增「模型扫描」：接口地址/密钥 + 扫描按钮、去重合并模型列表、五类失败提示；模型供应商由 6 家扩充到 22 家 |
 | **2.2.5** | 2026-11-11 | `f6bc4f6` | presence 三端联动：后台下线弹窗、用户上线提示、提示开关与用户端同步；登录页新增文章 / 项目预览，删除失效的 guest 入口 |
 | **2.2.6** | 2026-11-11 | `151a582` | 第四次测试修复：扫码 confirm 身份伪造、畸形输入 500、同账号并发互踢、会话 Cookie HttpOnly/Secure 与 CSRF 轮换、direct-login fail-closed、/health 最小化、缓存语义 |
+| **2.2.7** | 2026-11-11 | 待回填 | 同浏览器多窗口下线感知：顶层页接入 presence 轮询、`localStorage` 登录纪元互斥解决共享 Cookie 导致的「两窗口同显已登录/后台只 1 设备」、被顶窗口弹窗且不误踢新窗口 |
+
+### 2.2.7 — 同浏览器多窗口下线感知（2026-11-11）
+
+- **问题根因**：2.2.6 (concurrent 治理) 上线后仍有截图场景——审计后台显示某账号「在线设备 1」，但同浏览器两个 `projects.html` 窗口都显示「欢迎回来」且不弹下线窗。三点根因：① `web_token` 是 HttpOnly Cookie，同浏览器所有标签页/窗口共享，第二个窗口登录直接覆盖 Cookie，服务端始终只看到 1 个会话，无从区分窗口；② 顶层路由页（`index.html` / `projects.html` / `settings.html`）只有被动的 `session-kicked.js`，仅在页面自己发起 API 收到 `401 KICKED` 时才弹窗，页面静默停留时永远不会触发；③ presence-client 此前只注入 `/blog/*`，顶层页没有主动轮询。
+- **修复**：顶层三页显式引入 `presence-client.js?v=2`（同源 `fetch /api/presence/state`，`credentials:"same-origin"` 自动带 HttpOnly Cookie），静默停留也能靠服务端 `status=kicked` 弹「下线通知」；`presence-client.js` 末尾新增 localStorage 登录纪元互斥——后进入登录态的窗口 bump `__blog_session_epoch`，旧窗口轮询发现纪元更新即弹「账号已在其他窗口登录」并跳登录，**关键约束是不清共享 Cookie**，避免把新窗口的有效会话一并踢掉；`index.html` 回登录时读 `__blog_go_login` 标记强制显示登录表单，防止「已登录」条挡住重新登录；`blogStatic.js` 注入版本 `v=1 → v=2` 让 `/blog/*` 文章页也加载新版。
+- **后台 kick 链路核实**：`members-admin.js` 的 `destroySessionsOf(username,"kick")` 会先 `presence.markKicked(token,username,"kick")` 再删 session；`/api/presence/state` 在 session 删除后仍凭 kicked Map 返回 `status=kicked` + `showDialog=true`，并主动清 HttpOnly Cookie——后台点下线→用户端弹窗链路本身完整，缺口只在顶层页未接入轮询。
+- **验证**：本地单元 63/63；端到端「后台 kick→顶层弹窗」15/15、同浏览器双窗口互斥 11/11、presence 轮询静默跳登录 4/4；生产 5 文件 md5 与本地一致、pm2 重启后 health 200；生产真机（直连 `https://lizyi.asia`）双窗口互斥 10/10、后台 kick local→顶层弹「下线通知」7/7，且确认顶层页实际加载 `presence-client.js?v=2`（etag 换算即新版字节数）、其他在线账号不受影响。
+- **文档排错**：用户截图的 `woldvein-project.html` 文章页上半部分空白系滚动到评论区（scrollHeight 2927，正文在上方），CDP 实渲染确认正文 2197 字、标题/日期/小标题正常、无 JS 异常、已加载 `presence-client.js?v=2`，非渲染故障。
 
 ### 2.2.6 — 第四次测试缺陷修复与会话治理（2026-11-11）
 

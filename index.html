@@ -551,6 +551,7 @@
 </div>
 
 <script src="/session-kicked.js"></script>
+<script src="/presence-client.js?v=2" defer></script>
 <script>
   let qid = null;
   let pollTimer = null;
@@ -1107,6 +1108,14 @@
 
   // 已登录检测
   (async () => {
+    // 被其他窗口顶号后跳回登录页：共享 Cookie 仍有效，不能显示"已登录"条，
+    // 否则用户无法重新登录接管窗口。强制走登录表单一次。
+    try {
+      if (sessionStorage.getItem("__blog_go_login") === "1") {
+        sessionStorage.removeItem("__blog_go_login");
+        return;
+      }
+    } catch (e) {}
     try {
       const r = await apiFetch("/api/me");
       const d = await r.json();

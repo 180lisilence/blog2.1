@@ -251,7 +251,7 @@ function createBlogStatic(opts) {
           logger.error("blog-static", `读取失败: ${target}`, err);
           return res.status(500).type("text/plain; charset=utf-8").end("500");
         }
-        const tag = '<script src="/presence-client.js?v=1" defer></script>';
+        const tag = '<script src="/presence-client.js?v=2" defer></script>';
         let injected = raw;
         if (raw.indexOf("/presence-client.js") === -1) {
           injected = /<\/body\s*>/i.test(raw)
