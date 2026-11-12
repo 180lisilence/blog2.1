@@ -252,6 +252,16 @@ app.get("/session-kicked.js", (req, res) => {
   res.sendFile(path.join(config.blogContent, "assets/js/session-kicked.js"));
 });
 
+// robots.txt 和 sitemap.xml 公开
+app.get("/robots.txt", (req, res) => {
+  res.set("Content-Type", "text/plain");
+  res.sendFile(path.join(__dirname, "..", "robots.txt"));
+});
+app.get("/sitemap.xml", (req, res) => {
+  res.set("Content-Type", "application/xml");
+  res.sendFile(path.join(__dirname, "..", "sitemap.xml"));
+});
+
 app.use(ensureCsrfCookie);     // 确保 CSRF token cookie
 
 // 请求日志
