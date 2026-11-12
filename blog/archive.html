@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>文章归档 · 我的博客</title>
+<meta name="description" content="按时间归档的所有博客文章，记录生活与开发的点点滴滴。">
+<link rel="icon" type="image/svg+xml" href="/favicon.svg">
+<link rel="stylesheet" href="assets/css/blog.css">
+<style>
+.archive-list { max-width: 720px; margin: 0 auto; padding: 40px 20px; }
+.archive-year { font-size: 28px; font-weight: 700; color: #667eea; margin: 40px 0 20px; padding-bottom: 10px; border-bottom: 2px solid #e5e7eb; }
+.archive-item { display: flex; align-items: baseline; padding: 12px 0; border-bottom: 1px solid #f3f4f6; }
+.archive-date { color: #9ca3af; font-size: 14px; width: 100px; flex-shrink: 0; font-family: monospace; }
+.archive-title { color: #1f2937; text-decoration: none; font-size: 16px; flex: 1; }
+.archive-title:hover { color: #667eea; }
+.archive-count { color: #6b7280; font-size: 14px; margin-left: 10px; }
+</style>
+</head>
+<body>
+
+<header class="site-header">
+  <div class="nav-wrap">
+    <a href="index.html" class="brand"><span class="dot"></span>我的博客</a>
+    <nav class="nav-links">
+      <a href="index.html">首页</a>
+      <a href="archive.html" class="active">归档</a>
+      <a href="/projects.html">项目</a>
+      <a href="workbench/index.html">工作台</a>
+      <a href="index.html#about">关于</a>
+      <a href="/login">登录</a>
+    </nav>
+  </div>
+</header>
+
+<main class="archive-list">
+  <h1>📚 文章归档</h1>
+  <p style="color:#6b7280; margin-bottom: 30px;">所有文章按时间排列，共 4 篇</p>
+
+  <div class="archive-year">2026</div>
+
+  <div class="archive-item">
+    <span class="archive-date">2026-09-08</span>
+    <a href="posts/woldvein-project.html" class="archive-title">woldvein 项目全景复盘：从启动器到游戏 AI</a>
+  </div>
+
+  <div class="archive-item">
+    <span class="archive-date">2026-08-26</span>
+    <a href="posts/hello-world.html" class="archive-title">你好，博客的第一篇</a>
+  </div>
+
+  <div class="archive-item">
+    <span class="archive-date">2026-08-26</span>
+    <a href="posts/data-local-first.html" class="archive-title">为什么所有数据都放在本地</a>
+  </div>
+
+  <div class="archive-item">
+    <span class="archive-date">2026-08-26</span>
+    <a href="posts/workbench-intro.html" class="archive-title">我的个人工作台长什么样</a>
+  </div>
+
+</main>
+
+</body>
+</html>
