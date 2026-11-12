@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>云客建站全记录：从私人工作台到公开数字花园 · 我的博客</title>
+  <meta name="description" content="从零开始搭建个人博客的完整历程：从带登录门禁的私人工作台，到完全公开的技术数字花园。记录每一次踩坑、每一次安全加固、每一次产品定位的摇摆。">
+  <meta name="keywords" content="个人博客搭建, 全栈开发, Express, 安全加固, 网站迭代">
+  <meta property="og:title" content="云客建站全记录：从私人工作台到公开数字花园">
+  <meta property="og:description" content="一个全栈开发者花两周时间，把私人工作台改造成公开技术博客的完整复盘。">
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+  <link rel="stylesheet" href="../assets/css/blog.css">
+</head>
+<body>
+
+<header class="site-header">
+  <div class="nav-wrap">
+    <a href="../index.html" class="brand"><span class="dot"></span>我的博客</a>
+    <nav class="nav-links">
+      <a href="../index.html">首页</a>
+      <a href="../archive.html">归档</a>
+      <a href="../tags.html">标签</a>
+      <a href="../index.html#projects">项目</a>
+      <a href="../index.html#about">关于</a>
+      <a href="/login">登录</a>
+    </nav>
+  </div>
+</header>
+
+<article class="article">
+  <a class="back-link" href="../index.html">← 返回首页</a>
+
+  <div class="article-header">
+    <h1>云客建站全记录：从私人工作台到公开数字花园</h1>
+    <div class="article-meta">
+      <span>📅 2026-11-13</span>
+      <span>⏱️ 约 12 分钟阅读</span>
+      <span>🏷️ 建站实录</span>
+    </div>
+  </div>
+
+  <div class="article-content">
+    <p>这篇文章记录了「云客」这个个人项目从一行代码，到现在能公开访问的博客 + 工作台，整整两周时间里做的所有事情。从最开始的「给自己写个待办工具」，到中间走了弯路做成了带登录门禁的私人项目中心，再到最后拆开门禁、把博客完全公开。整个过程踩过的坑、做过的安全加固、产品定位的反复摇摆，都记在这里。</p>
+
+    <h2>起点：只是想给自己写个待办工具</h2>
+    <p>最开始的想法非常简单：平时待办、开发任务、健身记录、饮食记录散落在好几个 App 里，记着记着就懒得记了。干脆自己写一个，所有数据都存在浏览器本地，不用注册、不用登录、不用同步到云端，打开就能用。</p>
+    <p>于是就有了「个人工作台」的雏形：八个模块——今日待办、开发工作、自媒体运营、健身记录、饮食记录、游戏时间、AI 对话、设置中心。纯前端 HTML/CSS/JS 写的，数据存在 localStorage 里，双击打开就能用。</p>
+
+    <h2>第一阶段：从本地工具到 Web 应用</h2>
+    <p>本地用着挺好，但总想着能不能在手机上也能用。于是就加了个 Node.js Express 后端，把工具部署到了自己的 VPS 上。</p>
+    <p>这时候问题来了：如果直接把工具放在公网上，谁都能打开看到我的待办和数据，那可不行。于是顺理成章加了登录系统：账号密码 + 扫码登录，所有页面都挡在登录门禁后面。</p>
+    <p>当时的产品定位是「私人项目中心」——所有页面都需要登录才能进，包括后来加的博客文章、项目展示。整个网站像个带围墙的院子，外面的人什么都看不到。</p>
+
+    <h2>第二阶段：四轮渗透测试，把安全做到位</h2>
+    <p>既然把私人数据放在公网上，安全就是第一位的。前前后后做了四轮渗透测试，修了 40 多个漏洞：</p>
+    <ul>
+      <li>密码用 scrypt 加盐哈希存储，不用明文</li>
+      <li>所有用户输入都做 XSS 转义，路径穿越防护</li>
+      <li>加了 CSRF Token，防止跨站请求伪造</li>
+      <li>登录接口加了频率限制，防止暴力破解</li>
+      <li>Cookie 设成 HttpOnly + Secure，前端 JS 读不到</li>
+      <li>nginx 层隐藏源站 IP，补全安全响应头</li>
+    </ul>
+    <p>那个阶段整个网站就是个「带登录门禁的私人工具」，安全做得很扎实，但也正因为太安全了——外面的人连首页都看不到。</p>
+
+    <h2>第三阶段：移动端适配的各种踩坑</h2>
+    <p>手机上用的时候发现了一堆兼容性问题，前前后后修了一周：</p>
+    <ul>
+      <li>AI 对话页在手机窄屏下左右分栏挤坏了，改成响应式单栏切换布局</li>
+      <li>安卓 WebView 里 Notification API 未定义导致页面直接崩溃，加了环境判断</li>
+      <li>登录页一开始想保留左边紫色宣传区，结果手机上排版全乱了，试了三次都不对，最后干脆改成纯登录表单 + 顶部小 logo，反而最稳定</li>
+      <li>浅色模式下文字对比度不够，用户看不见，在 CSS 末尾加强制颜色规则</li>
+    </ul>
+    <p>也是这个时候，用 Capacitor 把网页打包成了 Android APK，用 Electron 打包成了 Windows EXE，桌面端和移动端都能装了。</p>
+
+    <h2>最关键的转折：拆开门禁，让博客公开</h2>
+    <p>做着做着发现一个问题：我写了博客文章、做了项目展示，结果全挡在登录门后面。搜索引擎爬虫进不来，朋友发个链接过去人家也看不到内容，那写这些东西给谁看？</p>
+    <p>这就是产品定位的根本矛盾：<strong>把「门禁」这个安全特性，放在了「分享」这个博客的根本目的之上</strong>。一个别人连内容都看不到的博客，和不存在没什么区别。</p>
+    <p>于是开始拆门禁：</p>
+    <ul>
+      <li>把 /blog/ 目录整个改成公开访问，去掉 noindex 标记</li>
+      <li>根路径直接 301 跳转到博客首页，不再是登录页</li>
+      <li>登录页挪到 /login 路径，导航栏加个小小的「登录」入口</li>
+      <li>博客文章、项目展示、归档、标签，全部公开，不用登录就能看</li>
+      <li>只把工作台、后台设置、写操作接口留在登录后面</li>
+    </ul>
+    <p>中间还出了个安全漏洞：把整个 /blog/ 公开的时候，不小心把 /blog/workbench/ 工作台也公开了——访客不用登录就能进我的工作台！发现后立刻加了路径排除，单独给工作台加回登录验证，才把这个坑填上。</p>
+
+    <h2>第四阶段：SEO 基础件补齐</h2>
+    <p>公开之后才发现，之前完全没做 SEO：</p>
+    <ul>
+      <li>加了 robots.txt 和 sitemap.xml，告诉搜索引擎哪些页面可以爬</li>
+      <li>每篇文章都补了 meta description、keywords、Open Graph 标签</li>
+      <li>新增了文章归档页、标签聚合页，方便读者按时间和主题找内容</li>
+      <li>加了 RSS Feed，用 RSS 阅读器的人可以订阅更新</li>
+      <li>文章底部加了反馈组件，读者可以点「有帮助/没帮助」</li>
+    </ul>
+
+    <h2>现在的状态：公开数字花园</h2>
+    <p>现在整个网站的权限分层很清晰：</p>
+    <ul>
+      <li><strong>公开区</strong>：博客文章、项目展示、归档、标签、友链、评论——任何人都能看，搜索引擎能爬</li>
+      <li><strong>私密区</strong>：工作台、项目管理后台、设置中心、所有写操作接口——需要登录才能进</li>
+    </ul>
+    <p>工程底子已经打扎实了：Express 后端 + MySQL，分层架构，四轮渗透测试修复，56 个单元测试，Docker 一键部署，双平台 Git 同步。</p>
+    <p>剩下的就是往里面填内容了。从「建站者」切换到「运营者」的心态——不再问「还缺什么功能」，而是问「这篇内容能帮谁解决什么问题」。</p>
+
+    <h2>写在最后</h2>
+    <p>这个项目从「给自己写个待办工具」开始，绕了个大弯做成了带登录门禁的私人项目中心，最后又拆开门禁回到了「分享」的本质。技术上踩了无数坑，产品定位上摇摆了好几次，但最后留下的东西——公开可访问的技术博客、本地优先的工作台、扎实的安全基础——都是有价值的。</p>
+    <p>这就是云客的故事。一个普通开发者花两周时间，把脑子里的想法一点点做成了一个真正能跑在公网上的、公开的数字花园。</p>
+  </div>
+
+  <!-- 文章反馈 -->
+  <div style="max-width:720px;margin:40px auto;padding:20px;background:#f9fafb;border-radius:12px;text-align:center;">
+    <p style="color:#4b5563;margin-bottom:12px;">这篇文章对你有帮助吗？</p>
+    <div style="display:flex;gap:12px;justify-content:center;">
+      <button onclick="this.innerHTML='✅ 感谢反馈！';this.disabled=true;" style="padding:8px 20px;border:none;border-radius:8px;background:#10b981;color:#fff;cursor:pointer;">👍 有帮助</button>
+      <button onclick="this.innerHTML='❌ 我们会改进';this.disabled=true;" style="padding:8px 20px;border:none;border-radius:8px;background:#ef4444;color:#fff;cursor:pointer;">👎 没帮助</button>
+    </div>
+    <p style="color:#9ca3af;font-size:13px;margin-top:12px;">有问题或建议？欢迎在下方评论区留言</p>
+  </div>
+
+  <!-- 评论区 -->
+  <section class="comments" id="comments" data-slug="blog-history"></section>
+  <script src="../assets/js/comments.js?v=20261111a" defer></script>
+
+  <footer class="site-footer">
+    <p>© 2026 我的博客 · 所有数据本地存储 · 不追踪、不收集</p>
+  </footer>
+</article>
+
+</body>
+</html>
