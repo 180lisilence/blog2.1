@@ -49,10 +49,7 @@ npm start
 - 登录页：http://127.0.0.1:3000/
 - 局域网访问：http://<你的局域网IP>:3000/
 
-### 内置管理员
 
-- 账号：`admin`
-- 密码：`123456`
 
 首次启动时自动创建（可在 `.env` 中修改 `DEFAULT_ADMIN_USERNAME` / `DEFAULT_ADMIN_PASSWORD`）。新用户可通过手机扫码页注册。
 
