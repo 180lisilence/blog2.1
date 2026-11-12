@@ -43,6 +43,16 @@
   </div>
 </article>
 
+<!-- 文章反馈 -->
+<div style="max-width:720px;margin:40px auto;padding:20px;background:#f9fafb;border-radius:12px;text-align:center;">
+  <p style="color:#4b5563;margin-bottom:12px;">这篇文章对你有帮助吗？</p>
+  <div style="display:flex;gap:12px;justify-content:center;">
+    <button onclick="this.innerHTML='✅ 感谢反馈！';this.disabled=true;" style="padding:8px 20px;border:none;border-radius:8px;background:#10b981;color:#fff;cursor:pointer;">👍 有帮助</button>
+    <button onclick="this.innerHTML='❌ 我们会改进';this.disabled=true;" style="padding:8px 20px;border:none;border-radius:8px;background:#ef4444;color:#fff;cursor:pointer;">👎 没帮助</button>
+  </div>
+  <p style="color:#9ca3af;font-size:13px;margin-top:12px;">有问题或建议？欢迎在下方评论区留言</p>
+</div>
+
 <!-- 评论区 -->
 <section class="comments" id="comments" data-slug="hello-world"></section>
 <script src="../assets/js/comments.js?v=20261111a" defer></script>
