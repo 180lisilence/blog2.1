@@ -1885,3 +1885,38 @@ input[type="checkbox"] {
   .nav-item { min-height: 44px; }
   .btn { padding: 11px 16px; }
 }
+
+/* ========== AI 页面手机端适配 ========== */
+@media (max-width: 768px) {
+  /* 手机端：列表和聊天页切换显示，不并排 */
+  .ai-page-container {
+    flex-direction: column !important;
+    height: 100% !important;
+  }
+  .ai-conv-list {
+    width: 100% !important;
+    height: 100% !important;
+  }
+  /* 切换状态：列表隐藏，聊天页显示 */
+  .ai-conv-list.mobile-hidden {
+    display: none;
+  }
+  .ai-page.mobile-active {
+    display: flex !important;
+    width: 100% !important;
+    height: 100% !important;
+  }
+  /* 手机端默认隐藏聊天页，只显示列表 */
+  .ai-page {
+    display: none;
+  }
+  /* 聊天页返回按钮（手机端显示） */
+  .ai-back-btn {
+    display: inline-flex !important;
+  }
+}
+@media (min-width: 769px) {
+  .ai-back-btn {
+    display: none !important;
+  }
+}

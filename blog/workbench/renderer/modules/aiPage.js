@@ -17,7 +17,21 @@ Router.registerRoute('ai', async (root) => {
     ]);
 
     const chatArea = U.el('div', { class: 'ai-page', style: 'flex:1;border-radius:12px;' });
-    root.appendChild(U.el('div', { style: 'display:flex;gap:0;height:calc(100vh - 108px);' }, [convListEl, chatArea]));
+
+    // 返回按钮（手机端显示）
+    const backBtn = U.el('button', {
+        class: 'ai-back-btn',
+        style: 'display:none;background:none;border:none;color:var(--text-sidebar);font-size:20px;cursor:pointer;padding:4px 8px;margin-right:8px;',
+        text: '←',
+        title: '返回对话列表',
+        onclick: () => {
+            // 手机端：回到对话列表
+            convListEl.classList.remove('mobile-hidden');
+            chatArea.classList.remove('mobile-active');
+        }
+    });
+
+    root.appendChild(U.el('div', { class: 'ai-page-container', style: 'display:flex;gap:0;height:calc(100vh - 108px);' }, [convListEl, chatArea]));
 
     let activeConvId = null;
     let currentBody = null;
@@ -104,10 +118,19 @@ Router.registerRoute('ai', async (root) => {
         chatArea.appendChild(inputWrap);
     }
 
+    function isMobile() {
+        return window.innerWidth < 768;
+    }
+
     async function navigateToConv(convId) {
         activeConvId = convId;
         await renderConvList();
         await renderConv();
+        // 手机端：切换到聊天页
+        if (isMobile()) {
+            convListEl.classList.add('mobile-hidden');
+            chatArea.classList.add('mobile-active');
+        }
     }
 
     async function renderConv() {
@@ -121,6 +144,7 @@ Router.registerRoute('ai', async (root) => {
 
         const header = U.el('div', { class: 'ai-page-header' }, [
             U.el('div', { class: 'ai-page-title' }, [
+                backBtn,
                 U.el('span', { text: '🤖 ' + conv.title }),
                 U.el('span', { class: 'ai-provider-tag', text: provider.label.split(' ')[0] + ' · ' + (conv.model || '') })
             ]),
@@ -200,7 +224,13 @@ Router.registerRoute('ai', async (root) => {
 
     const convs = await renderConvList();
     if (convs && convs.length > 0) {
-        await navigateToConv(convs[0].id);
+        // 宽屏自动选中第一个对话，手机端停留在列表页
+        if (!isMobile()) {
+            await navigateToConv(convs[0].id);
+        } else {
+            // 手机端：默认显示列表，聊天页隐藏
+            chatArea.classList.remove('mobile-active');
+        }
     } else {
         renderEmpty();
     }

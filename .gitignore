@@ -51,3 +51,9 @@ qrcode-login/_pentest_verify.js
 
 # 独立审计后台：独立部署、独立密钥，不随主站仓库发布
 blog-sentinel/
+
+# 打包产物（体积大，不入库）
+client/dist/
+android/
+*.apk
+*.exe

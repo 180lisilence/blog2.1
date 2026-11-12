@@ -39,8 +39,9 @@ services:
     environment:
       MYSQL_ROOT_PASSWORD: ${MYSQL_PASSWORD:-123456}
       MYSQL_DATABASE: ${MYSQL_DATABASE:-myself_blog2}
-    ports:
-      - "3306:3306"
+    # 不对外暴露 3306 端口，只在容器内部网络访问
+    # ports:
+    #   - "3306:3306"
     volumes:
       - mysql-data:/var/lib/mysql
     restart: unless-stopped

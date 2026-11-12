@@ -248,3 +248,11 @@ img.lazy.loaded { opacity: 1; }
   .settings-panel { width: 100%; }
   .modal-box { padding: 20px; }
 }
+
+/* ===== 浅色模式文字对比度修复 ===== */
+.stat-number { color: var(--brand-color) !important; opacity: 1 !important; }
+.glass-card h3 { color: var(--text) !important; }
+.glass-card p { color: var(--text-soft) !important; }
+section h2 { color: var(--text) !important; }
+section p { color: var(--text-soft) !important; }
+.empty-state { color: var(--text-soft) !important; }

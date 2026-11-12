@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>个人工作台</title>
+<title>云客</title>
 <script>
   (function(){
     try {
@@ -23,7 +23,7 @@
   <aside class="sidebar" id="sidebar">
     <div class="logo">
       <div class="logo-icon">🏠</div>
-      <div class="logo-text">个人工作台</div>
+      <div class="logo-text">云客</div>
       <button class="sidebar-collapse-btn" id="sidebar-collapse-btn" title="收起侧边栏">
         <span class="collapse-icon">◀</span>
       </button>
@@ -42,7 +42,7 @@
       <a href="#/setting" class="nav-item" data-route="setting"><span class="nav-icon">⚙️</span><span>数据与设置</span></a>
     </nav>
     <div class="sidebar-footer">
-      <div class="status-chip" id="db-status">● 数据已持久化</div>
+      <div class="status-chip" id="db-status">☁️ 云端已连接</div>
     </div>
   </aside>
 
@@ -92,11 +92,11 @@
   </div>
 </div>
 
-<script src="../assets/js/blog-storage.js?v=20261110c"></script>
-<script src="renderer/store.js?v=20261111a"></script>
+<script src="../assets/js/blog-storage.js?v=20261112c"></script>
+<script src="renderer/store.js?v=20261112f"></script>
 <script src="renderer/ui.js"></script>
-<script src="renderer/api-ai.js?v=20261111a"></script>
-<script src="renderer/router.js"></script>
+<script src="renderer/api-ai.js?v=20261112c"></script>
+<script src="renderer/router.js?v=20261112e"></script>
 
 <!-- home.js必须第一个加载，挂载全局工具 window.renderListPage / window.openEditor -->
 <script src="renderer/modules/home.js"></script>
@@ -108,11 +108,11 @@
 <script src="renderer/modules/fitness.js"></script>
 <script src="renderer/modules/diet.js"></script>
 <script src="renderer/modules/game.js"></script>
-<script src="renderer/modules/aiPage.js"></script>
-<script src="renderer/modules/setting.js?v=20261111a"></script>
-<script src="renderer/modules/profile.js"></script>
+<script src="renderer/modules/aiPage.js?v=20261112f"></script>
+<script src="renderer/modules/setting.js?v=20261112f"></script>
+<script src="renderer/modules/profile.js?v=20261112e"></script>
 <!-- 新增boot外部脚本，放在全部脚本末尾 -->
-<script src="renderer/boot.js">
+<script src="renderer/boot.js?v=20261112f">
 </script>
 <style>
 .back-to-blog{position:fixed;top:14px;right:14px;z-index:99999;background:rgba(26,26,46,.85);color:#fff;padding:7px 14px;border-radius:8px;text-decoration:none;font-size:12.5px;font-weight:600;font-family:-apple-system,'Segoe UI','Microsoft YaHei',sans-serif;backdrop-filter:blur(8px);box-shadow:0 4px 14px rgba(0,0,0,.3);transition:all .2s;display:inline-flex;align-items:center;gap:4px}

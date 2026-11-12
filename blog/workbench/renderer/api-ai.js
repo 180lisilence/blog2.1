@@ -458,20 +458,9 @@ const AI = {
  * store.js 每次 debouncePersistStore 前都应该调它，
  * 或者由 Config.set 在写入 ai 配置时先行剥离。
  */
+// API Key 现在直接持久化到 config.ai.apiKey，不再剥离
 function stripSecretForPersist(appStore) {
-    try {
-        const ai = appStore?.config?.ai;
-        if (!ai) return appStore;
-        if (ai.apiKey) {
-            // 只保留在受控内存容器里，不挂 window
-            Store.AIKey.set(ai.apiKey);
-            ai.apiKey = '';
-            ai.__keySet = true;
-        }
-        return appStore;
-    } catch (e) {
-        return appStore;
-    }
+    return appStore;
 }
 
 async function AI_newConv(title = '新对话') {

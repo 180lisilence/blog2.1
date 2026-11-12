@@ -213,8 +213,8 @@ window.SidebarToggle = SidebarToggle;
 
 // ============ 到期提醒检查 ============
 async function checkDeadlines() {
-    // 如果 Notification 不可用，直接返回
-    if (typeof Notification === 'undefined') return;
+    // WebView / 不支持 Notification 的环境直接跳过
+    if (typeof Notification === 'undefined' || !Notification) return;
     if (!Store.Config.get('notifyEnabled', Store.Config.defaults.notifyEnabled)) return;
     if (Notification.permission !== 'granted') return;
 
@@ -272,7 +272,7 @@ async function boot(){
     if (content) {
         content.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100%;color:var(--text-muted);font-size:14px;">'
             + '<div style="text-align:center;"><div style="font-size:32px;margin-bottom:12px;animation:pulse 1.5s infinite;">⏳</div>'
-            + '正在加载工作台数据...</div></div>';
+            + '正在加载云客数据...</div></div>';
     }
     Theme.init();
     window.SidebarToggle.init();

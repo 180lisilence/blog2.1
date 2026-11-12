@@ -9,8 +9,12 @@ Router.registerRoute('setting', async (root) => {
         defaultPriority: Store.Config.get('defaultPriority', Store.Config.defaults.defaultPriority),
         ai: Store.Config.get('ai', Store.Config.defaults.ai)
     };
-    const notifyStatus = Notification.permission;
-    const requestNotify = () => { Notification.requestPermission().then(p => { UI.Toast.ok('权限：' + p); renderConfig(); }); };
+    const notifySupported = typeof Notification !== 'undefined' && !!Notification;
+    const notifyStatus = notifySupported ? Notification.permission : 'unsupported';
+    const requestNotify = () => {
+        if (!notifySupported) { UI.Toast.err('当前环境不支持通知'); return; }
+        Notification.requestPermission().then(p => { UI.Toast.ok('权限：' + p); renderConfig(); });
+    };
 
     function renderConfig() {
         root.innerHTML = '';
@@ -50,8 +54,8 @@ Router.registerRoute('setting', async (root) => {
                 ])
             ]),
             U.el('div', { class: 'setting-row' }, [
-                U.el('div', { class: 'setting-label', text: '浏览器通知权限：' + (notifyStatus === 'granted' ? '✅ 已授权' : notifyStatus === 'denied' ? '⛔ 已拒绝' : '⚠️ 未请求') }),
-                notifyStatus !== 'granted' ? U.el('button', { class: 'btn btn-ghost', text: '请求授权', onclick: requestNotify }) : null
+                U.el('div', { class: 'setting-label', text: '浏览器通知权限：' + (notifyStatus === 'granted' ? '✅ 已授权' : notifyStatus === 'denied' ? '⛔ 已拒绝' : notifyStatus === 'unsupported' ? '📵 当前环境不支持' : '⚠️ 未请求') }),
+                notifyStatus !== 'granted' && notifyStatus !== 'unsupported' ? U.el('button', { class: 'btn btn-ghost', text: '请求授权', onclick: requestNotify }) : null
             ])
         ]);
 
@@ -75,14 +79,24 @@ Router.registerRoute('setting', async (root) => {
                 selected: aiCfg.provider === k ? true : undefined
             }))
         );
-        // W3-02 / N-06：输入框永不回填内存 Key，避免明文重新出现在 DOM 里。
-        // 留空 = 保持已配置的 Key；填写 = 覆盖（只进受控内存容器，不落盘）。
         const aiApiKeyEl = U.el('input', {
             class: 'form-input',
-            placeholder: '留空保持已配置的 Key；填写则覆盖（仅存内存，不落盘）',
+            style: 'flex:1;min-width:0;',
+            placeholder: '留空保持已配置的 Key',
             type: 'password',
             value: ''
         });
+
+        // 记住 API Key 开关：开启则持久化保存，关闭则只存本次会话内存
+        const rememberKey = cfg.ai.rememberKey !== false; // 默认开启
+        const rememberKeyEl = U.el('label', { class: 'switch', style: 'margin-left:auto;' }, [
+            U.el('input', {
+                type: 'checkbox',
+                checked: rememberKey,
+                id: 'ai-remember-key'
+            }),
+            U.el('span', { class: 'slider' })
+        ]);
         const aiModelInput = U.el('input', { class: 'form-input', style: 'max-width:220px', list: 'ai-model-list', placeholder: '选一个或手动填' });
         const aiModelList = U.el('datalist', { id: 'ai-model-list' });
         document.body.appendChild(aiModelList);
@@ -99,7 +113,8 @@ Router.registerRoute('setting', async (root) => {
         aiScanUrlEl.value = suggestedUrl;
         const aiScanKeyEl = U.el('input', {
             class: 'form-input', type: 'password', value: '',
-            placeholder: '留空沿用已配置的 Key；仅用于本次扫描，不保存'
+            style: 'flex:1;min-width:0;',
+            placeholder: '留空沿用已配置的 Key'
         });
         const aiScanBtn = U.el('button', { class: 'btn btn-ghost btn-sm', text: '🔍 扫描模型' });
         const aiScanStatusEl = U.el('div', {
@@ -114,10 +129,12 @@ Router.registerRoute('setting', async (root) => {
         function providerLabel(key) {
             return (AIMod.AI_PROVIDERS[key] || AIMod.AI_PROVIDERS.doubao).label;
         }
-        // W2-01：状态显示不再依赖恒为空的 aiCfg.apiKey，也不回显 Key 片段
         function aiKeyStatusText(key) {
+            const hasKey = Store.AIKey.has();
+            const persisted = !!(cfg.ai && cfg.ai.apiKey);
+            if (!hasKey) return providerLabel(key) + ' Key：❌ 未配置';
             return providerLabel(key) + ' Key：'
-                + (Store.AIKey.has() ? '✅ 本次会话已配置（仅存内存，刷新后需重填）' : '❌ 未配置');
+                + (persisted ? '✅ 已配置（持久化保存）' : '✅ 已配置（仅本次会话）');
         }
         const aiKeyStatusEl = U.el('div', { class: 'setting-label', text: aiKeyStatusText(aiCfg.provider) });
 
@@ -272,24 +289,31 @@ Router.registerRoute('setting', async (root) => {
 
         function saveAiCfg() {
             const typed = aiApiKeyEl.value.trim();
+            const shouldRemember = rememberKeyEl.querySelector('input').checked;
+            const existingKey = cfg.ai.apiKey || '';
+
+            // 用户输入了新 Key：按开关决定是持久化还是只存本次会话
             if (typed) {
-                // Key 只进受控内存容器，绝不回写 DOM 或持久化配置
-                Store.AIKey.set(typed);
-                aiApiKeyEl.value = '';
+                Store.AIKey.set(typed, shouldRemember);
             }
+
+            // 读取最新的配置（AIKey.set 已经更新了 appStore.config.ai）
+            const latest = Store.Config.get('ai', Store.Config.defaults.ai);
+
             cfg.ai = {
+                ...latest,
                 provider: aiProviderEl.value,
-                apiKey: '',
-                // 扫描用的接口地址随配置一起保存（地址不是密钥，可持久化）
+                rememberKey: shouldRemember,
                 apiUrl: aiScanUrlEl.value.trim(),
                 model: aiModelInput.value.trim(),
                 systemPrompt: aiSystemPromptEl.value.trim(),
-                scannedModels: scannedModels.slice(),
-                __keySet: Store.AIKey.has()
+                scannedModels: scannedModels.slice()
             };
             Store.Config.set('ai', cfg.ai);
+
+            aiApiKeyEl.value = '';
             aiKeyStatusEl.textContent = aiKeyStatusText(aiProviderEl.value);
-            UI.Toast.ok('AI 配置已保存');
+            UI.Toast.ok(shouldRemember ? 'AI 配置已保存，Key 将持久化保留' : 'AI 配置已保存，Key 仅本次会话有效');
         }
 
         async function testAi() {
@@ -311,10 +335,17 @@ Router.registerRoute('setting', async (root) => {
             ]),
             U.el('div', { class: 'setting-row' }, [
                 U.el('div', { class: 'setting-label', text: 'API Key' }),
-                U.el('div', { style: 'display:flex;gap:8px;align-items:center;' }, [
+                U.el('div', { style: 'display:flex;gap:8px;align-items:center;flex:1;' }, [
                     aiApiKeyEl,
                     U.el('button', { class: 'btn btn-ghost btn-sm', text: '👁', title: '显示/隐藏', onclick: () => { aiApiKeyEl.type = aiApiKeyEl.type === 'password' ? 'text' : 'password'; } })
                 ])
+            ]),
+            U.el('div', { class: 'setting-row', style: 'flex-direction:column;align-items:stretch;gap:4px;' }, [
+                U.el('div', { style: 'display:flex;align-items:center;justify-content:space-between;' }, [
+                    U.el('div', { class: 'setting-label', text: '记住 API Key' }),
+                    rememberKeyEl
+                ]),
+                U.el('div', { style: 'font-size:12px;color:var(--text-muted);padding-left:0;' }, '开启则下次登录自动保留，关闭则仅本次会话有效')
             ]),
             U.el('div', { class: 'setting-row' }, [
                 U.el('div', { class: 'setting-label', text: '模型（或 Endpoint ID）' }),
@@ -339,9 +370,9 @@ Router.registerRoute('setting', async (root) => {
                 aiScanChipsEl
             ]),
             // W3-01 / W3-02：端点不再由前端决定，对话与扫描都走服务端代理
-            U.el('div', { class: 'setting-row' }, [
+            U.el('div', { class: 'setting-row', style: 'flex-direction:column;align-items:stretch;gap:6px;' }, [
                 U.el('div', { class: 'setting-label', text: '请求通道' }),
-                U.el('div', { class: 'setting-label', style: 'color:#8a8f98;font-size:12px;line-height:1.6;', text: "对话经本站 /api/ai/chat 代理，扫描经 /api/ai/models 代理；目标端点由服务端白名单固定，浏览器不直连第三方，CSP 保持 connect-src 'self'" })
+                U.el('div', { style: 'color:var(--text-muted);font-size:12px;line-height:1.6;', text: "对话经本站 /api/ai/chat 代理，扫描经 /api/ai/models 代理；目标端点由服务端白名单固定，浏览器不直连第三方。" })
             ]),
             U.el('div', { class: 'setting-row', style: 'flex-direction:column;align-items:stretch;gap:8px;' }, [
                 U.el('div', { class: 'setting-label', text: 'System Prompt（人设）' }),

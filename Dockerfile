@@ -19,9 +19,9 @@ COPY . .
 # 暴露端口
 EXPOSE 3000
 
-# 健康检查
+# 健康检查（用 /health 接口，不生成二维码垃圾数据）
 HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
-  CMD node -e "fetch('http://127.0.0.1:3000/api/qrcode/generate').then(r=>r.ok?process.exit(0):process.exit(1)).catch(()=>process.exit(1))"
+  CMD node -e "fetch('http://127.0.0.1:3000/health').then(r=>r.ok?process.exit(0):process.exit(1)).catch(()=>process.exit(1))"
 
 # 启动服务
 WORKDIR /app/qrcode-login

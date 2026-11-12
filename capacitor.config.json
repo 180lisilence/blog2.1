@@ -1,0 +1,12 @@
+{
+  "appId": "com.yunke.client",
+  "appName": "云客",
+  "webDir": "blog/workbench",
+  "server": {
+    "url": "https://lizyi.asia/blog/workbench/",
+    "cleartext": false
+  },
+  "android": {
+    "allowMixedContent": false
+  }
+}

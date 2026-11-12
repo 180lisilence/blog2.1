@@ -11,7 +11,7 @@ function navigate() {
     const [route, ...rest] = hash.split('/');
     const info = ROUTES[route];
     document.querySelectorAll('.nav-item').forEach(n => n.classList.toggle('active', n.dataset.route === route));
-    document.getElementById('page-title').textContent = info ? info.title : '个人工作台';
+    document.getElementById('page-title').textContent = info ? info.title : '云客';
     const content = document.getElementById('content');
     content.innerHTML = '';
     if (info) {

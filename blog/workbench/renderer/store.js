@@ -64,24 +64,36 @@ let appStore = {};
 let saveTimeout = null;
 let isSaving = false;
 
-// ============================================================================
-// W3-02 / N-06：API Key 内存容器
-// ---------------------------------------------------------------------------
-// 旧版把 Key 挂在 window.__aiKeyMem，任何同源脚本（含 XSS、含被污染的
-// 第三方脚本）都能直接读走，配合"客户端可改白名单"构成 Key 外带链的条件项。
-// 现在收进闭包，只暴露受控的 set/get/has/clear，且 UI 判据统一走
-// Config.aiReady()，不再依赖可全局读取的变量。
-// Key 依旧不落盘、不上传服务端（N-06 语义保持），刷新后需重填。
-// ============================================================================
-const AIKey = (function () {
-    let mem = '';
-    return {
-        set(v) { mem = String(v || ''); },
-        get() { return mem; },
-        has() { return !!mem; },
-        clear() { mem = ''; }
-    };
-})();
+// API Key 管理：
+// - config.ai.apiKey 是持久化的值（受"记住 Key"开关控制）
+// - sessionKey 是本次会话临时输入的 Key（不持久化）
+// - get() 返回：优先持久化的，其次是本次会话临时的
+let sessionKey = ''; // 仅内存，不持久化
+const AIKey = {
+    set(v, persist = true) {
+        if (!appStore || !appStore.config) appStore.config = {};
+        if (!appStore.config.ai) appStore.config.ai = {};
+        const val = String(v || '');
+        if (persist) {
+            appStore.config.ai.apiKey = val;
+            appStore.config.ai.rememberKey = true;
+        } else {
+            sessionKey = val; // 只存内存
+        }
+        appStore.config.ai.__keySet = !!val;
+    },
+    get() {
+        // 优先返回持久化的，其次返回本次会话临时的
+        return appStore?.config?.ai?.apiKey || sessionKey || '';
+    },
+    has() {
+        return !!this.get();
+    },
+    clear() {
+        this.set('', true);
+        sessionKey = '';
+    }
+};
 
 // 所有需要持久化的 store 名称
 const STORES = ['todos','media','develop','consult','fitness','diet','game','notes','recycleBin','config','aiConvs','aiMsgs'];
@@ -101,17 +113,17 @@ async function initStore() {
             STORES.forEach(s => { if (!appStore[s]) appStore[s] = []; });
             if (!appStore.config) appStore.config = Config._clone(Config.defaults);
             migrateConfig();
-            document.getElementById('db-status').textContent = '● 数据已加载';
+            document.getElementById('db-status').textContent = '☁️ 云端数据已同步';
             document.getElementById('db-status').className = 'status-chip';
         } else {
             appStore = getDefaultStore();
-            document.getElementById('db-status').textContent = '● 新数据初始化';
+            document.getElementById('db-status').textContent = '☁️ 云端初始化完成';
             document.getElementById('db-status').className = 'status-chip';
             try { await persistStore(); } catch(e) { console.warn('persistStore保存警告', e); }
         }
     } catch (err) {
         appStore = getDefaultStore();
-        document.getElementById('db-status').textContent = '● 加载失败，使用空数据';
+        document.getElementById('db-status').textContent = '⚠️ 云端连接失败，离线模式';
         document.getElementById('db-status').className = 'status-chip err';
         console.error('initStore error:', err);
         try { await persistStore(); } catch(e) {}
@@ -130,16 +142,6 @@ function migrateConfig() {
         delete appStore.config.global;
         debouncePersistStore();
     }
-    // N-06 数据清理：历史版本可能已经把 API Key 明文写进了磁盘/服务端。
-    // 加载时若发现残留，立刻搬进受控内存容器并安排清洗，让下一次持久化抹掉。
-    const ai = appStore.config.ai;
-    if (ai && typeof ai === 'object' && ai.apiKey) {
-        AIKey.set(ai.apiKey);
-        ai.apiKey = '';
-        ai.__keySet = true;
-        console.warn('[N-06] 检测到磁盘/服务端残留的明文 API Key，已迁移到内存并安排清洗');
-        debouncePersistStore();
-    }
 }
 async function persistStore() {
     if (isSaving) return;
@@ -148,25 +150,16 @@ async function persistStore() {
         if (!wbAPI) {
             throw new Error('workbenchAPI 未就绪，请检查 preload');
         }
-        // ---- N-06：持久化前剥离敏感字段 ----
-        // appStore.config.ai.apiKey 明文落盘、并被 /api/data/all 持久化到服务端，
-        // 是"API Key 外带 + 永久留存"的根源。这里在写入磁盘/服务端前把它清空，
-        // 只保留在受控内存容器（AIKey）里。
-        if (appStore && appStore.config && appStore.config.ai && appStore.config.ai.apiKey) {
-            AIKey.set(appStore.config.ai.apiKey);
-            appStore.config.ai.apiKey = '';
-            appStore.config.ai.__keySet = true;
-        }
         const result = await wbAPI.save(appStore);
         if (result.success) {
-            document.getElementById('db-status').textContent = '● 数据已持久化';
+            document.getElementById('db-status').textContent = '☁️ 云端已保存';
             document.getElementById('db-status').className = 'status-chip';
         } else {
-            document.getElementById('db-status').textContent = '● 保存失败: ' + result.error;
+            document.getElementById('db-status').textContent = '⚠️ 云端保存失败: ' + result.error;
             document.getElementById('db-status').className = 'status-chip err';
         }
     } catch (err) {
-        document.getElementById('db-status').textContent = '● 保存异常: ' + err.message;
+        document.getElementById('db-status').textContent = '⚠️ 云端保存异常: ' + err.message;
         document.getElementById('db-status').className = 'status-chip err';
     } finally {
         isSaving = false;
@@ -274,20 +267,13 @@ const Config = {
     set(k, v) {
         if (!appStore) return;
         if (!appStore.config) appStore.config = {};
-        // N-06：apiKey 只进受控内存容器，不跟着 config 落盘 / 上传服务端
-        if (k === 'ai' && v && typeof v === 'object' && v.apiKey) {
-            AIKey.set(v.apiKey);
-            v = { ...v, apiKey: '', __keySet: true };
-        }
         appStore.config[k] = v;
         debouncePersistStore();
     },
-    // W2-01：统一的「AI 是否已配置」判据。
-    // N-06 之后 config.ai.apiKey 恒为空，UI 不能再判 !aiCfg.apiKey；
-    // 真正的判据是受控内存容器里有没有本次会话的 Key。
+    // AI 是否已配置：持久化的 Key 或本次会话临时 Key 任一存在即可
     aiReady() {
         const ai = this.get('ai', this.defaults.ai);
-        return !!(ai.apiKey || AIKey.has());
+        return !!(ai.apiKey || sessionKey);
     },
     sanitizeAi(providers) {
         try {
