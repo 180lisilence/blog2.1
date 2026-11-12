@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>我的博客</title>
+    <link>https://lizyi.asia/blog/</link>
+    <description>记录生活与开发的点点滴滴</description>
+    <language>zh-CN</language>
+    <atom:link href="https://lizyi.asia/blog/feed.xml" rel="self" type="application/rss+xml"/>
+    <lastBuildDate>Fri, 13 Nov 2026 00:00:00 +0800</lastBuildDate>
+
+    <item>
+      <title>woldvein 项目全景复盘：从启动器到游戏 AI</title>
+      <link>https://lizyi.asia/blog/posts/woldvein-project.html</link>
+      <guid>https://lizyi.asia/blog/posts/woldvein-project.html</guid>
+      <pubDate>Mon, 08 Sep 2026 00:00:00 +0800</pubDate>
+      <description>为《东方：平野孤鸿》做了五版工具：启动器、产品家族、审计修复、Steam 启动改道、AI Agent。三次崩溃逼出根因，一天内完成从崩溃到可玩的闭环。</description>
+      <category>游戏 · AI</category>
+    </item>
+
+    <item>
+      <title>你好，博客的第一篇</title>
+      <link>https://lizyi.asia/blog/posts/hello-world.html</link>
+      <guid>https://lizyi.asia/blog/posts/hello-world.html</guid>
+      <pubDate>Tue, 26 Aug 2026 00:00:00 +0800</pubDate>
+      <description>为什么我会把一个工作台放进博客里——一点动机，一点取舍。</description>
+      <category>碎碎念</category>
+    </item>
+
+    <item>
+      <title>我的个人工作台长什么样</title>
+      <link>https://lizyi.asia/blog/posts/workbench-intro.html</link>
+      <guid>https://lizyi.asia/blog/posts/workbench-intro.html</guid>
+      <pubDate>Tue, 26 Aug 2026 00:00:00 +0800</pubDate>
+      <description>待办、开发、咨询、自媒体、健身、饮食、游戏、AI——八个模块怎么组织成每天打开的一页。</description>
+      <category>工具</category>
+    </item>
+
+    <item>
+      <title>为什么所有数据都放在本地</title>
+      <link>https://lizyi.asia/blog/posts/data-local-first.html</link>
+      <guid>https://lizyi.asia/blog/posts/data-local-first.html</guid>
+      <pubDate>Tue, 26 Aug 2026 00:00:00 +0800</pubDate>
+      <description>没有账号、没有云端同步的取舍，以及数据备份和导入导出的玩法。</description>
+      <category>整理</category>
+    </item>
+
+  </channel>
+</rss>
