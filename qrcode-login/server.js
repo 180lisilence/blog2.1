@@ -332,7 +332,12 @@ app.use("/api/comments", verifyCsrfToken, commentsRoutes);
 const authGate = createAuthGate(authSession.webSessions);
 
 // ========== 公开页面（无需登录） ==========
-app.get(["/", "/index.html", "/login", "/login.html"], (req, res) => {
+// 根路径直接跳转到博客首页
+app.get(["/", "/index.html"], (req, res) => {
+  res.redirect(301, "/blog/");
+});
+// 登录页单独放在 /login
+app.get(["/login", "/login.html"], (req, res) => {
   res.sendFile(path.join(config.blogRoot, "index.html"));
 });
 app.get("/mobile-confirm.html", (req, res) => {
