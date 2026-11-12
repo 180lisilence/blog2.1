@@ -370,6 +370,9 @@ app.use("/blog", createBlogStatic({
   getSession: (t) => authSession.getWebSession(t)
 }));
 
+// 工作台需要登录验证
+app.use("/blog/workbench", authGate, express.static(path.join(config.blogContent, "workbench")));
+
 // 构建方法示例（需登录）
 app.use("/build-methods", authGate, express.static(path.join(config.blogRoot, "build-methods")));
 

@@ -152,6 +152,11 @@ function createBlogStatic(opts) {
   return function blogStatic(req, res, next) {
     if (req.method !== "GET" && req.method !== "HEAD") return next();
 
+    // 工作台目录需要登录验证，不走公开静态服务
+    if (req.path.startsWith("/workbench/") || req.path === "/workbench") {
+      return next();
+    }
+
     const safe = resolveSafe(rootResolved, req.path);
 
     // 越界：直接 400，不区分"不存在"和"越界"（F-06 / N-10）
