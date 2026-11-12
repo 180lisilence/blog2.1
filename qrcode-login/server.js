@@ -242,14 +242,14 @@ app.get("/api/public/preview", (req, res) => {
 // 放在公开路由（无需登录），严格 CSP 下同源自建脚本可正常加载。
 app.get("/presence-client.js", (req, res) => {
   res.set("Cache-Control", "public, max-age=300");
-  res.sendFile(path.join(config.blogRoot, "presence-client.js"));
+  res.sendFile(path.join(config.blogContent, "assets/js/presence-client.js"));
 });
 
 // 会话被顶号提示脚本：顶层页面（index / projects / settings）在 apiFetch 里调用
 // window.__handleKicked 处理 401 KICKED。公开只读、同源，严格 CSP 可加载。
 app.get("/session-kicked.js", (req, res) => {
   res.set("Cache-Control", "public, max-age=300");
-  res.sendFile(path.join(config.blogRoot, "session-kicked.js"));
+  res.sendFile(path.join(config.blogContent, "assets/js/session-kicked.js"));
 });
 
 app.use(ensureCsrfCookie);     // 确保 CSRF token cookie
@@ -340,12 +340,9 @@ app.get(["/", "/index.html"], (req, res) => {
 app.get(["/login", "/login.html"], (req, res) => {
   res.sendFile(path.join(config.blogRoot, "index.html"));
 });
-app.get("/mobile-confirm.html", (req, res) => {
-  res.sendFile(path.join(config.blogRoot, "mobile-confirm.html"));
-});
-app.get("/chatrecord-share.html", (req, res) => {
-  res.sendFile(path.join(config.blogRoot, "chatrecord-share.html"));
-});
+// mobile-confirm 和 chatrecord-share 现在在 /blog/ 下面，由 blogStatic 自动服务
+// app.get("/mobile-confirm.html", ...) 已移除
+// app.get("/chatrecord-share.html", ...) 已移除
 app.get("/architecture.html", (req, res) => {
   res.sendFile(path.join(config.blogRoot, "architecture.html"));
 });
