@@ -267,19 +267,30 @@ window.addEventListener('unhandledrejection',(e)=>{ showFatalError('未处理 Pr
 
 // ============ 启动入口 boot ============
 async function boot(){
-    await window.Store.initStore();
-    window.Store.Config.sanitizeAi(window.AIMod.AI_PROVIDERS);
+    // 先渲染骨架屏，避免白屏等待数据加载
+    const content = document.getElementById('content');
+    if (content) {
+        content.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100%;color:var(--text-muted);font-size:14px;">'
+            + '<div style="text-align:center;"><div style="font-size:32px;margin-bottom:12px;animation:pulse 1.5s infinite;">⏳</div>'
+            + '正在加载工作台数据...</div></div>';
+    }
     Theme.init();
     window.SidebarToggle.init();
-    window.Router.navigate();
+    // 时钟立即启动，不等待数据
     const tick = ()=>{
         const d = new Date();
-        document.getElementById('clock').textContent =
+        const el = document.getElementById('clock');
+        if (el) el.textContent =
             d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')+' '+
             String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0')+':'+String(d.getSeconds()).padStart(2,'0');
     };
     tick();
     setInterval(tick,1000);
+
+    // 数据加载放后面，先把框架渲染出来
+    await window.Store.initStore();
+    window.Store.Config.sanitizeAi(window.AIMod.AI_PROVIDERS);
+    window.Router.navigate();
     checkDeadlines();
     setInterval(checkDeadlines,60000);
 }

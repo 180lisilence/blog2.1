@@ -25,7 +25,7 @@ Router.registerRoute('setting', async (root) => {
             ]),
 
             U.el('div', { class: 'setting-row' }, [
-                U.el('div', { class: 'setting-label', text: '深色模式' }),
+                U.el('div', { class: 'setting-label', text: '深浅模式切换' }),
                 U.el('label', { class: 'switch' }, [
                     U.el('input', {
                         type: 'checkbox',
@@ -34,7 +34,6 @@ Router.registerRoute('setting', async (root) => {
                             const targetTheme = e.target.checked ? 'dark' : 'light';
                             window.Theme.set(targetTheme);
                             UI.Toast.ok(targetTheme === 'dark' ? '已切换深色模式' : '已切换浅色模式');
-                            // ✅ 删掉这里的 renderConfig(); 不要整页刷新！！
                         }
                     }),
                     U.el('span', { class: 'slider' })

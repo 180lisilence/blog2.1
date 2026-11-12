@@ -490,7 +490,7 @@
         </div>
         <div class="form-group">
           <label>设置密码</label>
-          <input type="password" id="regPass" placeholder="8-64位，需含字母和数字" autocomplete="new-password">
+          <input type="password" id="regPass" placeholder="8-64位，需含大小写字母和数字" autocomplete="new-password">
         </div>
         <div class="form-group">
           <label>确认密码</label>
@@ -939,7 +939,9 @@
     if (u.length < 2 || u.length > 20) { err.textContent = "账号长度需为 2-20 位"; return; }
     if (!p) { err.textContent = "请输入密码"; return; }
     if (p.length < 8 || p.length > 64) { err.textContent = "密码长度需为 8-64 位"; return; }
-    if (!/[A-Za-z]/.test(p) || !/[0-9]/.test(p)) { err.textContent = "密码需同时包含字母和数字"; return; }
+    if (!/[a-z]/.test(p)) { err.textContent = "密码需包含小写字母"; return; }
+    if (!/[A-Z]/.test(p)) { err.textContent = "密码需包含大写字母"; return; }
+    if (!/[0-9]/.test(p)) { err.textContent = "密码需包含数字"; return; }
     if (p !== p2) { err.textContent = "两次输入的密码不一致"; return; }
     const captchaAnswer = (document.getElementById("captchaAnswer")?.value || "").trim();
     if (!captchaState.token || !captchaAnswer) { err.textContent = "请完成验证码"; return; }

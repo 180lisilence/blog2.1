@@ -7,7 +7,13 @@ Router.registerRoute('profile', async (root) => {
     const profile = getProfile();
     const stats = await getStats();
 
-    const avatarEl = U.el('div', { class: 'profile-avatar-large' }, profile.avatar);
+    const avatarEl = U.el('div', { class: 'profile-avatar-large' });
+    // 支持 emoji 头像和图片头像（base64）
+    if (profile.avatar && profile.avatar.startsWith('data:image/')) {
+        avatarEl.innerHTML = '<img src="' + profile.avatar + '" style="width:100%;height:100%;border-radius:50%;object-fit:cover;" alt="头像">';
+    } else {
+        avatarEl.textContent = profile.avatar || '👤';
+    }
     const nameEl = U.el('div', { class: 'profile-name' }, profile.nickname);
     const bioEl = U.el('div', { class: 'profile-bio' }, profile.bio || '这个人很懒，什么都没留下');
     const metaEl = U.el('div', { class: 'profile-meta' }, [
@@ -114,9 +120,52 @@ async function getStats() {
 function showEditDialog() {
     const profile = getProfile();
     const avatars = ['👤','😀','😎','🤖','🐱','🐶','🦊','🐼','🦁','🐸','🦄','🐙','🦋','🌟','🔥','💎','🎯','🚀','🎨','🎭'];
+    const isImageAvatar = profile.avatar && profile.avatar.startsWith('data:image/');
     const avHtml = avatars.map(a =>
-        `<div class="avatar-option ${a===profile.avatar?'selected':''}" data-avatar="${a}">${a}</div>`
+        `<div class="avatar-option ${!isImageAvatar && a===profile.avatar?'selected':''}" data-avatar="${a}">${a}</div>`
     ).join('');
+
+    const uploadBtn = U.el('button', { class: 'btn btn-ghost btn-sm', type: 'button' }, '📤 上传自定义头像');
+    const uploadPreview = U.el('div', { style: 'margin-top:10px;text-align:center;' });
+    if (isImageAvatar) {
+        uploadPreview.innerHTML = '<img src="' + profile.avatar + '" style="width:60px;height:60px;border-radius:50%;object-fit:cover;border:2px solid var(--accent);" alt="头像预览">';
+    }
+    const fileInput = U.el('input', { type: 'file', accept: 'image/*', style: 'display:none;' });
+
+    uploadBtn.addEventListener('click', () => fileInput.click());
+    fileInput.addEventListener('change', (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+        if (file.size > 500 * 1024) {
+            UI.Toast.show('图片不能超过 500KB', 'err');
+            return;
+        }
+        const reader = new FileReader();
+        reader.onload = (ev) => {
+            const dataUrl = ev.target.result;
+            // 压缩到合适尺寸
+            const img = new Image();
+            img.onload = () => {
+                const canvas = document.createElement('canvas');
+                const size = 128;
+                canvas.width = size; canvas.height = size;
+                const ctx = canvas.getContext('2d');
+                // 居中裁剪为正方形
+                const minDim = Math.min(img.width, img.height);
+                const sx = (img.width - minDim) / 2;
+                const sy = (img.height - minDim) / 2;
+                ctx.drawImage(img, sx, sy, minDim, minDim, 0, 0, size, size);
+                const compressed = canvas.toDataURL('image/jpeg', 0.8);
+                chosenAvatar = compressed;
+                uploadPreview.innerHTML = '<img src="' + compressed + '" style="width:60px;height:60px;border-radius:50%;object-fit:cover;border:2px solid var(--accent);" alt="头像预览">';
+                // 取消 emoji 选中状态
+                modal.querySelectorAll('.avatar-option').forEach(x => x.classList.remove('selected'));
+                UI.Toast.show('头像已选择，记得点保存', 'ok');
+            };
+            img.src = dataUrl;
+        };
+        reader.readAsDataURL(file);
+    });
 
     const modal = U.el('div', { class: 'modal-backdrop', style: 'display:flex' }, [
         U.el('div', { class: 'modal' }, [
@@ -130,8 +179,13 @@ function showEditDialog() {
                     Object.assign(U.el('input', { class: 'form-input', maxlength: '20', id: 'edit-nickname' }), { value: profile.nickname })
                 ]),
                 U.el('div', { class: 'form-field' }, [
-                    U.el('div', { class: 'form-label' }, '头像'),
-                    U.el('div', { class: 'avatar-picker', html: avHtml })
+                    U.el('div', { class: 'form-label' }, '头像（选择 emoji 或上传图片）'),
+                    U.el('div', { class: 'avatar-picker', html: avHtml }),
+                    U.el('div', { style: 'margin-top:12px;display:flex;flex-direction:column;align-items:center;gap:8px;' }, [
+                        uploadBtn,
+                        uploadPreview
+                    ]),
+                    fileInput
                 ]),
                 U.el('div', { class: 'form-field' }, [
                     U.el('div', { class: 'form-label' }, '个人简介'),
@@ -144,21 +198,26 @@ function showEditDialog() {
                     U.el('button', {
                         class: 'btn btn-primary',
                         onclick: () => {
-                            // 直接使用当前modal对象，不要重新document查询
                             const nickInput = modal.querySelector('#edit-nickname');
                             const bioInput = modal.querySelector('#edit-bio');
                             const chosen = modal.querySelector('.avatar-option.selected');
 
-                            // 防御判断，元素缺失直接退出，防止崩溃
                             if (!nickInput || !bioInput) {
                                 UI.Toast.show('读取表单失败', 'error');
                                 return;
                             }
 
+                            let avatar = profile.avatar;
+                            if (chosenAvatar) {
+                                avatar = chosenAvatar;
+                            } else if (chosen) {
+                                avatar = chosen.dataset.avatar;
+                            }
+
                             const updated = {
                                 ...profile,
                                 nickname: nickInput.value.trim() || profile.nickname,
-                                avatar: chosen ? chosen.dataset.avatar : profile.avatar,
+                                avatar: avatar,
                                 bio: bioInput.value.trim()
                             };
                             saveProfile(updated);
@@ -172,10 +231,10 @@ function showEditDialog() {
         ])
     ]);
     document.body.appendChild(modal);
-    let chosenAvatar = profile.avatar;
+    let chosenAvatar = isImageAvatar ? profile.avatar : null;
     modal.querySelectorAll('.avatar-option').forEach(el => {
         el.addEventListener('click', () => {
-            chosenAvatar = el.dataset.avatar;
+            chosenAvatar = null; // 选了 emoji 就清空图片头像
             modal.querySelectorAll('.avatar-option').forEach(x => x.classList.toggle('selected', x === el));
         });
     });

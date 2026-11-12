@@ -20,6 +20,8 @@ Router.registerRoute('ai', async (root) => {
     root.appendChild(U.el('div', { style: 'display:flex;gap:0;height:calc(100vh - 108px);' }, [convListEl, chatArea]));
 
     let activeConvId = null;
+    let currentBody = null;
+    let currentConv = null;
 
     async function renderConvList() {
         const wrap = convListEl.querySelector('#ai-conv-items');
@@ -27,7 +29,7 @@ Router.registerRoute('ai', async (root) => {
         const convs = await AIMod.AI_listConvs();
         if (convs.length === 0) {
             wrap.appendChild(U.el('div', { class: 'empty', text: '还没有对话' }));
-            return;
+            return convs;
         }
         convs.forEach(c => {
             const item = U.el('div', { class: 'ai-conv-item' + (c.id === activeConvId ? ' active' : ''), onclick: () => navigateToConv(c.id) }, [
@@ -37,26 +39,69 @@ Router.registerRoute('ai', async (root) => {
                         e.stopPropagation();
                         UI.Modal.confirm('删除对话', '连同全部消息一起删除？', async () => {
                             await AIMod.AI_deleteConv(c.id);
-                            if (activeConvId === c.id) activeConvId = null;
+                            if (activeConvId === c.id) {
+                                activeConvId = null;
+                                renderEmpty();
+                            }
                             await renderConvList();
-                            renderEmpty();
                         }, '删除', '取消', true);
                     }}, '🗑️')
             ]);
             item.style.position = 'relative';
             wrap.appendChild(item);
         });
+        return convs;
     }
 
     function renderEmpty() {
         chatArea.innerHTML = '';
-        // W2-01：N-06 后 config.ai.apiKey 恒为空，统一走 Config.aiReady()
         const needSetup = !Store.Config.aiReady();
-        chatArea.appendChild(U.el('div', { class: 'ai-empty', style: 'height:100%;' }, [
-            U.el('div', { class: 'ai-empty-icon', text: '🤖' }),
-            U.el('div', { class: 'ai-empty-text', text: needSetup ? '请先到「数据与设置」配置 AI API' : '点击左侧「新对话」开始聊天' }),
-            U.el('div', { class: 'ai-empty-hint', text: '支持豆包 / 通义千问 / DeepSeek / OpenAI / Kimi / 智谱（经本站服务端代理转发）' })
-        ]));
+
+        const emptyWrap = U.el('div', { style: 'flex:1;display:flex;flex-direction:column;overflow:hidden;' });
+        const emptyBody = U.el('div', { class: 'ai-page-body', style: 'flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;' }, [
+            U.el('div', { class: 'ai-empty-icon', text: '🤖', style: 'font-size:48px;margin-bottom:16px;' }),
+            U.el('div', { class: 'ai-empty-text', text: needSetup ? '请先到「数据与设置」配置 AI API' : '输入消息开始新对话' }),
+            U.el('div', { class: 'ai-empty-hint', text: '支持豆包 / 通义千问 / DeepSeek / OpenAI / Kimi / 智谱' })
+        ]);
+        emptyWrap.appendChild(emptyBody);
+
+        // 空状态也保留输入框，用户直接输入即可开始新对话
+        const ta = U.el('textarea', { placeholder: '输入消息，Enter 发送，Shift+Enter 换行...', rows: 2 });
+        const sendBtn = U.el('button', { class: 'btn btn-primary', text: '发送' });
+        const inputWrap = U.el('div', { class: 'ai-page-input-wrap' }, [ta, sendBtn]);
+
+        async function send() {
+            const text = ta.value.trim();
+            if (!text) return;
+            if (!Store.Config.aiReady()) { UI.Toast.err('请先到设置里填写 API Key'); return; }
+            ta.value = '';
+            // 自动创建新对话
+            const conv = await AIMod.AI_newConv();
+            activeConvId = conv.id;
+            await navigateToConv(conv.id);
+            // 触发第一次发送
+            setTimeout(async () => {
+                const newTa = chatArea.querySelector('.ai-page-input-wrap textarea');
+                if (newTa) {
+                    newTa.value = text;
+                    newTa.dispatchEvent(new Event('input'));
+                    const sendBtn = chatArea.querySelector('.ai-page-input-wrap .btn-primary');
+                    if (sendBtn) sendBtn.click();
+                }
+            }, 100);
+        }
+
+        ta.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send(); }
+        });
+        ta.addEventListener('input', () => {
+            ta.style.height = 'auto';
+            ta.style.height = Math.min(ta.scrollHeight, 140) + 'px';
+        });
+        sendBtn.addEventListener('click', send);
+
+        chatArea.appendChild(emptyWrap);
+        chatArea.appendChild(inputWrap);
     }
 
     async function navigateToConv(convId) {
@@ -70,6 +115,7 @@ Router.registerRoute('ai', async (root) => {
         if (!activeConvId) { renderEmpty(); return; }
         const conv = await Store.DBget('aiConvs', activeConvId);
         if (!conv) { renderEmpty(); return; }
+        currentConv = conv;
         const aiCfg = Store.Config.get('ai', Store.Config.defaults.ai);
         const provider = AIMod.AI_PROVIDERS[conv.provider] || AIMod.AI_PROVIDERS[aiCfg.provider] || AIMod.AI_PROVIDERS.doubao;
 
@@ -90,6 +136,7 @@ Router.registerRoute('ai', async (root) => {
         ]);
 
         const body = U.el('div', { class: 'ai-page-body' });
+        currentBody = body;
         const msgs = await AIMod.AI_getMsgs(activeConvId);
         if (msgs.length === 0) {
             body.appendChild(U.el('div', { class: 'ai-welcome' }, [
@@ -109,7 +156,6 @@ Router.registerRoute('ai', async (root) => {
             const text = ta.value.trim();
             if (!text) return;
             ta.value = '';
-            // W2-01：统一判据，不再判恒为空的 aiCfg.apiKey
             if (!Store.Config.aiReady()) { UI.Toast.err('请先到设置里填写 API Key'); return; }
 
             await AIMod.AI_addMsg(activeConvId, 'user', text);
@@ -152,8 +198,10 @@ Router.registerRoute('ai', async (root) => {
         ta.focus();
     }
 
-    await renderConvList();
-    renderEmpty();
-    const convs = await AIMod.AI_listConvs();
-    if (convs.length > 0) navigateToConv(convs[0].id);
+    const convs = await renderConvList();
+    if (convs && convs.length > 0) {
+        await navigateToConv(convs[0].id);
+    } else {
+        renderEmpty();
+    }
 }, 'AI 对话');

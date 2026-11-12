@@ -21,19 +21,9 @@ const service = require("./service");
 const router = express.Router();
 
 /**
- * 删除权限判定：仅内置管理员（builtin）可删除评论。
- *
- * 判断依据（站内既有机制，不新造角色体系）：
- *   MySQL users.is_builtin → authModel.users Map 的 builtin 标记。
- *   同一份数据已被三处复用：
- *     ① blog-sentinel 成员快照对外输出 isBuiltin 字段；
- *     ② modules/audit/members-admin.js 的 assertNotBuiltin 用它保护内置账号禁改名/删除；
- *     ③ 生产库实测仅 admin 一个账号 is_builtin=1，其余 6 个为普通注册账号。
- *   因此 builtin 管理员 = 站长本人，普通访客（含评论作者本人）无删除权。
- *
- * 2.2.8 之前的口径是「row.username === req.username」即可删除，
- * 等于任何普通访客都能删掉自己的评论 —— 与站内权限模型不符（访客只应能
- * 生成项目、登录与访问、新增与回复评论）。
+ * 删除权限判定：
+ *   - 内置管理员（builtin）可删除任何人的评论
+ *   - 普通用户可删除自己发表的评论
  */
 function isAdminUser(username) {
   if (!username) return false;
@@ -43,6 +33,13 @@ function isAdminUser(username) {
   } catch (e) {
     return false;
   }
+}
+
+function canDeleteComment(viewer, commentUsername) {
+  // 管理员删任何人
+  if (viewer.isAdmin) return true;
+  // 作者删自己的
+  return viewer.name === commentUsername;
 }
 
 // 本模块所有接口都需要登录
@@ -144,27 +141,27 @@ router.post("/:slug", asyncHandler(async (req, res) => {
   ok(res, { comment: service.toDTO(row, req.viewer) }, "评论已发布");
 }));
 
-// ========== 删除评论（仅内置管理员） ==========
-// 2.2.8：权限从「评论作者本人」收紧为「内置管理员」。
-// 前端入口显隐只是体验优化，真正的防线在这里 —— 即使有人绕过前端直接
-// 调接口，普通访客也会被明确拒绝（403），不依赖前端隐藏作为唯一防线。
+// ========== 删除评论 ==========
+// 权限规则：
+//   - 内置管理员可删除任何人的评论
+//   - 普通用户可删除自己发表的评论
 router.delete("/:id", asyncHandler(async (req, res) => {
   const id = Number(req.params.id);
   if (!Number.isInteger(id) || id <= 0) {
     return fail(res, 400, "评论 ID 不合法");
   }
 
-  if (!req.viewer.isAdmin) {
-    logger.warn(
-      "comments-route",
-      `拒绝非管理员删除评论: user=${req.username}, id=${id}`
-    );
-    return fail(res, 403, "普通用户无权删除评论，删除权限仅限管理员");
-  }
-
   const row = await model.getById(id);
   if (!row || row.status === 0) {
     return fail(res, 404, "评论不存在或已删除");
+  }
+
+  if (!canDeleteComment(req.viewer, row.username)) {
+    logger.warn(
+      "comments-route",
+      `拒绝删除评论: user=${req.username}, id=${id}, owner=${row.username}`
+    );
+    return fail(res, 403, "无权删除他人的评论");
   }
 
   const replyCount = await model.countReplies(id);
