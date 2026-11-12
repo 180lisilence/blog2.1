@@ -70,7 +70,7 @@ function isDocumentExt(p) {
 
 // 博客内容公开访问（SEO 友好）
 function applyPublicCacheHeaders(res) {
-  res.setHeader("Cache-Control", "public, max-age=3600");
+  res.setHeader("Cache-Control", "public, max-age=300, must-revalidate");
   res.setHeader("Vary", "Accept-Encoding");
 }
 
