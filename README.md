@@ -23,11 +23,40 @@
 
 ## 🚀 快速开始
 
+### 方式一：Docker 一键启动（推荐）
+
+```bash
+# Linux / macOS
+chmod +x docker-start.sh
+./docker-start.sh
+
+# Windows
+docker-start.bat
+```
+
+或者手动执行：
+
+```bash
+# 1. 复制环境变量模板
+cp qrcode-login/.env.example qrcode-login/.env
+# 编辑 .env，修改数据库密码和管理员密码
+
+# 2. 启动
+docker-compose up -d --build
+```
+
+访问 http://localhost:3000 即可。
+
+### 方式二：本地开发
+
 ```bash
 # 安装依赖
 npm install
 
-# 启动开发
+# 复制配置
+cp qrcode-login/.env.example qrcode-login/.env
+
+# 启动
 node qrcode-login/server.js
 ```
 
