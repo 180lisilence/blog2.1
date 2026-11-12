@@ -1,0 +1,40 @@
+name: 站点健康检查
+
+on:
+  schedule:
+    - cron: '0 8 * * 1'  # 每周一早上 8 点跑一次
+  workflow_dispatch:  # 支持手动触发
+
+jobs:
+  health-check:
+    runs-on: ubuntu-latest
+    steps:
+      - name: 检查首页
+        run: |
+          curl -f -I https://lizyi.asia/ || exit 1
+          echo "✅ 首页正常"
+
+      - name: 检查博客首页
+        run: |
+          curl -f -I https://lizyi.asia/blog/ || exit 1
+          echo "✅ 博客首页正常"
+
+      - name: 检查 RSS
+        run: |
+          curl -f https://lizyi.asia/blog/feed.xml | head -5
+          echo "✅ RSS 正常"
+
+      - name: 检查 robots.txt
+        run: |
+          curl -f https://lizyi.asia/robots.txt | head -5
+          echo "✅ robots.txt 正常"
+
+      - name: 检查 sitemap.xml
+        run: |
+          curl -f https://lizyi.asia/sitemap.xml | head -5
+          echo "✅ sitemap.xml 正常"
+
+      - name: 检查一篇文章
+        run: |
+          curl -f -I https://lizyi.asia/blog/posts/woldvein-project.html || exit 1
+          echo "✅ 文章页正常"
