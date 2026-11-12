@@ -319,14 +319,16 @@ function loginFirstGuard(req, res, next) {
   next();
 }
 
+// ========== 公开 API（无需登录，博客访客可用） ==========
+app.use("/api/links", linksRoutes);
+app.use("/api/projects", projectsRoutes);
+app.use("/api/comments", commentsRoutes);
+
 // ========== API 路由（鉴权前置 + CSRF 验证） ==========
 // AI 代理单独挂在 /api 之前，避免被 authRoutes 的通配挂载吞掉。
 app.use("/api/ai", loginFirstGuard, verifyCsrfToken, aiRoutes);
 app.use("/api", loginFirstGuard, verifyCsrfToken, authRoutes);
 app.use("/api/chatrecord", verifyCsrfToken, chatrecordRoutes);
-app.use("/api/projects", verifyCsrfToken, projectsRoutes);
-app.use("/api/links", verifyCsrfToken, linksRoutes);
-app.use("/api/comments", verifyCsrfToken, commentsRoutes);
 
 // ========== 认证守卫 ==========
 const authGate = createAuthGate(authSession.webSessions);
