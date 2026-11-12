@@ -29,13 +29,30 @@
 
 ## 🚀 快速开始
 
+```bash
+# 一键启动（Docker）
+chmod +x docker-start.sh
+./docker-start.sh
+```
 
 ## 📄 文档
 
 - [详细使用说明](./docs/README-DETAILED.md)
 - [更新日志](./CHANGELOG.md)
-- [许可证](./LICENSE)
+- [架构说明](./docs/architecture.html)
 
-## 📝 License
+## 📁 目录结构
 
-[MIT](./LICENSE)
+```
+blog2.1/
+├── blog/              # 博客内容（公开访问）
+│   ├── posts/         # 文章
+│   ├── projects/      # 项目展示
+│   └── assets/        # 静态资源
+├── qrcode-login/      # 后端代码（Express）
+├── docs/              # 文档
+├── scripts/           # 临时修复脚本
+├── Dockerfile         # Docker 构建
+├── docker-compose.yml # 容器编排
+└── README.md
+```
