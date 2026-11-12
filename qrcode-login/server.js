@@ -334,9 +334,9 @@ app.use("/api/chatrecord", verifyCsrfToken, chatrecordRoutes);
 const authGate = createAuthGate(authSession.webSessions);
 
 // ========== 公开页面（无需登录） ==========
-// 根路径直接跳转到博客首页
+// 根路径直接返回博客首页内容，不跳转
 app.get(["/", "/index.html"], (req, res) => {
-  res.redirect(301, "/blog/");
+  res.sendFile(path.join(config.blogContent, "index.html"));
 });
 // 登录页单独放在 /login
 app.get(["/login", "/login.html"], (req, res) => {
