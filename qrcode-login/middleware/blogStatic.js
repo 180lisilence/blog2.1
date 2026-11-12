@@ -68,13 +68,18 @@ function isDocumentExt(p) {
   return ext === "" || ext === ".html" || ext === ".htm";
 }
 
-// 给所有 /blog 响应打上"这是私有内容"的缓存标签（N-09）
+// 博客内容公开访问（SEO 友好）
+function applyPublicCacheHeaders(res) {
+  res.setHeader("Cache-Control", "public, max-age=3600");
+  res.setHeader("Vary", "Accept-Encoding");
+}
+
+// 私有内容（登录后才能看）的缓存头
 function applyPrivateCacheHeaders(res) {
   res.setHeader("Cache-Control", "private, no-store, no-cache, must-revalidate, max-age=0");
   res.setHeader("Pragma", "no-cache");
   res.setHeader("Expires", "0");
   res.setHeader("Vary", "Cookie, Accept-Encoding");
-  res.setHeader("X-Robots-Tag", "noindex, nofollow, noarchive");
 }
 
 // 路径归一化 + 越界检查
@@ -136,26 +141,13 @@ function resolveSafe(root, reqPath) {
 }
 
 /**
- * 创建 /blog 静态托管中间件
+ * 创建 /blog 静态托管中间件（博客内容公开访问，SEO 友好）
  * @param {object} opts
  * @param {string}   opts.root           物理根目录（config.blogContent）
- * @param {Function} opts.getToken       从 req 取 token
- * @param {Function} opts.getSession     取会话对象
- *
- * N-08 之后未登录页面改为 302 跳首页，不再需要 loginPagePath 参数。
  */
 function createBlogStatic(opts) {
-  const { root, getToken, getSession } = opts;
+  const { root } = opts;
   const rootResolved = path.resolve(root);
-
-  // N-08：未登录访问页面类路径不再 200 返回登录页实体，改为 302 到首页。
-  // 首页 `/` 本身就是登录页，所以用户看到的界面不变，但状态码与语义正确了，
-  // 且所有不存在的 /blog/* 路径返回同一个 302，不再能靠 200/404 测绘目录树。
-  function redirectToLogin(req, res) {
-    applyPrivateCacheHeaders(res);
-    logger.debug("blog-static", `[N-08] 匿名页面请求重定向到登录页: ${req.originalUrl}`);
-    return res.redirect(302, "/");
-  }
 
   return function blogStatic(req, res, next) {
     if (req.method !== "GET" && req.method !== "HEAD") return next();
@@ -165,13 +157,9 @@ function createBlogStatic(opts) {
     // 越界：直接 400，不区分"不存在"和"越界"（F-06 / N-10）
     if (!safe.ok) {
       logger.warn("blog-static", `[F-06/N-10] 拒绝越界路径: ${req.originalUrl} -> ${safe.resolved}`);
-      applyPrivateCacheHeaders(res);
+      applyPublicCacheHeaders(res);
       return res.status(400).type("text/plain; charset=utf-8").send("400 - 请求路径非法");
     }
-
-    const token = getToken(req);
-    const ws = token ? getSession(token) : null;
-    const loggedIn = !!(ws && Date.now() <= ws.expireAt);
 
     let target = safe.resolved;
     let stat = null;
@@ -199,27 +187,12 @@ function createBlogStatic(opts) {
 
     // 路径本身不存在
     if (!stat || !stat.isFile()) {
-      if (!isDocumentExt(target)) {
-        applyPrivateCacheHeaders(res);
-        return res.status(404).type("text/plain; charset=utf-8").send("404 - 资源不存在");
-      }
-      if (!loggedIn) return redirectToLogin(req, res);
-      applyPrivateCacheHeaders(res);
+      applyPublicCacheHeaders(res);
       return res.status(404).type("text/plain; charset=utf-8").send("404 - 页面不存在");
     }
 
-    // 文件存在但未登录
-    if (!loggedIn) {
-      // N-08：静态资源不得伪装成 200 text/html
-      if (!isDocumentExt(target)) {
-        applyPrivateCacheHeaders(res);
-        return res.status(401).json({ ok: false, msg: "请先登录" });
-      }
-      return redirectToLogin(req, res);
-    }
-
-    // 已登录：正常返回
-    applyPrivateCacheHeaders(res);
+    // 博客内容公开访问（SEO 友好，不需要登录）
+    applyPublicCacheHeaders(res);
     res.setHeader("Content-Type", contentTypeFor(target));
 
     const inm = req.headers["if-none-match"];
