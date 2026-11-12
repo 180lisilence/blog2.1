@@ -14,29 +14,29 @@ const projectService = require("./service");
 
 const router = express.Router();
 
-// 认证检查中间件（本模块所有接口都需要登录）
-router.use((req, res, next) => {
+// 认证检查中间件（写操作和管理接口需要登录）
+function requireAuth(req, res, next) {
   const token = getTokenFromReq(req);
   const ws = sessionMgr.getWebSession(token);
   if (!ws) return fail(res, 401, "请先登录");
   req.username = ws.username;
   next();
-});
+}
 
-// 项目列表
+// 项目列表（公开，博客首页用）
 router.get("/", (req, res) => {
   const projects = projectService.getAll();
   ok(res, { projects });
 });
 
-// 扫描可导入的项目
-router.get("/scan", (req, res) => {
+// 扫描可导入的项目（需登录）
+router.get("/scan", requireAuth, (req, res) => {
   const available = projectService.scanAvailable();
   ok(res, { available });
 });
 
-// 导入项目
-router.post("/import", (req, res) => {
+// 导入项目（需登录）
+router.post("/import", requireAuth, (req, res) => {
   const { folder } = req.body || {};
   const folderName = String(folder || "").trim();
   if (!folderName) return fail(res, 400, "请输入项目文件夹名");
@@ -50,8 +50,8 @@ router.post("/import", (req, res) => {
   }
 });
 
-// 删除导入项目
-router.delete("/:id", (req, res) => {
+// 删除导入项目（需登录）
+router.delete("/:id", requireAuth, (req, res) => {
   const { id } = req.params;
   try {
     const removed = projectService.deleteProject(id);

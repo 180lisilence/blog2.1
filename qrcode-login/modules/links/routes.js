@@ -1,26 +1,15 @@
 /**
  * 友链路由
- * - GET /api/links  外链作品列表（需登录）
+ * - GET /api/links  外链作品列表（公开，博客访客可见）
  */
 const express = require("express");
 const logger = require("../../core/logger");
 const { fail, ok } = require("../../core/errors");
-const { getTokenFromReq } = require("../../middleware/auth");
-const sessionMgr = require("../auth/session");
 const linksService = require("./service");
 
 const router = express.Router();
 
-// 本模块所有接口都需要登录（与 projects 模块保持一致）
-router.use((req, res, next) => {
-  const token = getTokenFromReq(req);
-  const ws = sessionMgr.getWebSession(token);
-  if (!ws) return fail(res, 401, "请先登录");
-  req.username = ws.username;
-  next();
-});
-
-// 友链列表
+// 友链列表（公开访问）
 router.get("/", (req, res) => {
   try {
     const links = linksService.getLinks();

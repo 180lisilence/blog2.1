@@ -42,8 +42,8 @@ function canDeleteComment(viewer, commentUsername) {
   return viewer.name === commentUsername;
 }
 
-// 本模块所有接口都需要登录
-router.use((req, res, next) => {
+// 登录验证中间件（写操作需要登录）
+function requireAuth(req, res, next) {
   const token = getTokenFromReq(req);
   const ws = sessionMgr.getWebSession(token);
   if (!ws) return fail(res, 401, "请先登录");
@@ -51,9 +51,17 @@ router.use((req, res, next) => {
   // 查看者身份：名字用于展示，isAdmin 决定删除按钮显隐与删除接口放行
   req.viewer = { name: ws.username, isAdmin: isAdminUser(ws.username) };
   next();
-});
+}
 
-// ========== 全站统计 ==========
+// 获取当前查看者身份（可能是匿名）
+function getViewer(req) {
+  const token = getTokenFromReq(req);
+  const ws = sessionMgr.getWebSession(token);
+  if (!ws) return { name: "", isAdmin: false };
+  return { name: ws.username, isAdmin: isAdminUser(ws.username) };
+}
+
+// ========== 全站统计（公开） ==========
 // 必须放在 /:slug 之前，否则 stats/all 会被 /:slug 抢先匹配（slug="stats"）
 router.get("/stats/all", asyncHandler(async (req, res) => {
   const result = await model.stats();
@@ -74,8 +82,9 @@ router.get("/:slug", asyncHandler(async (req, res) => {
   if (!Number.isInteger(size) || size < 1) size = service.DEFAULT_PAGE_SIZE;
   if (size > service.MAX_PAGE_SIZE) size = service.MAX_PAGE_SIZE;
 
+  const viewer = getViewer(req);
   const { rows, total, totalPages } = await model.listByPost(slug, page, size);
-  const tree = service.buildTree(rows, req.viewer);
+  const tree = service.buildTree(rows, viewer);
 
   // 当前登录用户的展示名（前端发表框用）+ 是否管理员（前端删除入口显隐用）
   ok(res, {
@@ -85,12 +94,13 @@ router.get("/:slug", asyncHandler(async (req, res) => {
     page,
     size,
     totalPages,
-    isAdmin: req.viewer.isAdmin
+    isAdmin: viewer.isAdmin,
+    viewerName: viewer.name
   });
 }));
 
-// ========== 发表评论 / 回复 ==========
-router.post("/:slug", asyncHandler(async (req, res) => {
+// ========== 发表评论 / 回复（需登录） ==========
+router.post("/:slug", requireAuth, asyncHandler(async (req, res) => {
   const { slug } = req.params;
 
   if (!service.isValidPost(slug)) {
@@ -141,11 +151,11 @@ router.post("/:slug", asyncHandler(async (req, res) => {
   ok(res, { comment: service.toDTO(row, req.viewer) }, "评论已发布");
 }));
 
-// ========== 删除评论 ==========
+// ========== 删除评论（需登录） ==========
 // 权限规则：
 //   - 内置管理员可删除任何人的评论
 //   - 普通用户可删除自己发表的评论
-router.delete("/:id", asyncHandler(async (req, res) => {
+router.delete("/:id", requireAuth, asyncHandler(async (req, res) => {
   const id = Number(req.params.id);
   if (!Number.isInteger(id) || id <= 0) {
     return fail(res, 400, "评论 ID 不合法");
