@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>标签 · 我的博客</title>
+<meta name="description" content="按标签浏览所有博客文章，找到你感兴趣的主题。">
+<link rel="icon" type="image/svg+xml" href="/favicon.svg">
+<link rel="stylesheet" href="assets/css/blog.css">
+<style>
+.tags-container { max-width: 720px; margin: 0 auto; padding: 40px 20px; }
+.tag-cloud { display: flex; flex-wrap: wrap; gap: 12px; margin: 30px 0; }
+.tag-chip {
+  padding: 8px 18px; border-radius: 20px; background: #f3f4f6;
+  color: #4b5563; text-decoration: none; font-size: 14px;
+  transition: all 0.2s;
+}
+.tag-chip:hover { background: #667eea; color: #fff; }
+.tag-section { margin: 40px 0; }
+.tag-section h2 { color: #667eea; font-size: 22px; margin-bottom: 16px; }
+.tag-post { display: block; padding: 12px 0; border-bottom: 1px solid #f3f4f6; color: #1f2937; text-decoration: none; }
+.tag-post:hover { color: #667eea; }
+.tag-post .date { color: #9ca3af; font-size: 13px; margin-left: 10px; }
+</style>
+</head>
+<body>
+
+<header class="site-header">
+  <div class="nav-wrap">
+    <a href="index.html" class="brand"><span class="dot"></span>我的博客</a>
+    <nav class="nav-links">
+      <a href="index.html">首页</a>
+      <a href="archive.html">归档</a>
+      <a href="tags.html" class="active">标签</a>
+      <a href="/projects.html">项目</a>
+      <a href="workbench/index.html">工作台</a>
+      <a href="index.html#about">关于</a>
+      <a href="/login">登录</a>
+    </nav>
+  </div>
+</header>
+
+<main class="tags-container">
+  <h1>🏷️ 标签</h1>
+  <p style="color:#6b7280; margin-bottom: 20px;">按主题浏览文章</p>
+
+  <div class="tag-cloud">
+    <a href="#game-ai" class="tag-chip">游戏 · AI (1)</a>
+    <a href="#tools" class="tag-chip">工具 (1)</a>
+    <a href="#notes" class="tag-chip">碎碎念 (1)</a>
+    <a href="#dev" class="tag-chip">开发整理 (1)</a>
+  </div>
+
+  <div class="tag-section" id="game-ai">
+    <h2>🎮 游戏 · AI</h2>
+    <a href="posts/woldvein-project.html" class="tag-post">
+      woldvein 项目全景复盘：从启动器到游戏 AI
+      <span class="date">2026-09-08</span>
+    </a>
+  </div>
+
+  <div class="tag-section" id="tools">
+    <h2>🛠️ 工具</h2>
+    <a href="posts/workbench-intro.html" class="tag-post">
+      我的个人工作台长什么样
+      <span class="date">2026-08-26</span>
+    </a>
+  </div>
+
+  <div class="tag-section" id="notes">
+    <h2>💬 碎碎念</h2>
+    <a href="posts/hello-world.html" class="tag-post">
+      你好，博客的第一篇
+      <span class="date">2026-08-26</span>
+    </a>
+  </div>
+
+  <div class="tag-section" id="dev">
+    <h2>📦 开发整理</h2>
+    <a href="posts/data-local-first.html" class="tag-post">
+      为什么所有数据都放在本地
+      <span class="date">2026-08-26</span>
+    </a>
+  </div>
+
+</main>
+
+</body>
+</html>
