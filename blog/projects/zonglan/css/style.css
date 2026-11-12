@@ -1002,6 +1002,55 @@ pre.code-block .cm { color: #c99f6a; }
   .panel { padding: 18px 16px; }
   .timeline { padding-left: 38px; }
   .tl-dot { left: -38px; }
+
+  /* ---------- 顶部导航：防溢出（真机 360px 下 brand 撑到 399px，把 ☰ 挤出屏幕） ---------- */
+  .header-inner {
+    padding: 10px 14px;
+    gap: 10px;
+    min-width: 0;
+  }
+  .brand {
+    min-width: 0;
+    flex: 1 1 auto;
+    overflow: hidden;
+    gap: 10px;
+  }
+  /* 品牌文字容器：保持与桌面一致的同行显示，超宽时整体省略 */
+  .brand > span {
+    display: block;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .brand-name {
+    font-size: 19px;
+    letter-spacing: 0.06em;
+  }
+  .brand-sub {
+    font-size: 11px;
+    letter-spacing: 0.12em;
+  }
+  .brand-mark {
+    width: 34px;
+    height: 34px;
+  }
+  /* 汉堡按钮固定在右侧，绝不被品牌区挤出屏幕 */
+  .nav-toggle {
+    flex: 0 0 auto;
+    padding: 4px 12px;
+    font-size: 22px;
+    line-height: 1;
+  }
+}
+
+/* ---------- 超窄屏（≤480px）：品牌区进一步压缩 ---------- */
+@media (max-width: 480px) {
+  .header-inner { padding: 9px 10px; gap: 8px; }
+  .brand-mark { width: 28px; height: 28px; }
+  .brand-name { font-size: 16px; letter-spacing: 0.02em; }
+  .brand-sub { font-size: 10px; letter-spacing: 0.06em; }
+  .nav-toggle { padding: 4px 10px; font-size: 20px; }
 }
 
 @media (prefers-reduced-motion: reduce) {

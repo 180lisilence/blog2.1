@@ -41,7 +41,13 @@ body::after {
     50% { transform: translate(-8%, -6%) scale(1.15); }
 }
 
-body > * { position: relative !important; z-index: 1 !important; }
+/* 让内容盖在 body 的装饰光斑之上（z-index:1）。
+   2026-11-12 修正：原先的 position:relative !important 会连带覆盖子元素自己的
+   position:fixed / absolute，导致 .back-to-blog 等固定定位元素退化为 relative flex item，
+   被 justify-content:center 推到右侧、右边缘溢出视口（真机 CSS 视口 360px 下 vw 被撑到 374px）。
+   现在只提升 z-index，不再劫持 position —— 子元素各自的 position 由其样式表决定。 */
+body > * { z-index: 1; }
+body > *:not(.back-to-blog):not(.global-sun-btn) { position: relative; }
 
 /* ===== 文字颜色 ===== */
 body, p, span, div, li, td, th, label {

@@ -1786,3 +1786,98 @@ input[type="checkbox"] {
 .triage-text { flex: 1; font-size: 13.5px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .triage-time { font-size: 12px; color: var(--text-muted); flex-shrink: 0; }
 .triage-hot .triage-time { color: var(--danger); font-weight: 600; }
+
+/* ============================================================
+   移动端适配补充（2026-11-12）
+   真机实测：1080x2376 / dpr=3 → CSS 视口 360px
+   修复前：dashboard-grid 的 minmax(320px,1fr) 硬下限 + 侧栏占 100px
+           + .content padding 24px → 卡片溢出 84px，右侧内容被 main[hidden] 裁掉。
+   方案：窄屏侧栏改为浮层抽屉（不占布局宽度），栅格放开最小宽度。
+   ============================================================ */
+
+/* ---- 平板及以下：侧栏变浮层抽屉，内容区不再被挤压 ---- */
+@media (max-width: 900px) {
+  .sidebar {
+    position: fixed;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    z-index: 200;
+    width: 220px;
+    min-width: 220px;
+    transform: translateX(-100%);
+    transition: transform .25s ease;
+    box-shadow: 4px 0 24px rgba(0,0,0,.35);
+  }
+  /* JS 的 .collapsed 类在窄屏下不再控制宽度，改由抽屉展开态控制 */
+  .sidebar.collapsed,
+  .sidebar:not(.collapsed) {
+    width: 220px;
+    min-width: 220px;
+  }
+  .sidebar.collapsed .logo-text,
+  .sidebar.collapsed .nav-item span:last-child,
+  .sidebar.collapsed .status-chip { display: revert; }
+  .sidebar.collapsed .logo { padding: 0 16px; justify-content: flex-start; gap: 10px; }
+  .sidebar.collapsed .logo-icon { display: flex; }
+  .sidebar.collapsed .sidebar-collapse-btn { display: none; }
+  .sidebar.collapsed .nav-item { justify-content: flex-start; }
+
+  /* 抽屉展开态：靠 .app 上的 data 属性或 body 类切换 */
+  body.sidebar-open .sidebar,
+  .app.sidebar-open .sidebar { transform: translateX(0); }
+
+  /* 遮罩 */
+  body.sidebar-open::after,
+  .app.sidebar-open::after {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,.45);
+    z-index: 190;
+  }
+
+  .main { width: 100%; min-width: 0; }
+  .content { padding: 16px; min-width: 0; }
+  .sidebar-toggle-btn { display: flex; }
+}
+
+/* ---- 手机：栅格放开最小宽度，避免卡片被撑破 ---- */
+@media (max-width: 640px) {
+  .content { padding: 12px; }
+  .topbar { padding: 0 12px; height: 52px; }
+  .dashboard-grid {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+  /* 其它固定最小宽度的栅格一并放开 */
+  .stat-grid { grid-template-columns: repeat(2, 1fr) !important; }
+  .quick-grid { grid-template-columns: repeat(2, 1fr) !important; }
+  .profile-layout { grid-template-columns: 1fr !important; }
+  .avatar-picker { grid-template-columns: repeat(4, 1fr) !important; }
+  .ai-conv-list { width: 100% !important; }
+  .ai-quick-panel { width: 100% !important; }
+
+  /* 卡片内部不再有固定内边距挤压内容 */
+  .dashboard-card { padding: 16px; }
+  .hook-card { padding: 16px; }
+  .hook-head h3 { font-size: 16px; }
+  .hook-stat { min-width: 60px; }
+  .hook-num { font-size: 20px; }
+
+  /* 顶栏标题不换行也不溢出 */
+  .page-title {
+    font-size: 15px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    min-width: 0;
+  }
+  .topbar-left { min-width: 0; flex: 1; gap: 8px; }
+  .topbar-right { flex-shrink: 0; }
+  .clock { font-size: 12px; }
+
+  /* 触控目标不小于 44px */
+  .nav-item { min-height: 44px; }
+  .btn { padding: 11px 16px; }
+}

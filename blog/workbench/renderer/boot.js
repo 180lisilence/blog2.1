@@ -30,6 +30,9 @@ const SidebarToggle = (() => {
     function apply(force) {
         const collapsed = force !== undefined ? force : localStorage.getItem(STORAGE_KEY) === '1';
         sidebar.classList.toggle('collapsed', collapsed);
+        // 窄屏抽屉态：CSS 用 .collapsed 表示「抽屉关闭」，靠 body.sidebar-open 显示遮罩。
+        // 宽屏保持原语义（.collapsed = 收窄成 60px）。
+        document.body.classList.toggle('sidebar-open', !collapsed);
         collapseBtn.title = collapsed ? '展开侧边栏' : '收起侧边栏';
         collapseBtn.querySelector('.collapse-icon').textContent = collapsed ? '▶' : '◀';
         if (toggleBtn) {
@@ -65,12 +68,27 @@ const SidebarToggle = (() => {
         document.addEventListener('touchend', ()=>{isTouching=false;},{passive:true});
     }
 
+    // 窄屏点击遮罩关闭抽屉
+    function initMaskClose() {
+        document.addEventListener('click', (e) => {
+            if (!document.body.classList.contains('sidebar-open')) return;
+            if (window.innerWidth > 900) return;
+            const t = e.target;
+            if (t.closest && t.closest('#sidebar')) return;
+            if (t.closest && t.closest('#sidebar-toggle-btn')) return;
+            apply(true);
+        });
+    }
+
     function init() {
         collapseBtn.addEventListener('click', toggle);
         if(toggleBtn) toggleBtn.addEventListener('click', toggle);
         initGestures();
+        initMaskClose();
         const stored = localStorage.getItem(STORAGE_KEY);
-        apply(stored === null ? false : stored === '1');
+        // 窄屏首次进入默认收起（抽屉关闭），避免遮住内容
+        const isNarrow = window.innerWidth <= 900;
+        apply(isNarrow ? true : (stored === null ? false : stored === '1'));
     }
     return { init, toggle, apply };
 })();

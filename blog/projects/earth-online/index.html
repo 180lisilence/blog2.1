@@ -5,8 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Earth Online · 项目入口</title>
 <style>
-  body { margin:0; font-family: -apple-system, 'Segoe UI', 'Microsoft YaHei', sans-serif; background: #0a0e1a; color: #e0e6f0; display:flex; align-items:center; justify-content:center; min-height:100vh; }
-  .wrap { text-align:center; max-width: 520px; padding: 40px; }
+  body { margin:0; font-family: -apple-system, 'Segoe UI', 'Microsoft YaHei', sans-serif; background: #0a0e1a; color: #e0e6f0; display:flex; align-items:center; justify-content:center; min-height:100vh; position:relative; overflow-x:hidden; }
+  .wrap { text-align:center; max-width: 520px; padding: 40px; width:100%; box-sizing:border-box; }
   h1 { font-size: 28px; margin-bottom: 8px; background: linear-gradient(135deg, #5b6cff, #8b5cf6); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
   p { color: #8892a8; line-height: 1.7; margin-bottom: 28px; }
   .btns { display:flex; gap:12px; justify-content:center; flex-wrap:wrap; }
@@ -78,6 +78,28 @@ html[data-theme="light"] p{color:#3f4a63 !important}
 html[data-theme="light"] .wrap h1{background:none;-webkit-text-fill-color:#1a1f36}
 html[data-theme="light"] .btn-ghost{background:rgba(0,0,0,.04);color:#3f4a63;border:1px solid rgba(0,0,0,.18)}
 </style>
+<style>
+/* 移动端适配补充（2026-11-12）
+   真机实测：CSS 视口 360px 下 vw 被撑到 374px
+   根因：#globalLoader::before 是 600x600px 绝对定位光斑，左右各超出视口；
+        body 为 flex 容器，position:fixed 的 .back-to-blog 以 flex 静态位为基准偏移。
+   修法：光斑尺寸随视口收敛 + body 建立定位上下文 + 窄屏收紧内边距。 */
+#globalLoader::before{ width:min(600px, 100vw); height:min(600px, 100vw); }
+.loader-progress-wrap{ width:min(320px, 80vw); }
+@media (max-width: 480px) {
+  .wrap { padding: 24px 16px; }
+  h1 { font-size: 23px; }
+  p { font-size: 14px; margin-bottom: 22px; }
+  .btn { padding: 12px 18px; }
+  .loader-logo-icon { width:40px; height:40px; border-radius:10px; font-size:20px; }
+  .loader-logo span { font-size:26px; }
+  .loader-percent { font-size:20px; }
+  .loader-theme-switcher { bottom:24px; right:16px; }
+  .loader-theme-btn { width:44px; height:44px; font-size:18px; }
+  .loader-theme-label { display:none; }
+  .global-sun-btn { width:38px; height:38px; font-size:16px; top:12px; right:12px; }
+}
+</style>
 </head>
 <body>
 
@@ -119,7 +141,12 @@ html[data-theme="light"] .btn-ghost{background:rgba(0,0,0,.04);color:#3f4a63;bor
     </div>
   </div>
 <style>
-.back-to-blog{position:fixed;top:14px;left:14px;z-index:99999;background:rgba(26,26,46,.85);color:#fff;padding:7px 14px;border-radius:8px;text-decoration:none;font-size:12.5px;font-weight:600;font-family:-apple-system,'Segoe UI','Microsoft YaHei',sans-serif;backdrop-filter:blur(8px);box-shadow:0 4px 14px rgba(0,0,0,.3);transition:all .2s;display:inline-flex;align-items:center;gap:4px}
+/* 移动端修复（2026-11-12）：
+   body 是 display:flex 容器，position:fixed 元素仍作为 flex item 参与静态位置计算，
+   会被 justify-content:center 推到右侧，导致 left:14px 失效、右边缘溢出视口（真机 vw 360→374）。
+   修法：position:fixed + margin-left:auto / margin-right:auto 让静态位置回到左上角，
+   再用 left:14px 精确定位；配合 ../enhance.css 已不再劫持 position。 */
+.back-to-blog{position:fixed;top:14px;left:14px;margin-right:auto;z-index:99999;background:rgba(26,26,46,.85);color:#fff;padding:7px 14px;border-radius:8px;text-decoration:none;font-size:12.5px;font-weight:600;font-family:-apple-system,'Segoe UI','Microsoft YaHei',sans-serif;backdrop-filter:blur(8px);box-shadow:0 4px 14px rgba(0,0,0,.3);transition:all .2s;display:inline-flex;align-items:center;gap:4px}
 .back-to-blog:hover{background:rgba(91,108,255,.92);transform:translateY(-1px);box-shadow:0 6px 18px rgba(91,108,255,.45)}
 </style>
 <a href="../../index.html" class="back-to-blog">← 返回博客</a>
