@@ -275,6 +275,22 @@ a:hover { opacity: 1; color: var(--brand-2); }
 }
 .about h4 { font-size: 17px; font-weight: 700; }
 .about p { font-size: 14.5px; color: var(--muted); margin-top: 6px; line-height: 1.7; }
+.about-github {
+  display: inline-flex; align-items: center; gap: 7px;
+  margin-top: 14px; padding: 7px 14px;
+  font-size: 13.5px; font-weight: 600;
+  color: var(--brand); text-decoration: none;
+  background: rgba(99,102,241,0.08);
+  border: 1px solid rgba(99,102,241,0.25);
+  border-radius: 999px; width: fit-content;
+  transition: background .25s, border-color .25s, transform .25s;
+}
+.about-github svg { width: 16px; height: 16px; }
+.about-github:hover {
+  background: rgba(99,102,241,0.16);
+  border-color: rgba(99,102,241,0.45);
+  transform: translateY(-1px);
+}
 
 /* ===== 项目展示卡片 ===== */
 .project-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 18px; }
