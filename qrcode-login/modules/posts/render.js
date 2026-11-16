@@ -38,6 +38,18 @@ const HEADER = `<!DOCTYPE html>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>__TITLE__ · 我的博客</title>
 <meta name="description" content="__DESC__">
+<meta name="keywords" content="__KEYWORDS__">
+<link rel="canonical" href="__CANONICAL__">
+<meta property="og:type" content="article">
+<meta property="og:site_name" content="我的博客">
+<meta property="og:title" content="__TITLE__">
+<meta property="og:description" content="__DESC__">
+<meta property="og:url" content="__CANONICAL__">
+<meta property="og:image" content="https://lizyi.asia/favicon.svg">
+<meta property="article:published_time" content="__DATE__">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="__TITLE__">
+<meta name="twitter:description" content="__DESC__">
 <link rel="icon" type="image/svg+xml" href="/favicon.svg">
 <link rel="stylesheet" href="/assets/css/blog.css">
 <link rel="stylesheet" href="/assets/css/comments.css">
@@ -62,6 +74,7 @@ const FOOTER = `
 <footer class="site-footer">
   <p>© 2026 我的博客 · 所有数据本地存储 · 不追踪、不收集</p>
 </footer>
+<script src="/assets/js/nav-mobile.js" defer></script>
 </body>
 </html>`;
 
@@ -77,9 +90,15 @@ function renderPostPage(post) {
   const author = escapeHtml(post.author);
   const slug = escapeHtml(post.slug);
 
+  const canonical = `https://lizyi.asia/p/${slug}`;
+  const keywords = [post.tag || "随笔", "云客", "个人博客", "技术博客"].join(",");
+
   return HEADER
     .replace(/__TITLE__/g, title)
     .replace(/__DESC__/g, desc)
+    .replace(/__CANONICAL__/g, escapeHtml(canonical))
+    .replace(/__KEYWORDS__/g, escapeHtml(keywords))
+    .replace(/__DATE__/g, date)
     + `
 <article class="article">
   <a class="back-link" href="/">← 返回首页</a>

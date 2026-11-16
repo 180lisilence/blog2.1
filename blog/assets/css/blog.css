@@ -418,3 +418,51 @@ a:hover { opacity: 1; color: var(--brand-2); }
   .workbench-card h3 { font-size: 20px; }
   .about { flex-direction: column; text-align: center; }
 }
+
+/* ===== 移动端汉堡菜单（3.2） ===== */
+.nav-wrap { position: relative; }
+
+.nav-toggle {
+  display: none;
+  width: 38px;
+  height: 38px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: transparent;
+  color: var(--text);
+  font-size: 18px;
+  line-height: 1;
+  cursor: pointer;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+}
+
+.nav-toggle[aria-expanded="true"] {
+  color: var(--brand);
+  border-color: var(--brand);
+}
+
+@media (max-width: 768px) {
+  .nav-toggle { display: flex; }
+  .nav-links {
+    display: none;
+    position: absolute;
+    top: 64px;
+    left: 0;
+    right: 0;
+    flex-direction: column;
+    gap: 0;
+    background: var(--bg);
+    border-bottom: 1px solid var(--line);
+    padding: 8px 20px 14px;
+    box-shadow: 0 12px 24px rgba(0, 0, 0, .12);
+  }
+  .nav-wrap.nav-open .nav-links { display: flex; }
+  .nav-links a {
+    padding: 10px 0;
+    border-bottom: 1px solid var(--line);
+    font-size: 15px;
+  }
+  .nav-links a:last-child { border-bottom: 0; }
+}
