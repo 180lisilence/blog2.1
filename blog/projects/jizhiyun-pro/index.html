@@ -6,27 +6,11 @@
 <title>极智云 · 企业级综合门户</title>
 <meta name="description" content="极智云 - 驱动企业数字化未来，提供云服务、数据分析、AI应用、安全防护一体化解决方案">
 
-<!-- ===== Tailwind CSS v3 (本地版) ===== -->
-<script src="assets/lib/tailwind/tailwindcss.js"></script>
-<script>
-  tailwind.config = {
-    darkMode: 'class',
-    theme: {
-      extend: {
-        colors: {
-          brand: {
-            50:'#eef6ff',100:'#d9eaff',200:'#bcd9ff',300:'#8ec0ff',400:'#599cff',
-            500:'#3373ff',600:'#1c52f5',700:'#163fe1',800:'#1934b6',900:'#1b338f'
-          }
-        },
-        fontFamily: { sans: ['"Microsoft YaHei"','sans-serif'] }
-      }
-    }
-  }
-</script>
+<!-- ===== Tailwind CSS（预编译静态 CSS） ===== -->
+<link rel="stylesheet" href="assets/lib/tailwind/tailwind-built.css">
 
 <!-- ===== Font Awesome 图标库（本地JS版） ===== -->
-<script src="assets/lib/fontawesome/all.min.js"></script>
+<script src="assets/lib/fontawesome/all.min.js" defer></script>
 
 <!-- ===== Swiper 轮播 ===== -->
 <link rel="stylesheet" href="assets/lib/swiper/swiper-bundle.min.css">

@@ -75,11 +75,11 @@ function createAuthGate(webSessions) {
     if (ws && ws.status === "revoked" && req.path.startsWith("/api/")) {
       return sendKicked(req, res, { reason: ws.revokeReason });
     }
-    // 未登录：API 返回 401，页面跳转登录页（根目录登录页是 index.html）
+    // 未登录：API 返回 401，页面跳转登录页（登录页是 /login）
     if (req.path.startsWith("/api/")) {
       return res.status(401).json({ ok: false, msg: "请先登录" });
     }
-    return res.redirect("/");
+    return res.redirect("/login");
   };
 }
 

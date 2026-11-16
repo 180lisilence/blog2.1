@@ -11,16 +11,16 @@
 .tags-container { max-width: 720px; margin: 0 auto; padding: 40px 20px; }
 .tag-cloud { display: flex; flex-wrap: wrap; gap: 12px; margin: 30px 0; }
 .tag-chip {
-  padding: 8px 18px; border-radius: 20px; background: #f3f4f6;
-  color: #4b5563; text-decoration: none; font-size: 14px;
+  padding: 8px 18px; border-radius: 20px; background: var(--brand-soft);
+  color: var(--text); text-decoration: none; font-size: 14px;
   transition: all 0.2s;
 }
-.tag-chip:hover { background: #667eea; color: #fff; }
+.tag-chip:hover { background: var(--brand); color: #fff; }
 .tag-section { margin: 40px 0; }
-.tag-section h2 { color: #667eea; font-size: 22px; margin-bottom: 16px; }
-.tag-post { display: block; padding: 12px 0; border-bottom: 1px solid #f3f4f6; color: #1f2937; text-decoration: none; }
-.tag-post:hover { color: #667eea; }
-.tag-post .date { color: #9ca3af; font-size: 13px; margin-left: 10px; }
+.tag-section h2 { color: var(--brand); font-size: 22px; margin-bottom: 16px; }
+.tag-post { display: block; padding: 12px 0; border-bottom: 1px solid var(--line); color: var(--text); text-decoration: none; }
+.tag-post:hover { color: var(--brand); }
+.tag-post .date { color: var(--muted); font-size: 13px; margin-left: 10px; }
 </style>
 </head>
 <body>
@@ -66,7 +66,8 @@
       <a href="index.html">首页</a>
       <a href="archive.html">归档</a>
       <a href="tags.html" class="active">标签</a>
-      <a href="index.html#projects">项目</a>
+      <a href="/projects.html">项目</a>
+      <a href="/workbench/">工作台</a>
       <a href="index.html#about">关于</a>
       <a href="/login">登录</a>
     </nav>
@@ -75,7 +76,7 @@
 
 <main class="tags-container">
   <h1>🏷️ 标签</h1>
-  <p style="color:#6b7280; margin-bottom: 20px;">按主题浏览文章</p>
+  <p style="color:var(--muted); margin-bottom: 20px;">按主题浏览文章</p>
 
   <div class="tag-cloud">
     <a href="#game-ai" class="tag-chip">游戏 · AI (1)</a>
@@ -118,6 +119,7 @@
 
 </main>
 
+<script src="/nav-user.js"></script>
 </body>
 </html>
 

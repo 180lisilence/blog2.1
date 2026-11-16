@@ -373,6 +373,19 @@ app.get("/settings.html", authGate, (req, res) => {
 //   - F-06 / N-10：编码斜杠路径遍历 -> 归一化 + 前缀校验，越界 400
 //   - N-08：未登录的静态资源返回 401 JSON，不再伪装成 200 text/html
 //   - N-09：统一 private + no-store + Vary: Cookie，杜绝共享缓存串味
+app.get("/blog/feed.xml", (req, res) => {
+  res.sendFile(path.join(config.blogContent, "feed.xml"));
+});
+app.get(["/workbench", "/workbench/*"], (req, res) => {
+  res.redirect(302, "/blog" + req.path);
+});
+// ========== 公开博客静态资源（云客 1.0 博客公开访问） ==========
+const publicBlogStatic = express.static(config.blogContent, { index: false });
+app.use((req, res, next) => {
+  if (req.path === "/workbench" || req.path.startsWith("/workbench/")) return next();
+  publicBlogStatic(req, res, next);
+});
+
 app.use("/blog", createBlogStatic({
   root: config.blogContent,
   getToken: getTokenFromReq,
