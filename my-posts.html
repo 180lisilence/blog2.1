@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>我的发布 · 我的博客</title>
+<meta name="description" content="管理我自己的文章：查看发布状态、审核意见，删除不再需要的文章。">
+<link rel="icon" type="image/svg+xml" href="/favicon.svg">
+<link rel="stylesheet" href="/assets/css/blog.css">
+<link rel="stylesheet" href="/assets/css/posts-ui.css">
+</head>
+<body>
+
+<header class="site-header">
+  <div class="nav-wrap">
+    <a href="/" class="brand"><span class="dot"></span>我的博客</a>
+    <nav class="nav-links">
+      <a href="/">首页</a>
+      <a href="/write">写文章</a>
+      <a href="/my" class="active">我的发布</a>
+      <a href="/review" id="adminReviewNav" hidden>快速审核</a>
+      <a href="/projects.html">项目中心</a>
+    </nav>
+  </div>
+</header>
+
+<main class="pu-wrap">
+
+  <section class="pu-card pu-hero">
+    <h1>我的发布</h1>
+    <p>这里只显示你自己发表的文章。通过快速审核的内容已经公开；待审核与被拦截的内容只有你自己能看到。</p>
+    <div class="my-stats">
+      <div class="my-stat"><strong id="statPublished">0</strong><span>已发布</span></div>
+      <div class="my-stat"><strong id="statPending">0</strong><span>待审核</span></div>
+      <div class="my-stat"><strong id="statRejected">0</strong><span>被拦截</span></div>
+    </div>
+    <div class="pu-who">
+      <span id="myWho">正在加载…</span>
+      <a class="pu-btn small" href="/write">写新文章</a>
+      <button class="pu-btn ghost small" id="refreshBtn" type="button">刷新</button>
+    </div>
+  </section>
+
+  <div id="myToast" class="pu-result" hidden></div>
+
+  <div class="my-tabs" id="myTabs">
+    <button type="button" data-filter="all" class="active">全部</button>
+    <button type="button" data-filter="published">已发布</button>
+    <button type="button" data-filter="pending">待审核</button>
+    <button type="button" data-filter="rejected">被拦截</button>
+  </div>
+
+  <section id="myList"></section>
+
+</main>
+
+<footer class="site-footer">
+  <p>© 2026 我的博客 · 所有数据本地存储 · 不追踪、不收集</p>
+</footer>
+
+<script src="/assets/js/my-posts.js" defer></script>
+</body>
+</html>

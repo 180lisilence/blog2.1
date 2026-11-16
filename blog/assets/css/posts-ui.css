@@ -247,9 +247,86 @@
   padding: 6px 0 18px;
 }
 
+/* ===== 我的发布（3.1.1） ===== */
+.my-stats {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin: 18px 0 6px;
+}
+
+.my-stat {
+  flex: 1 1 140px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 12px 16px;
+  background: rgba(127, 127, 127, .05);
+}
+
+.my-stat strong {
+  display: block;
+  font-size: 22px;
+  line-height: 1.25;
+  color: var(--text);
+}
+
+.my-stat span {
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.my-tabs {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin: 4px 0 18px;
+}
+
+.my-tabs button {
+  border: 1px solid var(--line);
+  background: transparent;
+  color: var(--text);
+  border-radius: 999px;
+  padding: 6px 14px;
+  font-size: 13px;
+  font-family: inherit;
+  cursor: pointer;
+}
+
+.my-tabs button:hover { border-color: var(--brand); }
+
+.my-tabs button.active {
+  background: linear-gradient(135deg, var(--brand), var(--brand-2));
+  border-color: transparent;
+  color: #fff;
+}
+
+.my-summary {
+  margin: 8px 0 0;
+  font-size: 13px;
+  color: var(--muted);
+  line-height: 1.7;
+}
+
+.my-empty {
+  border: 1px dashed var(--line);
+  border-radius: 12px;
+  padding: 28px 18px;
+  text-align: center;
+  color: var(--muted);
+  font-size: 14px;
+}
+
+.my-empty a {
+  display: inline-block;
+  margin-top: 10px;
+  font-weight: 600;
+}
+
 @media (max-width: 640px) {
   .pu-wrap { padding: 20px 14px 56px; }
   .pu-card { padding: 18px; }
   .pu-hero h1 { font-size: 22px; }
   .pu-content { min-height: 240px !important; }
+  .my-stat { flex-basis: 100%; }
 }

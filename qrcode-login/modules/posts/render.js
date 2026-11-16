@@ -51,6 +51,7 @@ const HEADER = `<!DOCTYPE html>
       <a href="/">首页</a>
       <a href="/#posts">文章</a>
       <a href="/write">写文章</a>
+      <a href="/my">我的发布</a>
       <a href="/#about">关于</a>
     </nav>
   </div>

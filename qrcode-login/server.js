@@ -354,6 +354,10 @@ const authGate = createAuthGate(authSession.webSessions);
 app.get(["/write", "/write.html"], authGate, (req, res) => {
   res.sendFile(path.join(config.blogRoot, "post-editor.html"));
 });
+// 我的发布：登录后管理自己发表的文章（3.1.1）
+app.get(["/my", "/my.html"], authGate, (req, res) => {
+  res.sendFile(path.join(config.blogRoot, "my-posts.html"));
+});
 // 审核后台：仅内置管理员
 app.get(["/review", "/review.html"], authGate, (req, res) => {
   const u = authModel.users.get(req.username);
