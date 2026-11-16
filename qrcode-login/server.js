@@ -8,7 +8,7 @@ const cookieParser = require("cookie-parser");
 
 const config = require("./config");
 const logger = require("./core/logger");
-const { errorHandler } = require("./core/errors");
+const { errorHandler, asyncHandler } = require("./core/errors");
 const health = require("./core/health");
 const ocrManager = require("./core/ocrManager");
 const pool = require("./db/pool");
@@ -29,6 +29,9 @@ const chatrecordRoutes = require("./modules/chatrecord/routes");
 const projectsRoutes = require("./modules/projects/routes");
 const linksRoutes = require("./modules/links/routes");
 const commentsRoutes = require("./modules/comments/routes");
+const postsRoutes = require("./modules/posts/routes");
+const postsModel = require("./modules/posts/model");
+const postsRender = require("./modules/posts/render");
 
 const app = express();
 
@@ -329,6 +332,9 @@ function loginFirstGuard(req, res, next) {
   next();
 }
 
+// 3.1 文章：公开读取已发布内容，写操作由 loginFirstGuard 要求登录、verifyCsrfToken 校验 CSRF
+app.use("/api/posts", loginFirstGuard, verifyCsrfToken, postsRoutes);
+
 // ========== 公开 API（无需登录，博客访客可用） ==========
 app.use("/api/links", linksRoutes);
 app.use("/api/projects", projectsRoutes);
@@ -342,6 +348,33 @@ app.use("/api/chatrecord", verifyCsrfToken, chatrecordRoutes);
 
 // ========== 认证守卫 ==========
 const authGate = createAuthGate(authSession.webSessions);
+
+// ========== 3.1 文章发布 / 快速审核页面 ==========
+// 写文章页：登录后可用
+app.get(["/write", "/write.html"], authGate, (req, res) => {
+  res.sendFile(path.join(config.blogRoot, "post-editor.html"));
+});
+// 审核后台：仅内置管理员
+app.get(["/review", "/review.html"], authGate, (req, res) => {
+  const u = authModel.users.get(req.username);
+  if (!u || !u.builtin) {
+    return res.status(403).type("html").send("403 - 仅管理员可访问审核后台");
+  }
+  res.sendFile(path.join(config.blogRoot, "posts-review.html"));
+});
+// 动态文章页：已发布的文章按 slug 从数据库实时渲染
+app.get("/p/:slug", asyncHandler(async (req, res) => {
+  const slug = String(req.params.slug || "");
+  if (!/^[A-Za-z0-9_-]{1,64}$/.test(slug)) {
+    return res.status(404).type("html").send(postsRender.renderNotFoundPage());
+  }
+  const row = await postsModel.getPublishedBySlug(slug);
+  if (!row) {
+    return res.status(404).type("html").send(postsRender.renderNotFoundPage());
+  }
+  res.set("Cache-Control", "public, max-age=60");
+  res.type("html").send(postsRender.renderPostPage(row));
+}));
 
 // ========== 公开页面（无需登录） ==========
 // 根路径直接返回博客首页内容，不跳转

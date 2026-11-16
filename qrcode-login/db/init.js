@@ -47,6 +47,32 @@ const CREATE_TABLES_SQL = [
     INDEX idx_parent (parent_id),
     INDEX idx_user (username),
     INDEX idx_created (created_at)
+  ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci`,
+  // 3.1 用户文章表：登录用户发表，发布时做敏感词分级检测
+  // - status: published（已发布）/ pending（待人工快速审核）/ rejected（已拦截）
+  // - risk_level: none / medium / high
+  // - auto_passed: 1 表示无风险内容由系统即时发布（快速审核通过）
+  // - sensitive_hits: JSON 数组，记录命中的词与分类，供审核页高亮
+  `CREATE TABLE IF NOT EXISTS posts (
+    id BIGINT NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    slug VARCHAR(64) NOT NULL,
+    author VARCHAR(255) NOT NULL,
+    title VARCHAR(200) NOT NULL,
+    summary VARCHAR(300) NOT NULL DEFAULT '',
+    content MEDIUMTEXT NOT NULL,
+    tag VARCHAR(50) NOT NULL DEFAULT '',
+    status VARCHAR(16) NOT NULL DEFAULT 'pending',
+    risk_level VARCHAR(16) NOT NULL DEFAULT 'none',
+    auto_passed TINYINT NOT NULL DEFAULT 0,
+    sensitive_hits TEXT,
+    review_note VARCHAR(500) NOT NULL DEFAULT '',
+    reviewed_by VARCHAR(255) NOT NULL DEFAULT '',
+    reviewed_at BIGINT NOT NULL DEFAULT 0,
+    created_at BIGINT NOT NULL,
+    updated_at BIGINT NOT NULL,
+    UNIQUE KEY uk_slug (slug),
+    INDEX idx_status_created (status, created_at),
+    INDEX idx_author (author)
   ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci`
 ];
 

@@ -64,7 +64,7 @@ router.get("/stats/all", asyncHandler(async (req, res) => {
 router.get("/:slug", asyncHandler(async (req, res) => {
   const { slug } = req.params;
 
-  if (!service.isValidPost(slug)) {
+  if (!(await service.isValidPostAsync(slug))) {
     return fail(res, 404, "文章不存在");
   }
 
@@ -93,7 +93,7 @@ router.get("/:slug", asyncHandler(async (req, res) => {
 router.post("/:slug", asyncHandler(async (req, res) => {
   const { slug } = req.params;
 
-  if (!service.isValidPost(slug)) {
+  if (!(await service.isValidPostAsync(slug))) {
     return fail(res, 404, "文章不存在");
   }
 

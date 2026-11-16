@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>写文章 · 我的博客</title>
+<meta name="description" content="登录后发表文章，发布时自动进行敏感词检测。">
+<link rel="icon" type="image/svg+xml" href="/favicon.svg">
+<link rel="stylesheet" href="/assets/css/blog.css">
+<link rel="stylesheet" href="/assets/css/posts-ui.css">
+</head>
+<body>
+
+<header class="site-header">
+  <div class="nav-wrap">
+    <a href="/" class="brand"><span class="dot"></span>我的博客</a>
+    <nav class="nav-links">
+      <a href="/">首页</a>
+      <a href="/#posts">文章</a>
+      <a href="/write" class="active">写文章</a>
+      <a href="/#about">关于</a>
+    </nav>
+  </div>
+</header>
+
+<main class="pu-wrap">
+
+  <section class="pu-card pu-hero">
+    <h1>写文章</h1>
+    <p>发布时自动进行敏感词检测：无风险内容即时发布；命中提示类风险词会进入人工快速审核；命中高危违禁词会被直接拦截。</p>
+    <p>要求：标题 2-80 字，正文 10-20000 字；同一账号 60 秒内限发 1 篇，24 小时最多 10 篇。</p>
+    <div class="pu-who">
+      <span id="whoami">正在读取登录状态…</span>
+      <a id="reviewLink" href="/review" hidden>进入快速审核后台 →</a>
+    </div>
+  </section>
+
+  <div id="formResult" class="pu-result" hidden></div>
+
+  <form id="postForm" class="pu-card" autocomplete="off">
+    <div class="pu-field">
+      <div class="pu-label"><span>标题</span><span class="pu-counter" id="titleCount">0 / 80</span></div>
+      <input class="pu-input" id="fTitle" name="title" type="text" maxlength="80" placeholder="一句话说清这篇文章写什么" required>
+    </div>
+
+    <div class="pu-field">
+      <div class="pu-label"><span>标签（可选）</span></div>
+      <input class="pu-input" id="fTag" name="tag" type="text" maxlength="20" placeholder="例如：随笔 / 技术 / 复盘">
+    </div>
+
+    <div class="pu-field">
+      <div class="pu-label"><span>摘要（可选）</span><span class="pu-counter" id="summaryCount">0 / 150</span></div>
+      <textarea class="pu-textarea" id="fSummary" name="summary" maxlength="150" rows="2" placeholder="列表页展示的一句话简介"></textarea>
+    </div>
+
+    <div class="pu-field">
+      <div class="pu-label"><span>正文</span><span class="pu-counter" id="contentCount">0 / 20000</span></div>
+      <textarea class="pu-textarea pu-content" id="fContent" name="content" maxlength="20000" placeholder="纯文本写作，空行分段。发布前请确认没有侵权或违规内容。" required></textarea>
+    </div>
+
+    <div class="pu-actions">
+      <button class="pu-btn" id="submitBtn" type="submit">发布文章</button>
+      <button class="pu-btn ghost" id="resetBtn" type="button">清空</button>
+    </div>
+  </form>
+
+  <section class="pu-card">
+    <div class="pu-label"><span>我的文章</span></div>
+    <div id="myPosts" class="pu-list"></div>
+  </section>
+
+</main>
+
+<footer class="site-footer">
+  <p>© 2026 我的博客 · 所有数据本地存储 · 不追踪、不收集</p>
+</footer>
+
+<script src="/assets/js/post-editor.js" defer></script>
+</body>
+</html>

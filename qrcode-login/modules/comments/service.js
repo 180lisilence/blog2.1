@@ -13,6 +13,7 @@ const fs = require("fs");
 const path = require("path");
 const config = require("../../config");
 const logger = require("../../core/logger");
+const pool = require("../../db/pool");
 
 // 文章目录（只允许这个目录下的 slug）
 const POSTS_DIR = path.join(config.blogContent, "posts");
@@ -43,6 +44,32 @@ function isValidPost(slug) {
   } catch (e) {
     return false;
   }
+}
+
+/**
+ * 3.1：动态文章（数据库 posts 表，status=published）同样允许评论。
+ * 先查静态文件，未命中再查库；库查询失败按不存在处理，不影响静态文章评论。
+ */
+async function isPublishedDynamicPost(slug) {
+  if (typeof slug !== "string" || !/^[A-Za-z0-9_-]{1,100}$/.test(slug)) return false;
+  try {
+    const [rows] = await pool.query(
+      "SELECT 1 FROM posts WHERE slug = ? AND status = 'published' LIMIT 1",
+      [slug]
+    );
+    return rows.length > 0;
+  } catch (e) {
+    logger.error("comments-service", `查询动态文章失败: ${slug}`, e);
+    return false;
+  }
+}
+
+/**
+ * 异步版文章校验：静态文章 OR 已发布的动态文章
+ */
+async function isValidPostAsync(slug) {
+  if (isValidPost(slug)) return true;
+  return isPublishedDynamicPost(slug);
 }
 
 /**
@@ -168,6 +195,8 @@ module.exports = {
   DEFAULT_PAGE_SIZE,
   RATE_LIMIT_MS,
   isValidPost,
+  isValidPostAsync,
+  isPublishedDynamicPost,
   listPosts,
   normalizeContent,
   validateContent,
