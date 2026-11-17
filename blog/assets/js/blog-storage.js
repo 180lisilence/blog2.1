@@ -89,11 +89,14 @@
       credentials: 'same-origin',
       cache: 'no-store'
     }).then(function (r) {
-      if (r.status === 401) return null;   // 未登录：保持本地兜底模式
-      if (!r.ok) return null;
+      if (r.status === 401) { loaded = true; fireReady(); return null; }   // 未登录：保持本地兜底模式
+      if (!r.ok) { loaded = true; fireReady(); return null; }
       return r.json();
     }).then(function (res) {
-      if (!res || !res.ok || !res.data || typeof res.data !== 'object') return;
+      if (!res || !res.ok || !res.data || typeof res.data !== 'object') {
+        if (!loaded) { loaded = true; fireReady(); }
+        return;
+      }
       // 用服务端数据覆盖本地：服务端是权威源
       cache = res.data;
       dirty = {};
@@ -104,6 +107,8 @@
       fireReady();
     }).catch(function () {
       // 网络异常：保持快照模式，不打断页面
+      loaded = true;
+      fireReady();
     });
   }
 
@@ -134,6 +139,52 @@
   });
 
   // ---- 4. 推送（增量） ----
+  // 保存状态机：idle / saving / saved / failed
+  // 旧版失败后只把改动塞回队列，等下一次用户操作才重试；用户改完立刻关页
+  // 就等于把最后一次修改丢掉。现在加指数退避自动重试 + 对外状态回调，
+  // 界面能显示「待同步 N 项 / 重试」，不再只有一行黄字。
+  var failCount = 0;
+  var retryTimer = null;
+  var statusName = 'idle';
+  var statusCbs = [];
+
+  function pendingCount() {
+    return Object.keys(dirty).length + Object.keys(removed).length;
+  }
+
+  function setStatus(s, extra) {
+    statusName = s;
+    var info = {
+      status: s,
+      pending: pendingCount(),
+      failCount: failCount,
+      error: extra && extra.error ? String(extra.error) : ''
+    };
+    var list = statusCbs.slice();
+    for (var i = 0; i < list.length; i++) {
+      try { list[i](info); } catch (e) {}
+    }
+  }
+
+  function scheduleRetry() {
+    if (retryTimer) clearTimeout(retryTimer);
+    // 1.5s → 3s → 6s → 12s → 24s → 30s 封顶，避免断网时刷爆请求
+    var delay = Math.min(30000, 1500 * Math.pow(2, Math.min(failCount, 5)));
+    retryTimer = setTimeout(function () { retryTimer = null; push(); }, delay);
+  }
+
+  function onStatus(fn) {
+    if (typeof fn !== 'function') return;
+    statusCbs.push(fn);
+    try { fn({ status: statusName, pending: pendingCount(), failCount: failCount, error: '' }); } catch (e) {}
+  }
+
+  function retryNow() {
+    if (retryTimer) { clearTimeout(retryTimer); retryTimer = null; }
+    failCount = 0;
+    return push();
+  }
+
   function schedulePush() {
     clearTimeout(pushTimer);
     pushTimer = setTimeout(push, 400);
@@ -143,6 +194,7 @@
     if (!server) {
       // 未连后端：只写本地快照
       try { localStorage.setItem(LS_SNAPSHOT, JSON.stringify(cache)); } catch (e) {}
+      setStatus('local');
       return Promise.resolve();
     }
 
@@ -160,6 +212,7 @@
     // 立即从"待推"里摘掉，避免推送期间的新改动被误清
     dirty = {};
     removed = {};
+    setStatus('saving');
 
     return getCsrf().then(function (token) {
       return fetch('/api/data/all', {
@@ -175,11 +228,16 @@
       if (r.status === 401) { server = false; throw new Error('unauthorized'); }
       if (!r.ok) throw new Error('push failed: ' + r.status);
       try { localStorage.setItem(LS_SNAPSHOT, JSON.stringify(cache)); } catch (e) {}
-    }).catch(function () {
+      failCount = 0;
+      setStatus('saved');
+    }).catch(function (err) {
       // 失败：把改动放回待推队列，下次再试；同时保住本地快照不丢数据
       for (var k in patch) dirty[k] = true;
       for (var d = 0; d < delKeys.length; d++) removed[delKeys[d]] = true;
       try { localStorage.setItem(LS_SNAPSHOT, JSON.stringify(cache)); } catch (e) {}
+      failCount++;
+      setStatus('failed', { error: (err && err.message) || 'network' });
+      scheduleRetry();
     });
   }
 
@@ -204,6 +262,10 @@
     removeSync: remove,
     onReady: onReady,
     reload: loadFromServer,
+    onStatus: onStatus,
+    retryNow: retryNow,
+    status: function () { return statusName; },
+    pending: pendingCount,
     server: function () { return server; },
     loaded: function () { return loaded; },
     ready: readyPromise,

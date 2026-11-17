@@ -89,9 +89,19 @@ Router.registerRoute('home', async (root) => {
     ]);
 
     /* ===== ③ 高优待办摘要 ===== */
+    // 旧版用 i._store || '?'，而 DBput 不补 _store，历史/导入数据会显示成「?」。
+    // 现在按来源数组直接给出模块名，不再依赖条目里的 _store 字段。
     const highSummaries = [];
-    [media, develop, consult, fitness, game].flat().filter(i => i.priority === 'high' && !i.done).forEach(i => {
-        highSummaries.push({ store: i._store || '?', name: i.name || i.title || i.project, item: i });
+    [
+        { items: media, label: '自媒体', href: '#/media' },
+        { items: develop, label: '开发工作', href: '#/develop' },
+        { items: consult, label: '咨询工作', href: '#/consult' },
+        { items: fitness, label: '健身计划', href: '#/fitness' },
+        { items: game, label: '游戏娱乐', href: '#/game' }
+    ].forEach(({ items, label, href }) => {
+        items.filter(i => i.priority === 'high' && (label === '自媒体' ? !i.published : !i.done)).forEach(i => {
+            highSummaries.push({ store: label, href, name: i.name || i.title || i.project, item: i });
+        });
     });
 
     /* ===== 快速备忘 ===== */
@@ -130,7 +140,7 @@ Router.registerRoute('home', async (root) => {
     const summaryPanel = U.el('div', { class: 'dashboard-card' }, [
         U.el('div', { class: 'card-head' }, [U.el('h3', { text: '🔥 高优待办摘要' })]),
         highSummaries.length === 0 ? U.el('div', { class: 'empty', text: '没有高优事项' }) : null,
-        ...highSummaries.slice(0, 8).map(s => U.el('div', { class: 'summary-row', onclick: () => Router.navigate() }, [
+        ...highSummaries.slice(0, 8).map(s => U.el('div', { class: 'summary-row', onclick: () => { if (s.href) location.hash = s.href; } }, [
             U.el('span', { class: 'badge badge-prio-high', text: s.store }),
             U.el('span', { class: 'summary-text', text: s.name })
         ])).filter(Boolean)

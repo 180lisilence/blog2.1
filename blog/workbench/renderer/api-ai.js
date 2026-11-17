@@ -484,6 +484,29 @@ async function AI_getMsgs(convId) {
 }
 async function AI_addMsg(convId, role, content) {
     const msg = await Store.DBadd('aiMsgs', { convId, role, content });
+    // 消息只增不减会把 workbench 这个 JSON 顶到 1MB 请求体 / 2MB 配额，
+    // 到时候整个工作台都保存失败。这里按会话和总量做上限裁剪。
+    try {
+        const all = await Store.DBgetAll('aiMsgs');
+        const perConv = Store.AI_MSG_PER_CONV || 200;
+        const totalMax = Store.AI_MSG_TOTAL || 2000;
+        let removed = 0;
+        const mine = all.filter(m => m.convId === convId);
+        if (mine.length > perConv) {
+            const drop = mine.slice(0, mine.length - perConv);
+            for (const m of drop) { await Store.DBpurge('aiMsgs', m.id); removed++; }
+        }
+        const remaining = all.length - removed;
+        if (remaining > totalMax) {
+            const oldest = all
+                .filter(m => !(mine.length > perConv && mine.indexOf(m) < mine.length - perConv))
+                .sort((a, b) => (a.createdAt || 0) - (b.createdAt || 0))
+                .slice(0, remaining - totalMax);
+            for (const m of oldest) await Store.DBpurge('aiMsgs', m.id);
+        }
+    } catch (e) {
+        console.warn('AI 消息裁剪失败:', e);
+    }
     const conv = await Store.DBget('aiConvs', convId);
     if (conv) {
         conv.lastMsgAt = U.now();

@@ -409,10 +409,21 @@ Router.registerRoute('setting', async (root) => {
                         const text = await f.text();
                         try {
                             const data = JSON.parse(text);
-                            if (!data || typeof data !== 'object') throw new Error('备份格式无效');
+                            // 旧版只判断是不是对象，任意 JSON 都能覆盖现有数据。
+                            // 现在先按 store 校验结构，校验不过直接拒绝，不动现有数据。
+                            const err = Store.validateImport(data);
+                            if (err) throw new Error(err);
+                            // 「覆盖导入」：先把现有模块清空，再写入备份里存在的模块，
+                            // 避免旧数据在备份没覆盖到的 store 里残留。
+                            Store.STORES.forEach(s => { if (s !== 'config') Store.appStore[s] = []; });
                             Store.STORES.forEach(s => { if (Array.isArray(data[s])) Store.appStore[s] = data[s].slice(); });
-                            if (data.config && typeof data.config === 'object') Store.appStore.config = Store.Config._clone(data.config);
+                            Store.appStore.config = (data.config && typeof data.config === 'object')
+                                ? Store.Config._clone(data.config)
+                                : Store.Config._clone(Store.Config.defaults);
+                            if (data._meta && typeof data._meta === 'object') Store.appStore._meta = { ...data._meta };
+                            else Store.appStore._meta = { schemaVersion: Store.SCHEMA_VERSION, updatedAt: U.now() };
                             Store.migrateConfig();
+                            Store.migrateSchema();
                             await Store.persistStore();
                             UI.Toast.ok('导入成功');
                             Router.navigate();

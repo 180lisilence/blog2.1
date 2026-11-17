@@ -232,3 +232,15 @@ input:focus, textarea:focus, select:focus {
     -webkit-text-fill-color: #4f46e5 !important;
     color: #4f46e5 !important;
 }
+
+/* ===== 云端保存状态条 ===== */
+.status-chip.clickable { cursor: pointer; }
+.status-chip.warn {
+    background: rgba(255, 176, 32, 0.18);
+    color: #ffc14d;
+}
+.status-chip.clickable:hover { filter: brightness(1.12); }
+[data-theme="light"] .status-chip.warn {
+    background: rgba(180, 83, 9, 0.12);
+    color: #b45309;
+}
