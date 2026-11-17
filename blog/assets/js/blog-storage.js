@@ -42,6 +42,7 @@
   var cache = {};
   var server = false;          // 是否已成功连接后端
   var loaded = false;          // 是否已拿到过一次服务端数据
+  var authFailed = false;      // 是否确认登录态失效（401）
   var dirty = {};              // 待推送的变更键
   var removed = {};            // 待推送的删除键
   var pushTimer = null;
@@ -89,7 +90,7 @@
       credentials: 'same-origin',
       cache: 'no-store'
     }).then(function (r) {
-      if (r.status === 401) { loaded = true; fireReady(); return null; }   // 未登录：保持本地兜底模式
+      if (r.status === 401) { authFailed = true; loaded = true; fireReady(); return null; }   // 登录态失效：不再退化为本地模式
       if (!r.ok) { loaded = true; fireReady(); return null; }
       return r.json();
     }).then(function (res) {
@@ -225,12 +226,23 @@
         body: JSON.stringify({ set: patch, remove: delKeys })
       });
     }).then(function (r) {
-      if (r.status === 401) { server = false; throw new Error('unauthorized'); }
+      if (r.status === 401) {
+        server = false;
+        authFailed = true;
+        var e = new Error('unauthorized');
+        e.auth = true;
+        throw e;
+      }
       if (!r.ok) throw new Error('push failed: ' + r.status);
       try { localStorage.setItem(LS_SNAPSHOT, JSON.stringify(cache)); } catch (e) {}
       failCount = 0;
       setStatus('saved');
     }).catch(function (err) {
+      if (err && err.auth) {
+        // 登录态失效：不要自动重试，也不要写本地兜底。交给页面阻断并跳登录。
+        setStatus('auth', { error: '登录已失效' });
+        return;
+      }
       // 失败：把改动放回待推队列，下次再试；同时保住本地快照不丢数据
       for (var k in patch) dirty[k] = true;
       for (var d = 0; d < delKeys.length; d++) removed[delKeys[d]] = true;
@@ -267,6 +279,7 @@
     status: function () { return statusName; },
     pending: pendingCount,
     server: function () { return server; },
+    authFailed: function () { return authFailed; },
     loaded: function () { return loaded; },
     ready: readyPromise,
     _cache: cache

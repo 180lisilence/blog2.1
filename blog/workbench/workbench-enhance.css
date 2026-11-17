@@ -244,3 +244,38 @@ input:focus, textarea:focus, select:focus {
     background: rgba(180, 83, 9, 0.12);
     color: #b45309;
 }
+
+/* ===== 登录失效 / 云端不可达阻断层 ===== */
+.wb-block {
+    position: fixed;
+    inset: 0;
+    z-index: 99998;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+    background: rgba(8, 10, 18, 0.78);
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+}
+.wb-block-card {
+    width: 100%;
+    max-width: 420px;
+    padding: 32px 28px;
+    border-radius: 16px;
+    text-align: center;
+    background: var(--bg-card, #151a2b);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    box-shadow: 0 24px 70px rgba(0, 0, 0, 0.45);
+}
+.wb-block-icon { font-size: 40px; line-height: 1; margin-bottom: 14px; }
+.wb-block-title { font-size: 18px; font-weight: 700; color: var(--text-primary, #f2f4ff); margin-bottom: 10px; }
+.wb-block-desc { font-size: 13px; line-height: 1.75; color: var(--text-muted, #9aa3bf); margin-bottom: 22px; }
+.wb-block .btn { min-width: 132px; }
+[data-theme="light"] .wb-block { background: rgba(15, 23, 42, 0.45); }
+[data-theme="light"] .wb-block-card {
+    background: #fff;
+    border-color: #e5e7eb;
+}
+[data-theme="light"] .wb-block-title { color: #1f2937; }
+[data-theme="light"] .wb-block-desc { color: #6b7280; }

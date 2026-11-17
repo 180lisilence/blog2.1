@@ -288,7 +288,9 @@ async function boot(){
     setInterval(tick,1000);
 
     // 数据加载放后面，先把框架渲染出来
-    await window.Store.initStore();
+    const ready = await window.Store.initStore();
+    // 未登录 / 云端不可达：initStore 已拉起阻断层，不再渲染任何业务页面。
+    if (ready === false) return;
     window.Store.Config.sanitizeAi(window.AIMod.AI_PROVIDERS);
     window.Router.navigate();
     checkDeadlines();

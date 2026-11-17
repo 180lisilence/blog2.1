@@ -22,14 +22,19 @@ const wbAPI = window.workbenchAPI || {
                 success: true,
                 data: data || null,
                 // 旧版把函数本身当布尔值用，永远为 true；这里显式调用。
-                server: !!(window.BS && typeof window.BS.server === 'function' && window.BS.server())
+                server: !!(window.BS && typeof window.BS.server === 'function' && window.BS.server()),
+                authFailed: !!(window.BS && typeof window.BS.authFailed === 'function' && window.BS.authFailed())
             };
         } catch (e) { return { success: false, error: e.message }; }
     },
     async save(data) {
         try {
-            if (window.BS) window.BS.set(this._key, data);
-            else localStorage.setItem(this._lsKey, JSON.stringify(data));
+            // 工作台没有「本地模式」：未连云端（含登录失效）一律拒绝写入，
+            // 避免本地改动与云端分叉、或以为存上了其实没存。
+            if (!window.BS || typeof window.BS.server !== 'function' || !window.BS.server()) {
+                return { success: false, error: '未连接云端，拒绝本地写入' };
+            }
+            window.BS.set(this._key, data);
             return { success: true };
         } catch (e) { return { success: false, error: e.message }; }
     },
@@ -115,6 +120,51 @@ function getDefaultStore() {
 }
 
 let statusBound = false;
+let blocked = false;
+
+// 工作台是登录后才能用的服务端数据工具：登录失效或云端不可达时，
+// 直接阻断整个页面并给出唯一出口，不再提供「本地模式」。
+function blockWorkbench(kind) {
+    if (blocked) return;
+    blocked = true;
+    const chip = document.getElementById('db-status');
+    if (chip) {
+        chip.textContent = kind === 'auth' ? '🔒 登录已失效' : '📡 云端不可用';
+        chip.className = 'status-chip err';
+    }
+    if (document.getElementById('wb-block')) return;
+    const isAuth = kind === 'auth';
+    const mask = document.createElement('div');
+    mask.id = 'wb-block';
+    mask.className = 'wb-block';
+    const card = document.createElement('div');
+    card.className = 'wb-block-card';
+    const icon = document.createElement('div');
+    icon.className = 'wb-block-icon';
+    icon.textContent = isAuth ? '🔒' : '📡';
+    const title = document.createElement('div');
+    title.className = 'wb-block-title';
+    title.textContent = isAuth ? '登录已失效' : '无法连接云端数据';
+    const desc = document.createElement('div');
+    desc.className = 'wb-block-desc';
+    desc.textContent = isAuth
+        ? '工作台的数据保存在云端，必须登录后使用。请重新登录后再打开。'
+        : '工作台不使用本地模式。请检查网络或稍后重试，连接恢复前不会加载或写入任何数据。';
+    const btn = document.createElement('button');
+    btn.className = 'btn btn-primary';
+    btn.textContent = isAuth ? '去登录' : '重新连接';
+    btn.addEventListener('click', () => {
+        if (isAuth) location.href = '/login';
+        else location.reload();
+    });
+    card.appendChild(icon);
+    card.appendChild(title);
+    card.appendChild(desc);
+    card.appendChild(btn);
+    mask.appendChild(card);
+    document.body.appendChild(mask);
+}
+
 function bindStatus() {
     if (statusBound) return;
     statusBound = true;
@@ -124,7 +174,7 @@ function bindStatus() {
         chip.addEventListener('click', () => {
             if (!window.BS || typeof window.BS.status !== 'function') return;
             if (window.BS.status() === 'failed') { window.BS.retryNow(); UI.Toast.ok('正在重试同步…'); }
-            else if (window.BS.status() === 'local') UI.Toast.warn('当前是本地模式，登录后才会同步到云端');
+            else if (window.BS.status() === 'auth') blockWorkbench('auth');
         });
     }
     if (!window.BS || typeof window.BS.onStatus !== 'function') return;
@@ -143,10 +193,8 @@ function bindStatus() {
             el.textContent = '⚠️ 待同步 ' + info.pending + ' 项 · 点此重试';
             el.className = 'status-chip err clickable';
             el.title = info.error || '网络异常';
-        } else if (info.status === 'local') {
-            el.textContent = '💾 本地模式（未连云端）';
-            el.className = 'status-chip warn clickable';
-            el.title = '登录后才会同步到云端';
+        } else if (info.status === 'auth') {
+            blockWorkbench('auth');
         }
     });
 }
@@ -154,10 +202,14 @@ function bindStatus() {
 async function initStore() {
     bindStatus();
     try {
-        // 关键：先等云端首次全量拉取结束。新设备没有本地快照时，
-        // 旧代码会立刻把默认空数据写回去，等于用空数据覆盖云端。
+        // 先等云端首次全量拉取结束，避免把本地快照或默认空数据当成权威数据。
         if (window.BS && window.BS.ready) { try { await window.BS.ready; } catch (e) {} }
         const result = await wbAPI.load();
+
+        // 工作台必须登录 + 云端可达：两者任一不满足都阻断，不进入任何本地模式。
+        if (result.authFailed) { blockWorkbench('auth'); return false; }
+        if (!result.server) { blockWorkbench('offline'); return false; }
+
         if (result.success && result.data) {
             appStore = result.data;
             STORES.forEach(s => { if (!appStore[s]) appStore[s] = []; });
@@ -166,22 +218,18 @@ async function initStore() {
             migrateSchema();
             const el = document.getElementById('db-status');
             if (el) {
-                el.textContent = result.server ? '☁️ 云端数据已同步' : '💾 本地模式（未连云端）';
-                el.className = result.server ? 'status-chip' : 'status-chip warn clickable';
+                el.textContent = '☁️ 云端数据已同步';
+                el.className = 'status-chip';
             }
         } else {
             appStore = getDefaultStore();
-            // 只有确认连上云端才写初始数据；离线/未登录只写本地快照。
-            if (result.server) {
-                try { await persistStore(); } catch (e) { console.warn('persistStore保存警告', e); }
-            }
+            try { await persistStore(); } catch (e) { console.warn('persistStore保存警告', e); }
         }
+        return true;
     } catch (err) {
-        appStore = getDefaultStore();
-        document.getElementById('db-status').textContent = '⚠️ 云端连接失败，离线模式';
-        document.getElementById('db-status').className = 'status-chip err';
         console.error('initStore error:', err);
-        // 连接失败时只保留内存默认数据，不再写盘，避免把空数据覆盖到云端。
+        blockWorkbench('offline');
+        return false;
     }
 }
 
