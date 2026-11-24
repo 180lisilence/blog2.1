@@ -1,0 +1,869 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>🏮 2026 年度个人开发报告 · 新春特辑</title>
+<style>
+  * { box-sizing: border-box; }
+  :root {
+    --red-deep: #7A0E12;
+    --red: #A30D1F;
+    --red-bright: #C8102E;
+    --gold: #F5C242;
+    --gold-soft: #E8B84B;
+    --cream: #FFF7ED;
+    --ink: #3A1512;
+  }
+  body {
+    font-family: "STKaiti", "KaiTi", "楷体", "STSong", "SimSun", "Microsoft YaHei", serif;
+    font-size: 17px;
+    line-height: 1.8;
+    color: var(--ink);
+    margin: 0;
+    padding: 40px 24px;
+    background:
+      radial-gradient(circle at 12% 8%, rgba(245,194,66,.18) 0, transparent 22%),
+      radial-gradient(circle at 88% 12%, rgba(245,194,66,.16) 0, transparent 20%),
+      radial-gradient(circle at 50% 100%, rgba(245,194,66,.10) 0, transparent 30%),
+      linear-gradient(160deg, var(--red-deep), var(--red) 55%, var(--red-bright));
+    min-height: 100vh;
+  }
+  /* 灯笼悬挂位 */
+  .lantern { position: fixed; top: 0; z-index: 5; }
+  .lantern.left  { left: 30px; }
+  .lantern.right { right: 30px; }
+
+  .wrap {
+    max-width: 900px;
+    margin: 0 auto;
+    background: var(--cream);
+    border: 3px solid var(--gold);
+    border-radius: 18px;
+    padding: 48px 44px;
+    box-shadow: 0 18px 50px rgba(0,0,0,.35);
+    position: relative;
+  }
+  .wrap::before {
+    content: "福";
+    position: absolute;
+    right: 26px; top: 90px;
+    font-size: 120px;
+    color: rgba(163,13,31,.07);
+    font-family: "STKaiti","KaiTi","楷体",serif;
+    transform: rotate(12deg);
+    pointer-events: none;
+  }
+  h1 {
+    font-family: "STKaiti","KaiTi","楷体",serif;
+    text-align: center;
+    font-size: 2.6em;
+    color: var(--red);
+    margin: 0 0 10px;
+    letter-spacing: 4px;
+  }
+  .subtitle { text-align: center; color: var(--red-bright); font-size: 1.05em; margin-bottom: 6px; }
+  .meta { text-align: center; color: #7a4a3a; font-size: .95em; margin-bottom: 30px; }
+  .preface {
+    background: linear-gradient(135deg, #FFF1DC, #FFE4C7);
+    border-left: 4px solid var(--gold);
+    padding: 14px 20px;
+    border-radius: 10px;
+    color: var(--ink);
+    margin: 18px 0 30px;
+  }
+  h2 {
+    font-family: "STKaiti","KaiTi","楷体",serif;
+    font-size: 1.7em;
+    color: var(--red);
+    margin-top: 42px;
+    border-bottom: 2px dashed var(--gold-soft);
+    padding-bottom: 8px;
+  }
+  h3 { font-size: 1.28em; margin-top: 26px; color: var(--red-bright); }
+  .lead {
+    background: linear-gradient(135deg, #FFF1DC, #FFE4C7);
+    border-left: 5px solid var(--red);
+    padding: 14px 18px;
+    border-radius: 10px;
+    margin: 14px 0 22px;
+    font-size: 1.08em;
+    font-weight: 700;
+    color: var(--red);
+  }
+  .lead .tag { color: var(--gold-soft); font-weight: 700; margin-right: 6px; }
+  table { border-collapse: collapse; width: 100%; margin: 16px 0; font-size: 1em; }
+  th, td { border: 1px solid #E8C9A0; padding: 9px 13px; text-align: left; }
+  th { background: var(--red); color: var(--gold); font-family: "STKaiti","KaiTi","楷体",serif; }
+  tr:nth-child(even) { background: #FFF1DC; }
+  .stat-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin: 22px 0; }
+  .stat {
+    background: linear-gradient(160deg, var(--red), var(--red-bright));
+    border: 2px solid var(--gold);
+    border-radius: 14px;
+    padding: 18px 10px;
+    text-align: center;
+    color: var(--cream);
+  }
+  .stat .num { font-size: 2.2em; font-weight: 700; color: var(--gold); }
+  .stat .label { font-size: .88em; margin-top: 5px; }
+  ul, ol { padding-left: 24px; }
+  li { margin: 5px 0; }
+  blockquote {
+    border: 2px solid var(--gold);
+    background: linear-gradient(135deg, #FFF1DC, #FFE9C2);
+    margin: 18px 0;
+    padding: 18px 22px;
+    border-radius: 12px;
+    color: var(--ink);
+    font-size: 1.05em;
+  }
+  blockquote p { margin: 10px 0; }
+  blockquote p:first-child { margin-top: 0; }
+  blockquote p:last-child { margin-bottom: 0; }
+  code { background: #FCE8D5; padding: 2px 7px; border-radius: 5px; color: var(--red); }
+  /* 路上一瞥配图卡片 */
+  .moment-photo {
+    margin: 24px 0 8px; padding: 12px;
+    border: 2px solid var(--gold); border-radius: 14px;
+    background: linear-gradient(135deg, #FFF1DC, #FFE9C2);
+  }
+  .moment-photo img {
+    width: 100%; border-radius: 10px; display: block;
+    border: 1px solid #E8C9A0;
+  }
+  .moment-photo figcaption {
+    text-align: center; color: #7a4a3a; font-size: .9em;
+    margin-top: 10px; letter-spacing: .03em;
+  }
+  /* 手绘小木房卡车 · 公路行驶动画 */
+  .truck-scene svg {
+    width: 100%; height: auto; display: block;
+    border-radius: 10px; border: 1px solid #E8C9A0; background: #BFE3F2;
+  }
+  .truck-car { animation: cruise 7s linear infinite; }
+  @keyframes cruise { 0% { transform: translateX(-260px); } 100% { transform: translateX(820px); } }
+  .truck-body { animation: bounce .28s ease-in-out infinite alternate; }
+  @keyframes bounce { from { transform: translateY(0); } to { transform: translateY(-3px); } }
+  .wheel { transform-box: fill-box; transform-origin: center; animation: wheelspin 1.1s linear infinite; }
+  @keyframes wheelspin { to { transform: rotate(360deg); } }
+  .road-dashes { animation: dashroll 1s linear infinite; }
+  @keyframes dashroll { to { transform: translateX(-80px); } }
+  .smoke { opacity: 0; transform-box: fill-box; transform-origin: center; animation: puff 2s ease-out infinite; }
+  .smoke.s2 { animation-delay: .6s; } .smoke.s3 { animation-delay: 1.2s; }
+  @keyframes puff {
+    0% { transform: translate(0, 0) scale(.5); opacity: .85; }
+    100% { transform: translate(-20px, -28px) scale(1.4); opacity: 0; }
+  }
+  /* 顶部阅读进度条 */
+  #progressBar { position: fixed; top: 0; left: 0; height: 3px; width: 0; z-index: 30;
+    background: linear-gradient(90deg, var(--gold), var(--red-bright)); box-shadow: 0 0 8px rgba(245,194,66,.6); }
+  /* BGM 按钮 */
+  #bgmBtn {
+    position: fixed; right: 26px; bottom: 26px; z-index: 10;
+    background: var(--gold); color: var(--red-deep);
+    border: 2px solid var(--cream);
+    border-radius: 30px; padding: 12px 20px;
+    font-family: "STKaiti","KaiTi","楷体",serif;
+    font-size: 16px; cursor: pointer;
+    box-shadow: 0 6px 18px rgba(0,0,0,.3);
+  }
+  #bgmBtn:hover { background: #FFD76E; }
+  .footer { text-align: center; margin-top: 40px; color: #7a4a3a; font-size: .9em; }
+  /* ===== 手绘装饰与动画 ===== */
+  .hero-banner {
+    position: relative;
+    width: 100%;
+    border-radius: 14px;
+    overflow: hidden;
+    border: 2px solid var(--gold);
+    margin-bottom: 24px;
+    box-shadow: 0 10px 30px rgba(122,14,18,.25);
+  }
+  .hero-banner img { display: block; width: 100%; height: auto; }
+  .hero-banner.img-fallback { min-height: 220px; display: flex; align-items: center; justify-content: center;
+    background: linear-gradient(135deg, var(--red), var(--red-bright)); color: var(--gold); font-size: 1.1em; }
+  .hero-banner .hero-caption {
+    position: absolute; left: 0; right: 0; bottom: 0;
+    padding: 12px 20px;
+    background: linear-gradient(transparent, rgba(122,14,18,.72));
+    color: var(--cream); font-size: 15px; letter-spacing: 2px;
+  }
+  /* 灯笼摇摆 */
+  .lantern { transform-origin: top center; animation: sway 4.2s ease-in-out infinite; }
+  .lantern.right { animation-delay: -2.1s; }
+  @keyframes sway {
+    0%, 100% { transform: rotate(-4deg); }
+    50% { transform: rotate(4deg); }
+  }
+  /* 烟花绽放脉冲 */
+  .firework { position: absolute; pointer-events: none; }
+  .firework .ray { stroke: var(--gold); stroke-width: 1.6; stroke-linecap: round;
+    transform-origin: center; animation: burst 2.6s ease-out infinite; }
+  .firework .dot { fill: var(--gold); animation: twinkle 2.6s ease-out infinite; }
+  .firework.delayed .ray, .firework.delayed .dot { animation-delay: 1.3s; }
+  @keyframes burst {
+    0% { opacity: 0; transform: scale(.3); }
+    30% { opacity: 1; }
+    70% { opacity: .8; }
+    100% { opacity: 0; transform: scale(1.15); }
+  }
+  @keyframes twinkle { 0%,100% { opacity: .2; } 50% { opacity: 1; } }
+  /* 祥云漂浮 */
+  .cloud-band { display: block; margin: 6px auto 0; opacity: .85; animation: drift 9s ease-in-out infinite alternate; }
+  @keyframes drift { from { transform: translateX(-10px); } to { transform: translateX(10px); } }
+  /* 下落烟花粒子（图形为烟花，轨迹同原花瓣下落） */
+  .spark { position: fixed; top: -40px; z-index: 4; pointer-events: none;
+    animation: fall linear infinite; }
+  .spark svg { display: block; }
+  .spark .ray { stroke-width: 1.4; stroke-linecap: round; }
+  @keyframes fall {
+    0% { transform: translateY(-40px) rotate(0deg); opacity: .9; }
+    100% { transform: translateY(105vh) rotate(340deg); opacity: .5; }
+  }
+  /* 章节梅花头饰 */
+  h2 { display: flex; align-items: center; gap: 12px; }
+  h2 .plum { flex: 0 0 auto; }
+  /* 结语元宝 */
+  .ingot-row { display: flex; justify-content: center; align-items: center; gap: 40px; margin: 18px 0 10px; }
+  .stat { transition: transform .25s ease, box-shadow .25s ease; }
+  .stat:hover { transform: translateY(-4px); box-shadow: 0 12px 26px rgba(0,0,0,.3); }
+  .tbl-caption { text-align: left; color: #7a4a3a; font-size: .9em; margin-bottom: 6px; }
+  .hero-banner.img-fallback span { position: relative; z-index: 1; padding: 0 20px; text-align: center; }
+  @media print {
+    body { background: #fff; padding: 0; }
+    #bgmBtn, #progressBar, .spark, .firework, .nav-dock, .edge-fade { display: none; }
+    .truck-scene svg * { animation: none !important; }
+    .wrap { box-shadow: none; background: #fff; }
+  }
+
+  /* ===== 交互动效：玻璃停靠栏 / 液态胶囊 / 聚光 / 流光 / 折叠 ===== */
+  :root { --mx: 50%; --my: 50%; }
+  /* 左侧竖向玻璃停靠栏 */
+  .nav-dock {
+    position: fixed; left: 20px; top: 50%; transform: translateY(-50%);
+    z-index: 20; display: flex; flex-direction: column; align-items: center; gap: 4px;
+    padding: 12px 8px; border-radius: 26px;
+    background: rgba(122,14,18,.55);
+    backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px);
+    border: 1px solid rgba(245,194,66,.45);
+    box-shadow: 0 10px 30px rgba(0,0,0,.35);
+    max-height: 92vh;
+  }
+  .nav-dock .dock-item {
+    position: relative; width: 44px; height: 44px; border: none; background: transparent;
+    border-radius: 18px; color: var(--cream); cursor: pointer;
+    font-size: 18px; display: flex; align-items: center; justify-content: center;
+    transition: transform .35s cubic-bezier(.34,1.56,.64,1), background .25s;
+    z-index: 2; flex: 0 0 auto;
+  }
+  .nav-dock .dock-item .tip {
+    position: absolute; left: calc(100% + 10px); top: 50%;
+    transform: translateY(-50%) translateX(-4px);
+    background: var(--red-deep); color: var(--gold); font-size: 13px; white-space: nowrap;
+    padding: 4px 10px; border-radius: 8px; opacity: 0; pointer-events: none;
+    transition: opacity .25s, transform .25s; font-family: inherit;
+  }
+  .nav-dock .dock-item:hover .tip { opacity: 1; transform: translateY(-50%) translateX(0); }
+  /* 液态玻璃胶囊：在锚点间滑动、回弹 */
+  .nav-dock .dock-pill {
+    position: absolute; top: 12px; left: 8px; width: 44px; height: 44px; border-radius: 18px;
+    background: linear-gradient(160deg, var(--red-bright), var(--red));
+    border: 1px solid var(--gold); z-index: 1;
+    transition: transform .45s cubic-bezier(.34,1.56,.64,1), height .45s cubic-bezier(.34,1.56,.64,1);
+  }
+  .nav-dock .dock-item.active { color: var(--gold); }
+  .nav-dock .dock-item.neighbor { transform: scale(1.08); }
+  .nav-dock .dock-item:hover, .nav-dock .dock-item.active { transform: scale(1.18); }
+  /* 聚光跟随：柔光沿光标照亮卡片边缘（第 2 个动效） */
+  .spot { position: relative; overflow: hidden; }
+  .spot::after {
+    content: ""; position: absolute; inset: 0; border-radius: inherit; pointer-events: none;
+    background: radial-gradient(220px circle at var(--mx) var(--my), rgba(245,194,66,.28), transparent 60%);
+    opacity: 0; transition: opacity .3s;
+  }
+  .spot:hover::after { opacity: 1; }
+  /* 边缘流光：一道光沿边框转圈（第 3 个动效） */
+  .beam { isolation: isolate; }
+  .beam::before {
+    content: ""; position: absolute; inset: 0; border-radius: inherit; padding: 2px;
+    background: conic-gradient(from var(--beam-angle, 0deg), var(--gold), var(--red-bright), var(--gold-soft), var(--gold));
+    -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+    -webkit-mask-composite: xor; mask-composite: exclude;
+    animation: beam-spin 3.5s linear infinite; pointer-events: none;
+  }
+  @property --beam-angle { syntax: "<angle>"; initial-value: 0deg; inherits: false; }
+  @keyframes beam-spin { to { --beam-angle: 360deg; } }
+  /* 小节点击原位展开 / 收回（第 4 个动效）：包裹块级容器，折叠只作用于本节 */
+  .collapse-block { }
+  .collapse-block .collapse-toggle { cursor: pointer; user-select: none; outline-offset: 4px; }
+  .collapse-block .collapse-toggle::after { content: " ▾"; color: var(--gold-soft); font-size: .8em; }
+  .collapse-block.collapsed > .collapse-toggle::after { content: " ▸"; }
+  .collapse-body { display: grid; grid-template-rows: 1fr; transition: grid-template-rows .35s ease; }
+  .collapse-body > .collapse-inner { overflow: hidden; }
+  .collapse-block.collapsed > .collapse-body { grid-template-rows: 0fr; }
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { animation-duration: .01ms !important; transition-duration: .01ms !important; }
+  }
+
+</style>
+</head>
+<body>
+
+<!-- 红灯笼装饰 -->
+<svg class="lantern left" width="80" height="130" viewBox="0 0 80 130">
+  <line x1="40" y1="0" x2="40" y2="18" stroke="#F5C242" stroke-width="2"/>
+  <ellipse cx="40" cy="55" rx="30" ry="34" fill="#C8102E" stroke="#F5C242" stroke-width="2"/>
+  <line x1="20" y1="30" x2="20" y2="80" stroke="#F5C242" stroke-width="1.2"/>
+  <line x1="40" y1="22" x2="40" y2="88" stroke="#F5C242" stroke-width="1.2"/>
+  <line x1="60" y1="30" x2="60" y2="80" stroke="#F5C242" stroke-width="1.2"/>
+  <rect x="28" y="18" width="24" height="7" fill="#F5C242"/>
+  <rect x="28" y="85" width="24" height="7" fill="#F5C242"/>
+  <line x1="40" y1="92" x2="40" y2="112" stroke="#F5C242" stroke-width="2"/>
+  <line x1="34" y1="112" x2="46" y2="112" stroke="#C8102E" stroke-width="2"/>
+  <line x1="36" y1="112" x2="36" y2="126" stroke="#C8102E" stroke-width="2"/>
+  <line x1="40" y1="112" x2="40" y2="128" stroke="#C8102E" stroke-width="2"/>
+  <line x1="44" y1="112" x2="44" y2="126" stroke="#C8102E" stroke-width="2"/>
+</svg>
+<svg class="lantern right" width="80" height="130" viewBox="0 0 80 130">
+  <line x1="40" y1="0" x2="40" y2="18" stroke="#F5C242" stroke-width="2"/>
+  <ellipse cx="40" cy="55" rx="30" ry="34" fill="#C8102E" stroke="#F5C242" stroke-width="2"/>
+  <line x1="20" y1="30" x2="20" y2="80" stroke="#F5C242" stroke-width="1.2"/>
+  <line x1="40" y1="22" x2="40" y2="88" stroke="#F5C242" stroke-width="1.2"/>
+  <line x1="60" y1="30" x2="60" y2="80" stroke="#F5C242" stroke-width="1.2"/>
+  <rect x="28" y="18" width="24" height="7" fill="#F5C242"/>
+  <rect x="28" y="85" width="24" height="7" fill="#F5C242"/>
+  <line x1="40" y1="92" x2="40" y2="112" stroke="#F5C242" stroke-width="2"/>
+  <line x1="34" y1="112" x2="46" y2="112" stroke="#C8102E" stroke-width="2"/>
+  <line x1="36" y1="112" x2="36" y2="126" stroke="#C8102E" stroke-width="2"/>
+  <line x1="40" y1="112" x2="40" y2="128" stroke="#C8102E" stroke-width="2"/>
+  <line x1="44" y1="112" x2="44" y2="126" stroke="#C8102E" stroke-width="2"/>
+</svg>
+
+<!-- 手绘动画烟花（内联 SVG，无外部资源） -->
+<svg class="firework" style="top:13%; left:7%;" width="90" height="90" viewBox="0 0 90 90" aria-hidden="true">
+  <g transform="translate(45,45)">
+    <line class="ray" x1="0" y1="0" x2="30" y2="0"/>
+    <line class="ray" x1="0" y1="0" x2="21.2" y2="21.2"/>
+    <line class="ray" x1="0" y1="0" x2="0" y2="30"/>
+    <line class="ray" x1="0" y1="0" x2="-21.2" y2="21.2"/>
+    <line class="ray" x1="0" y1="0" x2="-30" y2="0"/>
+    <line class="ray" x1="0" y1="0" x2="-21.2" y2="-21.2"/>
+    <line class="ray" x1="0" y1="0" x2="0" y2="-30"/>
+    <line class="ray" x1="0" y1="0" x2="21.2" y2="-21.2"/>
+    <circle class="dot" r="3.5"/>
+  </g>
+</svg>
+<svg class="firework delayed" style="top:20%; right:7%;" width="70" height="70" viewBox="0 0 90 90" aria-hidden="true">
+  <g transform="translate(45,45)">
+    <line class="ray" x1="0" y1="0" x2="30" y2="0"/>
+    <line class="ray" x1="0" y1="0" x2="21.2" y2="21.2"/>
+    <line class="ray" x1="0" y1="0" x2="0" y2="30"/>
+    <line class="ray" x1="0" y1="0" x2="-21.2" y2="21.2"/>
+    <line class="ray" x1="0" y1="0" x2="-30" y2="0"/>
+    <line class="ray" x1="0" y1="0" x2="-21.2" y2="-21.2"/>
+    <line class="ray" x1="0" y1="0" x2="0" y2="-30"/>
+    <line class="ray" x1="0" y1="0" x2="21.2" y2="-21.2"/>
+    <circle class="dot" r="3.5"/>
+  </g>
+</svg>
+
+<div id="progressBar" aria-hidden="true"></div>
+<audio id="bgm" loop preload="auto"></audio>
+<button id="bgmBtn" onclick="toggleBgm()">🎵 播放新春旋律</button>
+
+<div class="wrap">
+
+<!-- 封面主视觉：本地 assets/cover.png（相对路径，随目录一起转发） -->
+<div class="hero-banner">
+  <img src="assets/cover.png" alt="新春红金主视觉：灯笼、烟花、祥云、梅花与元宝" onerror="this.onerror=null;this.style.display='none';this.parentNode.classList.add('img-fallback');var t=document.createElement('span');t.textContent='新春红金主视觉';this.parentNode.appendChild(t);">
+  <!-- 可选视频位：将免授权 mp4 放入 assets/ 后取消下一行注释即可循环播放
+  <video src="assets/fireworks.mp4" autoplay loop muted playsinline style="width:100%"></video>
+  -->
+  <div class="hero-caption">岁末年终 · 灯火可亲 · 红金新春</div>
+</div>
+
+<h1>🏮 2026 年度个人开发报告 · 新春特辑 🧧</h1>
+<p class="subtitle">岁末年终，灯火可亲 · 红金新春主题 · 岁末盘点</p>
+<p class="meta">作者：180lisilence ｜ 统计周期：2025-11 ~ 2026-11 ｜ 报告日期：2026-11-24</p>
+
+<div class="preface">
+  这一年敲下的每一行代码，都化作年终盘点里的一盏灯。本报告以红金新春主题呈现，回顾这一年在 GitHub 上留下的足迹。
+</div>
+
+<h2><span class="plum"><svg width="24" height="24" viewBox="0 0 24 24" aria-hidden="true"><g fill="#C8102E"><circle cx="12" cy="7" r="3.2"/><circle cx="16" cy="10.8" r="3.2"/><circle cx="14.5" cy="15.5" r="3.2"/><circle cx="9.5" cy="15.5" r="3.2"/><circle cx="8" cy="10.8" r="3.2"/></g><circle cx="12" cy="11.5" r="2" fill="#F5C242"/></svg></span>🧨 一、年度概览</h2>
+<div class="lead"><span class="tag">▶ 本章重点：</span>全年 <strong>352 次</strong>公开贡献，集中在 8–11 月，呈"前沉默、后高产"的清晰成长曲线。</div>
+<p>过去这一年，我的 GitHub 账号 <code>180lisilence</code> 累计产出 <strong>352 次公开贡献</strong>（commits / PR / 评审合计），活跃仓库覆盖 <strong>博客系统、DSH 插件生态、游戏修改器、Minecraft 开服工具、安卓逆向、AI Agent 框架、桌面工具</strong> 等多个方向。根据 GitHub Profile 活动概览，我参与了 55 个以上仓库的贡献。</p>
+<p>从贡献分布看，代码评审占 1%，Pull Request 占 99%（PR 与评审占比来自 GitHub Profile 活动分类，commits 另计入公开贡献总数），以个人项目的提交和对上游仓库的 Fork 实验为主。全年真正的集中爆发期是 <strong>2026 年 8 月到 11 月中旬</strong>——5、6、7 三个月没有任何公开活动，从 8 月初开始进入连续高产状态，一直持续到今天。</p>
+
+<div class="stat-grid">
+  <div class="stat" role="group" aria-label="一年公开贡献 352"><div class="num">352</div><div class="label">🎆 一年公开贡献</div></div>
+  <div class="stat" role="group" aria-label="活跃仓库 55 以上"><div class="num">55+</div><div class="label">📦 活跃仓库</div></div>
+  <div class="stat" role="group" aria-label="编程语言 12 种"><div class="num">12</div><div class="label">🛠️ 编程语言</div></div>
+  <div class="stat" role="group" aria-label="活跃月份 4 个"><div class="num">4</div><div class="label">📅 活跃月份</div></div>
+</div>
+
+<h2><span class="plum"><svg width="24" height="24" viewBox="0 0 24 24" aria-hidden="true"><g fill="#C8102E"><circle cx="12" cy="7" r="3.2"/><circle cx="16" cy="10.8" r="3.2"/><circle cx="14.5" cy="15.5" r="3.2"/><circle cx="9.5" cy="15.5" r="3.2"/><circle cx="8" cy="10.8" r="3.2"/></g><circle cx="12" cy="11.5" r="2" fill="#F5C242"/></svg></span>🏮 二、关键数字</h2>
+<div class="lead"><span class="tag">▶ 本章重点：</span><strong>55+</strong> 仓库、<strong>12</strong> 种语言，是典型的全栈、问题驱动型开发者。</div>
+<table>
+  <caption class="tbl-caption">表 1 · 年度关键数字一览</caption>
+  <tr><th scope="col">指标</th><th scope="col">数值</th></tr>
+  <tr><td>🎆 一年公开贡献</td><td>352</td></tr>
+  <tr><td>📦 贡献仓库数</td><td>55+</td></tr>
+  <tr><td>📅 活跃月份</td><td>4 个月（8/9/10/11）</td></tr>
+  <tr><td>🚀 首发 PR</td><td>2026-08，仓库 -Beta-version #1</td></tr>
+  <tr><td>🤝 最近一次对外 PR</td><td>2026-11-16，awesome-dsh-plugin #15790</td></tr>
+  <tr><td>🌐 主站版本</td><td>blog2.1（7a7c830 全门禁稳定版）</td></tr>
+  <tr><td>🛠️ 涉及编程语言</td><td>12 种</td></tr>
+</table>
+
+<h3>🎨 语言分布（按仓库数粗略统计）</h3>
+<ul>
+  <li><strong>HTML</strong>：14 个（博客、静态页、监控页、游戏展示页）</li>
+  <li><strong>JavaScript</strong>：10 个（DSH 插件、早期实验项目）</li>
+  <li><strong>Python</strong>：9 个（游戏修改器、脚本集合、RAG、字幕工具）</li>
+  <li><strong>TypeScript</strong>：5 个（DSH 生态、歌词扩展、逆向 Agent）</li>
+  <li><strong>C++</strong>：3 个（3D 模型、Notepad++ Fork、游戏修改器管理器）</li>
+  <li><strong>Java</strong>：3 个（游戏工具、书籍导出、安卓端 DSH）</li>
+  <li><strong>C#</strong>：2 个（MC 开服器、右键菜单管理器）</li>
+  <li><strong>Smali / Kotlin / Rust / Dart / PowerShell</strong>：各 1 个</li>
+</ul>
+<p style="color:#7a4a3a;font-size:.92em;">以上按仓库主语言归类，合计约 50 余个，与 55+ 活跃仓库口径接近（部分仓库跨语言或未标注主语言）。</p>
+
+<h2><span class="plum"><svg width="24" height="24" viewBox="0 0 24 24" aria-hidden="true"><g fill="#C8102E"><circle cx="12" cy="7" r="3.2"/><circle cx="16" cy="10.8" r="3.2"/><circle cx="14.5" cy="15.5" r="3.2"/><circle cx="9.5" cy="15.5" r="3.2"/><circle cx="8" cy="10.8" r="3.2"/></g><circle cx="12" cy="11.5" r="2" fill="#F5C242"/></svg></span>🕰️ 三、时间线复盘</h2>
+<div class="lead"><span class="tag">▶ 本章重点：</span>四个月走完"静态页 → 全栈博客 → DSH 生态 → 自有工具"的进阶路径。</div>
+
+<h3>🌑 3.1 沉默期（2026-05 ~ 2026-07）</h3>
+<p>GitHub 面板显示这三个月没有任何公开活动。回头看，这段时间其实是在积累：本地写代码、搭环境、试错，只是没有 push 到远程。很多后续项目的雏形，都是在这段沉默期里慢慢磨出来的。就像年节前的备料，看似安静，实则在攒家底。</p>
+
+<h3>🌱 3.2 起步月：8 月——博客大爆发</h3>
+<ul>
+  <li><strong>8 月 3 日</strong>：<code>system</code>、<code>-</code>、<code>1shantou</code>、<code>SHANTOU2.0</code> 四个仓库同日更新。</li>
+  <li><strong>8 月 12 日</strong>：<code>zuopin3.0</code>（作品集站点）上线。</li>
+  <li><strong>8 月 15 日</strong>：<code>youxi1.0</code>、<code>LyricStage</code> 歌词扩展 Fork。</li>
+  <li><strong>8 月 17 日</strong>：<code>-Beta-version</code>（开出人生第一个公开 PR #1）、<code>earthorbit</code>、<code>ContextMenuManager</code> Fork。</li>
+  <li><strong>8 月 26 日</strong>：<code>blog2.0</code> 与 <code>myself-blog</code> 同日更新，博客系统正式成型。</li>
+</ul>
+
+<h3>🔧 3.3 深耕月：9 月——工具与系统并行</h3>
+<ul>
+  <li><strong>9 月 8 日</strong>：<code>blog2.1</code> 第一次出现，线上主力博客的起点。</li>
+  <li><strong>9 月 12~14 日</strong>：<code>woldvein0.2</code>、<code>woldvein_trainer</code> 相继提交，游戏修改器系列立项。</li>
+  <li><strong>9 月 15~17 日</strong>：密集上线 <code>DSH-Plugin</code>、<code>app</code>（StarCitizen Fork）、<code>Game-Cheats-Manager</code>、<code>cangku</code>、<code>cangku2</code>。</li>
+  <li><strong>9 月 22 日</strong>：<code>sub-title</code>、<code>workbuddy-switch</code>（Tauri/Rust）Fork。</li>
+  <li><strong>9 月 24~25 日</strong>：<code>dsh-desktop</code>、<code>dsh-pojia-mode</code>、<code>smooth_game</code> 修改器 2.0 大重构。</li>
+  <li><strong>9 月 30 日</strong>：<code>deepseek-harness</code> 上游 Fork。</li>
+</ul>
+
+<h3>🤖 3.4 拓展月：10 月——开源框架与 Agent</h3>
+<ul>
+  <li><strong>10 月 5 日</strong>：<code>woldvein_injector</code> 注入器上线。</li>
+  <li><strong>10 月 6 日</strong>：<code>Tianshu-harness</code>、<code>Operit</code> 两个智能体框架 Fork。</li>
+  <li><strong>10 月 10 日</strong>：<code>DSHA</code>（手机端免 ROOT DSH）Fork。</li>
+  <li><strong>10 月 15 日</strong>：<code>rea</code>（Agent 逆向框架）、<code>SusuAIOverclock-pojia</code> Fork。</li>
+  <li><strong>10 月 17 日</strong>：<code>Operit</code> 继续迭代、<code>MaoRAG</code> Fork。</li>
+</ul>
+
+<h3>🏆 3.5 丰收月：11 月（月中）——自有项目集中落地</h3>
+<ul>
+  <li><strong>11 月 1 日</strong>：<code>NewRepo</code>、<code>MSL</code>（MC 开服器）Fork。</li>
+  <li><strong>11 月 8 日</strong>：单日爆发，同日更新 11 个仓库——<code>skilll-collection</code>、<code>critical-game</code>、<code>my-world-monitor-tool</code>、<code>3D-model-construction</code>、<code>rea-tool-myself</code>、<code>personal-information-anliaysis</code>、<code>card-unlock-master</code>、<code>gamehub</code>、<code>qi-mao-book-export-verison</code>、<code>yunlu-room</code>、<code>xiaoxiaoxiao</code>。</li>
+  <li><strong>11 月 16 日</strong>：<code>awesome-dsh-plugin</code> Fork、<code>dsh-floating-ball</code>、<code>dsh-election-chajian</code>，同时向上游提交 <strong>PR #15790</strong>。</li>
+</ul>
+
+<h2><span class="plum"><svg width="24" height="24" viewBox="0 0 24 24" aria-hidden="true"><g fill="#C8102E"><circle cx="12" cy="7" r="3.2"/><circle cx="16" cy="10.8" r="3.2"/><circle cx="14.5" cy="15.5" r="3.2"/><circle cx="9.5" cy="15.5" r="3.2"/><circle cx="8" cy="10.8" r="3.2"/></g><circle cx="12" cy="11.5" r="2" fill="#F5C242"/></svg></span>📁 四、五大项目方向复盘</h2>
+<div class="lead"><span class="tag">▶ 本章重点：</span>五条主线并行，<strong>博客系统与 DSH 生态</strong>是投入最深的两块。</div>
+
+<h3>📰 4.1 博客系统：从静态页到全门禁 Web 应用</h3>
+<p>博客是贯穿全年的主线项目，仓库演进路线：<code>1.0fabuban</code> → <code>myself-blog</code> → <code>blog2.0</code> → <code>blog2.1</code>（当前线上版本）。blog2.1 是这套系统的完全体：Node.js 后端 + 全站登录门禁 + CSP 严格策略 + Sentinel 审计后台（3100 端口独立服务）。这个项目让我完整走了一遍 Web 全栈：MySQL 设计、会话管理、bcrypt 密码哈希、Express 中间件、PM2 部署、CSP 报告-上线双阶段切换。</p>
+<p>同期还写了 <code>xiaoxiaoxiao</code> 双端日记工作台，走的是另一条路：纯前端、localStorage 存储、不登录、不联网。和 blog2.1 形成对比——一个是"重安全、重权限"的门户，一个是"轻量、本地优先"的个人工具。</p>
+
+<h3>🧩 4.2 DSH 插件生态：从一个悬浮球到一个列表</h3>
+<p>DSH 是我下半年投入最多的方向。围绕它的仓库形成了一个小生态：自有插件 <code>dsh-floating-ball</code>（悬浮球唤起）、<code>dsh-election-chajian</code>（内容选择）；Fork 学习 <code>dsh-desktop</code>、<code>dsh-pojia-mode</code>、<code>DSH-Plugin</code>、<code>deepseek-harness</code>、<code>DSHA</code>；社区建设 <code>awesome-dsh-plugin</code>，并在 11 月 16 日向上游提交 PR #15790。</p>
+<p>DSH 的设计理念 "Everything is a Plugin" 影响了我对 AI 工具的认知——AI 不应该是一个封闭的聊天窗口，而应该是一个可扩展的运行环境。</p>
+
+<h3>🎮 4.3 游戏修改器：0.2 → 0.3 的重构</h3>
+<p>游戏修改器是另一条持续投入的线：<code>woldvein_trainer</code>（主修改器，已从 0.2 迭代到 0.3）、<code>woldvein_injector</code>、<code>woldvein0.2</code>（已归档）、<code>woldveiHouse</code>、<code>smooth_game</code>（2.0 大重构）、<code>critical-game</code>、<code>gamehub</code>、<code>Game-Cheats-Manager</code>。</p>
+<p>这条线让我完整走了一遍 Windows 内存读写流程：CE 找静态偏移、指针扫描定位多级指针链、Python 写原型、再考虑 C++ 重写核心。0.3 版本做了一次彻底的模块拆分——内存读写、注入、UI、配置各自独立。</p>
+
+<h3>⛏️ 4.4 Minecraft 开服与运维</h3>
+<p>MC 是我长期的爱好，也是运维经验的主要来源：<code>MSL</code>（WPF 开服器 Fork）、<code>my-world-monitor-tool</code>（自写监控：进程存活、日志读取、崩溃自动重启）。开服教会我的不是怎么装插件，而是怎么让服务长期稳定在线：JVM 参数、G1 GC、FRP 断线重连、日志滚动、崩溃自动拉起、定时备份。这些经验后来直接迁移到博客服务器运维上。</p>
+
+<h3>🔍 4.5 逆向与底层</h3>
+<p>逆向方向的仓库相对零散：<code>rea</code> + <code>rea-tool-myself</code>、<code>card-unlock-master</code>（Smali 练习）、<code>3D-model-construction</code>（C++）、<code>personal-information-anliaysis</code>。目前还在学习期，Smali 入门、IDA 静态分析、CE 动态调试三件套正在一个个啃。</p>
+
+<h2><span class="plum"><svg width="24" height="24" viewBox="0 0 24 24" aria-hidden="true"><g fill="#C8102E"><circle cx="12" cy="7" r="3.2"/><circle cx="16" cy="10.8" r="3.2"/><circle cx="14.5" cy="15.5" r="3.2"/><circle cx="9.5" cy="15.5" r="3.2"/><circle cx="8" cy="10.8" r="3.2"/></g><circle cx="12" cy="11.5" r="2" fill="#F5C242"/></svg></span>🧰 五、技术栈全景</h2>
+<div class="lead"><span class="tag">▶ 本章重点：</span>语言广而不深，2027 年向 <strong>Python / C++</strong> 两门刻意钻深。</div>
+<table>
+  <caption class="tbl-caption">表 2 · 技术栈与典型仓库对照</caption>
+  <tr><th scope="col">语言</th><th scope="col">典型仓库</th><th scope="col">我的用途</th></tr>
+  <tr><td>HTML/CSS</td><td>blog2.1, xiaoxiaoxiao, yunlu-room</td><td>静态页、响应式双端界面</td></tr>
+  <tr><td>JavaScript</td><td>dsh-floating-ball, DSH-Plugin</td><td>浏览器插件、DSH 插件、前端交互</td></tr>
+  <tr><td>TypeScript</td><td>LyricStage, Tianshu-harness, rea</td><td>大型前端/Agent 框架</td></tr>
+  <tr><td>Python</td><td>woldvein_trainer, skilll-collection, MaoRAG</td><td>修改器、自动化脚本、RAG</td></tr>
+  <tr><td>Java</td><td>critical-game, qi-mao-book-export, DSHA</td><td>安卓侧工具、书籍导出</td></tr>
+  <tr><td>C#</td><td>MSL, ContextMenuManager</td><td>Windows 原生桌面工具</td></tr>
+  <tr><td>C++</td><td>3D-model-construction, Game-Cheats-Manager</td><td>底层计算、PE 工具</td></tr>
+  <tr><td>Smali</td><td>card-unlock-master</td><td>安卓逆向练习</td></tr>
+  <tr><td>Kotlin</td><td>Operit (Fork)</td><td>Android 原生 Agent 阅读</td></tr>
+  <tr><td>Rust</td><td>workbuddy-switch (Fork)</td><td>Tauri 桌面工具</td></tr>
+  <tr><td>Dart</td><td>app (StarCitizen Fork)</td><td>跨端移动工具阅读</td></tr>
+  <tr><td>PowerShell</td><td>dsh-pojia-mode (Fork)</td><td>Windows 自动化</td></tr>
+</table>
+
+<h2><span class="plum"><svg width="24" height="24" viewBox="0 0 24 24" aria-hidden="true"><g fill="#C8102E"><circle cx="12" cy="7" r="3.2"/><circle cx="16" cy="10.8" r="3.2"/><circle cx="14.5" cy="15.5" r="3.2"/><circle cx="9.5" cy="15.5" r="3.2"/><circle cx="8" cy="10.8" r="3.2"/></g><circle cx="12" cy="11.5" r="2" fill="#F5C242"/></svg></span>🤝 六、开源协作数据</h2>
+<div class="lead"><span class="tag">▶ 本章重点：</span>PR 占 <strong>99%</strong>，从个人实验走向向上游提交 <strong>PR #15790</strong>。</div>
+<ul>
+  <li><strong>第一个 PR</strong>：2026 年 8 月，在 <code>-Beta-version</code> 仓库开出 PR #1。</li>
+  <li><strong>Fork 阅读的上游项目</strong>：包括 <code>deepseek-ai/deepseek-harness</code>、<code>MSLTeam/MSL</code>、<code>notepad-plus-plus/notepad-plus-plus</code>、<code>BluePointLilac/ContextMenuManager</code>、<code>oftx/LyricStage</code>、<code>dyang886/Game-Cheats-Manager</code>、<code>chenzhaoxuan0/sub-title</code> 等十余个。</li>
+  <li><strong>最近一次对外贡献</strong>：2026 年 11 月 16 日，向 <code>awesome-dsh-plugin/awesome-dsh-plugin</code> 提交 PR #15790。</li>
+  <li><strong>活动面板分布</strong>：代码评审 1%，Pull Request 99%。</li>
+</ul>
+
+<h2><span class="plum"><svg width="24" height="24" viewBox="0 0 24 24" aria-hidden="true"><g fill="#C8102E"><circle cx="12" cy="7" r="3.2"/><circle cx="16" cy="10.8" r="3.2"/><circle cx="14.5" cy="15.5" r="3.2"/><circle cx="9.5" cy="15.5" r="3.2"/><circle cx="8" cy="10.8" r="3.2"/></g><circle cx="12" cy="11.5" r="2" fill="#F5C242"/></svg></span>📝 七、踩过的坑与方法论</h2>
+<div class="lead"><span class="tag">▶ 本章重点：</span><strong>本地优先、双远程备份、安全先行、稳定优先、备份常态化</strong>——五条工作流原则。</div>
+<ol>
+  <li><strong>本地优先，服务器只跑不写</strong>。博客项目所有改动先在本地完成，测试通过再上传服务器，最后推 GitHub + Gitee 双远程。</li>
+  <li><strong>双远程备份</strong>。GitHub + Gitee 同时推，互为异地容灾。两个仓库提交哈希永远一致。</li>
+  <li><strong>CSP 严格模式是好事</strong>。inline script/style 全外链化，收窄 XSS 攻击面。</li>
+  <li><strong>工具优先稳定，功能其次</strong>。修改器 0.3 花大力气拆模块，就是为了以后加功能不动核心。</li>
+  <li><strong>备份是流程不是附加项</strong>。博客数据库每天 dump，MC 存档每天打包，代码 Git 双远程。</li>
+</ol>
+
+<h2><span class="plum"><svg width="24" height="24" viewBox="0 0 24 24" aria-hidden="true"><g fill="#C8102E"><circle cx="12" cy="7" r="3.2"/><circle cx="16" cy="10.8" r="3.2"/><circle cx="14.5" cy="15.5" r="3.2"/><circle cx="9.5" cy="15.5" r="3.2"/><circle cx="8" cy="10.8" r="3.2"/></g><circle cx="12" cy="11.5" r="2" fill="#F5C242"/></svg></span>🌱 八、不足与明年计划</h2>
+<div class="lead"><span class="tag">▶ 本章重点：</span>补持续度、补深度、补文档、补测试；2027 年六项硬指标。</div>
+<p>短板：5~7 月三个月完全沉默；语言太杂但深度不够；README/文档写得少；测试基本为零；Fork 多、原创少。</p>
+<p><strong>2027 年目标：</strong></p>
+<ol>
+  <li>blog3.0 前后端分离重构，替换 blog2.1。</li>
+  <li>DSH 插件生态统一插件市场页面。</li>
+  <li>修改器核心模块 C++ 重写。</li>
+  <li>补齐所有仓库 README。</li>
+  <li>每月≥20 次公开贡献。</li>
+  <li>给关键项目写最基础的回归测试。</li>
+</ol>
+
+<h2><span class="plum"><svg width="24" height="24" viewBox="0 0 24 24" aria-hidden="true"><g fill="#C8102E"><circle cx="12" cy="7" r="3.2"/><circle cx="16" cy="10.8" r="3.2"/><circle cx="14.5" cy="15.5" r="3.2"/><circle cx="9.5" cy="15.5" r="3.2"/><circle cx="8" cy="10.8" r="3.2"/></g><circle cx="12" cy="11.5" r="2" fill="#F5C242"/></svg></span>🧧 九、结语</h2>
+<div class="ingot-row" aria-hidden="true">
+  <svg width="60" height="40" viewBox="0 0 60 40"><path d="M8 30 Q10 17 22 17 L38 17 Q50 17 52 30 Z" fill="#F5C242" stroke="#E8B84B" stroke-width="1.5"/><ellipse cx="30" cy="17" rx="8" ry="4" fill="#FFF1DC"/></svg>
+  <svg class="cloud-band" width="180" height="36" viewBox="0 0 180 36"><g fill="none" stroke="#E8B84B" stroke-width="2.5" stroke-linecap="round"><path d="M10 26 q10 -14 26 -8 q6 -12 22 -6 q14 -10 26 0 q16 -4 20 10"/><path d="M96 26 q10 -14 26 -8 q6 -12 22 -6 q14 -10 26 0 q16 -4 20 10"/></g></svg>
+  <svg width="60" height="40" viewBox="0 0 60 40"><path d="M8 30 Q10 17 22 17 L38 17 Q50 17 52 30 Z" fill="#F5C242" stroke="#E8B84B" stroke-width="1.5"/><ellipse cx="30" cy="17" rx="8" ry="4" fill="#FFF1DC"/></svg>
+</div>
+<blockquote>
+  <p>🏮 <strong>爆竹声中一岁除，春风送暖入屠苏。</strong></p>
+  <p>352 次贡献，55 个仓库，12 种语言，从一个静态 HTML 页面写到一套全门禁博客系统、一个 DSH 插件生态、几个游戏修改器、一套 MC 开服监控。这一年没有什么惊天动地的开源大作，但每一行代码都是为了解决自己真实遇到的问题而写。</p>
+  <p>写工具这件事最有意思的地方在于：你今天花半小时写的小脚本，明天可能就变成你每天都会打开一次的日常工具；你今天 Fork 来学习的一个开源项目，半年后可能变成你自己生态的一部分。</p>
+  <p><strong>新岁将启，代码不止。明年继续。</strong> 🎆</p>
+</blockquote>
+
+<figure class="moment-photo truck-scene">
+  <svg viewBox="0 0 800 360" role="img" aria-label="手绘卡通小木房卡车在雪山公路上行驶的动画">
+    <defs>
+      <linearGradient id="skyGrad" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0" stop-color="#9FD4EE"/><stop offset="1" stop-color="#D9EEF7"/>
+      </linearGradient>
+      <linearGradient id="fadeL" x1="0" y1="0" x2="1" y2="0">
+        <stop offset="0" stop-color="#BFE3F2"/><stop offset="1" stop-color="#BFE3F2" stop-opacity="0"/>
+      </linearGradient>
+      <linearGradient id="fadeR" x1="0" y1="0" x2="1" y2="0">
+        <stop offset="0" stop-color="#BFE3F2" stop-opacity="0"/><stop offset="1" stop-color="#BFE3F2"/>
+      </linearGradient>
+    </defs>
+    <!-- 天空与远山 -->
+    <rect x="0" y="0" width="800" height="288" fill="url(#skyGrad)"/>
+    <path d="M0 220 L120 150 L220 210 L340 140 L470 215 L600 150 L720 205 L800 170 L800 288 L0 288 Z" fill="#C7DCE8"/>
+    <path d="M0 250 L100 190 L190 245 L300 180 L420 250 L540 195 L660 245 L760 200 L800 235 L800 288 L0 288 Z" fill="#EDF4F8"/>
+    <!-- 公路 -->
+    <rect x="0" y="288" width="800" height="6" fill="#E8C9A0"/>
+    <rect x="0" y="294" width="800" height="66" fill="#6B5D54"/>
+    <g class="road-dashes">
+      <rect x="-80" y="322" width="44" height="6" rx="3" fill="#F5C242"/>
+      <rect x="0"   y="322" width="44" height="6" rx="3" fill="#F5C242"/>
+      <rect x="80"  y="322" width="44" height="6" rx="3" fill="#F5C242"/>
+      <rect x="160" y="322" width="44" height="6" rx="3" fill="#F5C242"/>
+      <rect x="240" y="322" width="44" height="6" rx="3" fill="#F5C242"/>
+      <rect x="320" y="322" width="44" height="6" rx="3" fill="#F5C242"/>
+      <rect x="400" y="322" width="44" height="6" rx="3" fill="#F5C242"/>
+      <rect x="480" y="322" width="44" height="6" rx="3" fill="#F5C242"/>
+      <rect x="560" y="322" width="44" height="6" rx="3" fill="#F5C242"/>
+      <rect x="640" y="322" width="44" height="6" rx="3" fill="#F5C242"/>
+      <rect x="720" y="322" width="44" height="6" rx="3" fill="#F5C242"/>
+      <rect x="800" y="322" width="44" height="6" rx="3" fill="#F5C242"/>
+    </g>
+    <!-- 卡车（整体沿路行驶） -->
+    <g class="truck-car">
+      <g class="truck-body">
+        <!-- 车身水平镜像，使车头朝右行驶 -->
+        <g transform="translate(702,0) scale(-1,1)">
+          <!-- 驾驶室 -->
+          <rect x="206" y="200" width="94" height="68" rx="7" fill="#2E6FB7" stroke="#1F5488" stroke-width="2"/>
+          <rect x="216" y="208" width="34" height="30" rx="4" fill="#D7EEF7" stroke="#1F5488" stroke-width="1.5"/>
+          <rect x="206" y="214" width="18" height="54" fill="#C8102E"/>
+          <circle cx="211" cy="232" r="5" fill="#F5C242"/>
+          <rect x="198" y="256" width="104" height="12" rx="5" fill="#1F5488"/>
+          <!-- 木板小房货厢 -->
+          <path d="M294 178 L312 158 L488 158 L506 178 Z" fill="#A97B3F" stroke="#2E6FB7" stroke-width="2"/>
+          <rect x="300" y="178" width="196" height="90" rx="6" fill="#C99A5B" stroke="#2E6FB7" stroke-width="3"/>
+          <line x1="304" y1="205" x2="492" y2="205" stroke="#A97B3F" stroke-width="1.5"/>
+          <line x1="304" y1="232" x2="492" y2="232" stroke="#A97B3F" stroke-width="1.5"/>
+          <line x1="304" y1="255" x2="492" y2="255" stroke="#A97B3F" stroke-width="1.5"/>
+          <line x1="344" y1="181" x2="344" y2="265" stroke="#A97B3F" stroke-width="1.5"/>
+          <line x1="384" y1="181" x2="384" y2="265" stroke="#A97B3F" stroke-width="1.5"/>
+          <line x1="424" y1="181" x2="424" y2="265" stroke="#A97B3F" stroke-width="1.5"/>
+          <line x1="464" y1="181" x2="464" y2="265" stroke="#A97B3F" stroke-width="1.5"/>
+          <rect x="316" y="196" width="30" height="26" rx="3" fill="#D7EEF7" stroke="#2E6FB7" stroke-width="1.5"/>
+          <rect x="430" y="214" width="34" height="40" rx="3" fill="#8A5A2B" stroke="#2E6FB7" stroke-width="1.5"/>
+          <!-- 底盘 -->
+          <rect x="196" y="264" width="304" height="10" fill="#4A3B2A"/>
+          <!-- 车轮 -->
+          <g class="wheel">
+            <circle cx="250" cy="272" r="26" fill="#333"/>
+            <circle cx="250" cy="272" r="12" fill="#D9D9D9"/>
+            <line x1="250" y1="262" x2="250" y2="282" stroke="#888" stroke-width="2"/>
+            <line x1="240" y1="272" x2="260" y2="272" stroke="#888" stroke-width="2"/>
+            <circle cx="250" cy="272" r="3.5" fill="#555"/>
+          </g>
+          <g class="wheel">
+            <circle cx="452" cy="272" r="26" fill="#333"/>
+            <circle cx="452" cy="272" r="12" fill="#D9D9D9"/>
+            <line x1="452" y1="262" x2="452" y2="282" stroke="#888" stroke-width="2"/>
+            <line x1="442" y1="272" x2="462" y2="272" stroke="#888" stroke-width="2"/>
+            <circle cx="452" cy="272" r="3.5" fill="#555"/>
+          </g>
+        </g>
+        <!-- 车尾（左后）排气筒与尾气，不镜像 -->
+        <rect x="196" y="228" width="8" height="20" fill="#555"/>
+        <circle class="smoke"    cx="192" cy="222" r="6" fill="#FFFFFF" opacity=".7"/>
+        <circle class="smoke s2" cx="192" cy="222" r="6" fill="#FFFFFF" opacity=".7"/>
+        <circle class="smoke s3" cx="192" cy="222" r="6" fill="#FFFFFF" opacity=".7"/>
+      </g>
+    </g>
+    <!-- 两端淡出遮罩，避免卡车生硬出画 -->
+    <rect class="edge-fade" x="0" y="0" width="70" height="360" fill="url(#fadeL)"/>
+    <rect class="edge-fade" x="730" y="0" width="70" height="360" fill="url(#fadeR)"/>
+  </svg>
+  <figcaption>🚛 路上一瞥：手绘小木房卡车 · 雪后晴空，一路向前</figcaption>
+</figure>
+
+<p class="footer">— 180lisilence · 2026 岁末盘点 · 新春红金特辑 —</p>
+
+</div>
+
+<script>
+  const bgm = document.getElementById('bgm');
+  const btn = document.getElementById('bgmBtn');
+  let playing = false, bgmMissing = false;
+  bgm.src = encodeURI('新春背景音乐.wav');
+  bgm.addEventListener('error', function () { bgmMissing = true; });
+  function toggleBgm() {
+    if (!playing) {
+      if (bgmMissing) { bgm.load(); bgmMissing = false; }
+      bgm.play().then(() => {
+        playing = true;
+        btn.textContent = '🔇 暂停新春旋律';
+      }).catch(function (e) {
+        if (e && (e.name === 'NotAllowedError' || e.name === 'AbortError')) {
+          btn.textContent = '🎵 浏览器拦截了自动播放，请再点一次';
+        } else {
+          bgmMissing = true;
+          btn.textContent = '🎵 音频未加载，点击重试';
+        }
+      });
+    } else {
+      bgm.pause();
+      playing = false;
+      btn.textContent = '🎵 播放新春旋律';
+    }
+  }
+
+  // 下落烟花（内联生成，无外部资源；图形为烟花，自顶部飘落）
+  (function () {
+    if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    const palette = ['#F5C242', '#E8B84B', '#FF7A7A', '#F5C242'];
+    const RAYS = 8;
+    function sparkSVG(color, size) {
+      const c = 24, rays = [], dots = [];
+      for (let k = 0; k < RAYS; k++) {
+        const a = (Math.PI * 2 * k) / RAYS;
+        const x2 = c + Math.cos(a) * 18, y2 = c + Math.sin(a) * 18;
+        rays.push('<line x1="' + c + '" y1="' + c + '" x2="' + x2.toFixed(1) + '" y2="' + y2.toFixed(1) + '" class="ray" stroke="' + color + '"/>');
+        dots.push('<circle cx="' + x2.toFixed(1) + '" cy="' + y2.toFixed(1) + '" r="1.6" fill="' + color + '"/>');
+      }
+      return '<svg width="' + size + '" height="' + size + '" viewBox="0 0 48 48" aria-hidden="true">' +
+        rays.join('') + dots.join('') +
+        '<circle cx="' + c + '" cy="' + c + '" r="3" fill="#FFF1DC"/></svg>';
+    }
+    for (let i = 0; i < 14; i++) {
+      const s = document.createElement('div');
+      s.className = 'spark';
+      const size = 26 + Math.random() * 26;
+      s.style.left = Math.random() * 100 + 'vw';
+      s.innerHTML = sparkSVG(palette[i % palette.length], size);
+      s.style.animationDuration = (6 + Math.random() * 6) + 's';
+      s.style.animationDelay = (Math.random() * 8) + 's';
+      document.body.appendChild(s);
+    }
+  })();
+
+  // 顶部阅读进度条 + 数字进入视口滚动计数
+  (function () {
+    var bar = document.getElementById('progressBar');
+    function onScroll() {
+      var h = document.documentElement;
+      var max = h.scrollHeight - h.clientHeight;
+      bar.style.width = (max > 0 ? (h.scrollTop / max) * 100 : 0) + '%';
+    }
+    window.addEventListener('scroll', onScroll, { passive: true });
+    onScroll();
+
+    var reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    var nums = document.querySelectorAll('.stat .num');
+    function animate(el) {
+      var raw = el.textContent.trim().replace(/,/g, '');
+      var m = raw.match(/^(\d+)(.*)$/);
+      if (!m) return;
+      var target = parseInt(m[1], 10), suffix = m[2];
+      if (reduce) { el.textContent = target + suffix; return; }
+      var start = null, dur = 900;
+      function step(ts) {
+        if (!start) start = ts;
+        var p = Math.min((ts - start) / dur, 1);
+        var eased = 1 - Math.pow(1 - p, 3);
+        el.textContent = Math.round(target * eased) + suffix;
+        if (p < 1) requestAnimationFrame(step);
+      }
+      requestAnimationFrame(step);
+    }
+    if ('IntersectionObserver' in window) {
+      var io = new IntersectionObserver(function (entries) {
+        entries.forEach(function (e) {
+          if (e.isIntersecting) { animate(e.target); io.unobserve(e.target); }
+        });
+      }, { threshold: .4 });
+      nums.forEach(function (n) { io.observe(n); });
+    } else {
+      nums.forEach(animate);
+    }
+  })();
+
+  // ===== 五个交互动效（原生 JS，无外部依赖） =====
+  (function () {
+    // —— 章节锚点 + 玻璃停靠栏 ——
+    var headings = Array.prototype.slice.call(document.querySelectorAll('.wrap > h2'));
+    headings.forEach(function (h, i) { h.id = 'sec' + (i + 1); });
+    var labels = ['概览', '数字', '时间线', '方向', '技术栈', '协作', '方法论', '计划', '结语'];
+    var icons = ['🧨', '🏮', '🕰️', '📁', '🧰', '🤝', '📝', '🌱', '🧧'];
+
+    var dock = document.createElement('nav');
+    dock.className = 'nav-dock';
+    dock.setAttribute('aria-label', '章节导航');
+    var pill = document.createElement('div');
+    pill.className = 'dock-pill';
+    dock.appendChild(pill);
+
+    var DOCK_PAD = 12;
+    var items = headings.map(function (h, i) {
+      var b = document.createElement('button');
+      b.className = 'dock-item';
+      b.setAttribute('aria-label', '跳转到：' + labels[i]);
+      b.innerHTML = '<span>' + icons[i] + '</span><span class="tip">' + labels[i] + '</span>';
+      b.addEventListener('click', function () {
+        h.scrollIntoView({ behavior: 'smooth' });
+        setActive(i);
+      });
+      b.addEventListener('mouseenter', function () { markNeighbors(i); });
+      b.addEventListener('mouseleave', markNeighborsReset);
+      dock.appendChild(b);
+      return b;
+    });
+    document.body.appendChild(dock);
+
+    var current = 0;
+    function movePill(i) {
+      var b = items[i];
+      pill.style.height = b.offsetHeight + 'px';
+      pill.style.transform = 'translateY(' + (b.offsetTop - DOCK_PAD) + 'px)';
+    }
+    function setActive(i) {
+      items.forEach(function (b, k) { b.classList.toggle('active', k === i); });
+      current = i;
+      movePill(i);
+    }
+    function markNeighbors(i) {
+      items.forEach(function (b, k) { b.classList.toggle('neighbor', Math.abs(k - i) === 1); });
+    }
+    function markNeighborsReset() {
+      items.forEach(function (b) { b.classList.remove('neighbor'); });
+    }
+    window.addEventListener('resize', function () { movePill(current); });
+    requestAnimationFrame(function () { movePill(0); });
+
+    // 滚动时高亮当前章节，胶囊平滑跟随
+    var secs = headings.map(function (h) { return document.getElementById(h.id); });
+    if ('IntersectionObserver' in window) {
+      var io = new IntersectionObserver(function (entries) {
+        entries.forEach(function (e) {
+          if (e.isIntersecting) {
+            var i = secs.indexOf(e.target);
+            if (i >= 0) setActive(i);
+          }
+        });
+      }, { rootMargin: '-30% 0px -60% 0px' });
+      secs.forEach(function (s) { io.observe(s); });
+    }
+    // 小节折叠/展开后稳住当前章节高亮，避免停靠栏胶囊跳变
+    window.addEventListener('report:toggle-collapse', function () { setActive(current); });
+
+    // —— 聚光跟随 + 边缘流光 ——
+    document.querySelectorAll('.stat, .lead').forEach(function (el) {
+      el.classList.add('spot');
+      if (el.classList.contains('stat')) el.classList.add('beam');
+      el.addEventListener('mousemove', function (ev) {
+        var r = el.getBoundingClientRect();
+        el.style.setProperty('--mx', (ev.clientX - r.left) + 'px');
+        el.style.setProperty('--my', (ev.clientY - r.top) + 'px');
+      });
+    });
+
+    // —— 小节点击原位展开 / 收回（包裹独立容器，仅折叠本节；键盘可达） ——
+    var subHs = Array.prototype.slice.call(document.querySelectorAll('h3'));
+    subHs.forEach(function (h, idx) {
+      var block = document.createElement('div');
+      block.className = 'collapse-block';
+      var body = document.createElement('div');
+      body.className = 'collapse-body';
+      var inner = document.createElement('div');
+      inner.className = 'collapse-inner';
+      body.appendChild(inner);
+      var nodes = [];
+      var n = h.nextSibling;
+      while (n && n.nodeName !== 'H2' && n.nodeName !== 'H3') {
+        nodes.push(n);
+        n = n.nextSibling;
+      }
+      nodes.forEach(function (x) { inner.appendChild(x); });
+      h.id = 'sub-' + (idx + 1);
+      h.classList.add('collapse-toggle');
+      h.setAttribute('role', 'button');
+      h.setAttribute('tabindex', '0');
+      h.setAttribute('aria-expanded', 'true');
+      block.setAttribute('aria-labelledby', h.id);
+      // 以 block 占据 h3 原位，再把标题与正文收进 block
+      h.parentNode.insertBefore(block, h);
+      block.appendChild(h);
+      block.appendChild(body);
+      function toggle() {
+        var collapsed = block.classList.toggle('collapsed');
+        h.setAttribute('aria-expanded', String(!collapsed));
+        // 折叠小节不改变当前章节认知，通知停靠栏稳住高亮、避免胶囊跳变
+        window.dispatchEvent(new CustomEvent('report:toggle-collapse'));
+      }
+      h.addEventListener('click', toggle);
+      h.addEventListener('keydown', function (e) {
+        if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggle(); }
+      });
+    });
+  })();
+
+</script>
+</body>
+</html>

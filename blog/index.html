@@ -17,6 +17,18 @@
 .links-hint{font-size:14px;color:#6b7280;margin:10px 0 18px}
 .project-card.ext-card{border-style:dashed}
 .project-card.ext-card .proj-links a{color:#0f766e}
+/* 年度报告专项入口 */
+.yearone-feature{margin:6px 0 34px}
+.yearone-inner{display:block;position:relative;padding:28px 26px;border-radius:16px;text-decoration:none;overflow:hidden;
+  background:radial-gradient(circle at 12% 18%,rgba(255,214,110,.55),transparent 46%),linear-gradient(135deg,#a51c14 0%,#d9341f 55%,#e8611c 100%);
+  border:2px solid rgba(255,214,110,.55);box-shadow:0 14px 34px rgba(165,28,20,.28);transition:transform .25s,box-shadow .25s}
+.yearone-inner:hover{transform:translateY(-2px);box-shadow:0 18px 42px rgba(165,28,20,.36)}
+.yearone-badge{display:inline-block;background:linear-gradient(135deg,#ffe08a,#ffb43a);color:#7a1c0c;font-size:12px;font-weight:700;padding:4px 12px;border-radius:999px;letter-spacing:.5px}
+.yearone-inner h2{color:#fff6dc;font-size:22px;margin:12px 0 10px;text-shadow:0 2px 10px rgba(0,0,0,.25)}
+.yearone-inner p{color:#ffe9c2;font-size:14px;line-height:1.7;margin:0 0 16px}
+.yearone-cta{display:inline-block;background:#fff6dc;color:#a51c14;font-weight:700;font-size:14px;padding:9px 18px;border-radius:10px;box-shadow:0 6px 16px rgba(0,0,0,.18)}
+.yearone-inner:hover .yearone-cta{background:#fff}
+@media (max-width:600px){.yearone-inner{padding:22px 18px}.yearone-inner h2{font-size:18px}}
 </style>
 </head>
 <body>
@@ -51,6 +63,16 @@
 </section>
 
 <main class="container">
+
+  <!-- 🧧 年度报告专项入口 -->
+  <section class="yearone-feature">
+    <a class="yearone-inner" href="/yearone/">
+      <span class="yearone-badge">🧧 年度专项</span>
+      <h2>🏮 2026 年度个人开发报告 · 新春特辑</h2>
+      <p>这一年做过的项目、踩过的坑、堆起来的技术栈，全部收进一页可滚动的年度盘点——带封面、烟花和一段新春旋律。</p>
+      <span class="yearone-cta">进入年度报告 →</span>
+    </a>
+  </section>
 
   <!-- 精选文章 -->
   <h2 class="section-title" style="color:#667eea">⭐ 精选文章</h2>
