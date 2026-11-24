@@ -1,0 +1,95 @@
+/* ============================================================
+ * 启动动画插件 —— 样式
+ * 由内核注入，通过 .dsh-splash 是否存在来决定要不要显示。
+ * ============================================================ */
+
+html body #__dsh_splash__ {
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    width: 100vw !important;
+    height: 100vh !important;
+    height: 100dvh !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    background: var(--dsh-splash-bg, #0f0f10) !important;
+    z-index: 2147483600 !important;
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    justify-content: center !important;
+    pointer-events: auto !important;
+    opacity: 1 !important;
+    transition: opacity 400ms ease-out !important;
+    -webkit-user-select: none !important;
+    user-select: none !important;
+    font-family: -apple-system, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif !important;
+}
+
+html body #__dsh_splash__.dsh-fade-out {
+    opacity: 0 !important;
+    pointer-events: none !important;
+}
+
+html body #__dsh_splash__ .dsh-splash-logo {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    max-width: 60vw !important;
+}
+
+html body #__dsh_splash__ .dsh-splash-logo svg {
+    width: 160px !important;
+    height: auto !important;
+    max-height: 60px !important;
+    fill: var(--dsh-splash-accent, #4d6bfe) !important;
+}
+
+/* 呼吸 */
+html body #__dsh_splash__.dsh-style-breathe .dsh-splash-logo {
+    animation: dsh-splash-breathe 1.6s ease-in-out infinite !important;
+}
+/* 旋转 */
+html body #__dsh_splash__.dsh-style-spin .dsh-splash-logo {
+    animation: dsh-splash-spin 1.2s linear infinite !important;
+}
+/* 弹跳 */
+html body #__dsh_splash__.dsh-style-bounce .dsh-splash-logo {
+    animation: dsh-splash-bounce 1s ease-in-out infinite !important;
+}
+/* 纯文字（找不到 logo.svg 时的兜底 / 手动选择） */
+html body #__dsh_splash__.dsh-style-text .dsh-splash-logo svg {
+    display: none !important;
+}
+html body #__dsh_splash__.dsh-style-text .dsh-splash-logo::after {
+    content: attr(data-text) !important;
+    font-size: 36px !important;
+    font-weight: 600 !important;
+    letter-spacing: 4px !important;
+    color: var(--dsh-splash-accent, #4d6bfe) !important;
+    animation: dsh-splash-breathe 1.6s ease-in-out infinite !important;
+}
+/* 没有 logo 时自动退化为文字 */
+html body #__dsh_splash__.dsh-no-logo .dsh-splash-logo svg {
+    display: none !important;
+}
+html body #__dsh_splash__.dsh-no-logo .dsh-splash-logo::after {
+    content: attr(data-text) !important;
+    font-size: 36px !important;
+    font-weight: 600 !important;
+    letter-spacing: 4px !important;
+    color: var(--dsh-splash-accent, #4d6bfe) !important;
+}
+
+@keyframes dsh-splash-breathe {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.6; transform: scale(0.92); }
+}
+@keyframes dsh-splash-spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
+@keyframes dsh-splash-bounce {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-12px); }
+}

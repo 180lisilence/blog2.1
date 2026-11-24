@@ -1,0 +1,15 @@
+{
+  "id": "filebrowser",
+  "name": "文件浏览",
+  "version": "1.0.0",
+  "author": "",
+  "description": "右侧文件面板：浏览指定文件夹，点文件夹进入，图片/文本直接预览",
+  "defaultEnabled": false,
+  "entry": "main.js",
+  "defaults": {
+    "enabled": false,
+    "rootPath": "",
+    "width": 320,
+    "visible": true
+  }
+}

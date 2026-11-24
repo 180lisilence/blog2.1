@@ -1,0 +1,19 @@
+{
+  "id": "wallpaper",
+  "name": "动态壁纸",
+  "version": "1.0.0",
+  "author": "",
+  "description": "联动 Steam Wallpaper Engine：把当前壁纸（Web / 视频 / 图片）渲染到聊天背景",
+  "defaultEnabled": false,
+  "entry": "main.js",
+  "defaults": {
+    "enabled": false,
+    "source": "follow",
+    "recentPath": "",
+    "manualPath": "",
+    "scale": 100,
+    "muted": true,
+    "opacity": 100,
+    "autoFollow": false
+  }
+}

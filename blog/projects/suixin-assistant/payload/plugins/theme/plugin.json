@@ -1,0 +1,29 @@
+{
+  "id": "theme",
+  "name": "主题",
+  "version": "1.0.0",
+  "author": "",
+  "description": "自定义主题：背景图 / 蒙版 / 面板不透明度 / 圆角 / 强调色",
+  "defaultEnabled": true,
+  "entry": "main.js",
+  "style": "style.css",
+  "defaults": {
+    "image": "",
+    "fit": "cover",
+    "zoom": 100,
+    "offsetX": 0,
+    "offsetY": 0,
+    "blur": 0,
+    "overlay": 15,
+    "overlayColor": "auto",
+    "card": 55,
+    "textShadow": true,
+    "aggressive": false,
+    "hideScrollbar": false,
+    "accent": "",
+    "radius": -1,
+    "welcomeText": "",
+    "welcomeColor": "",
+    "textColor": ""
+  }
+}

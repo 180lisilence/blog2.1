@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Industrial-chain-doubao-skill · 安卓静态 Triage 技能</title>
+<meta name="description" content="安卓 APK/DEX/SO 样本只读静态建档与初步 triage 的 Doubao Skill 方法库">
+<style>
+  :root{
+    --bg:#f6f7f9; --card:#ffffff; --ink:#1f2328; --muted:#57606a;
+    --line:#e5e7eb; --accent:#0969da; --accent-soft:#ddf4ff;
+    --ok:#1a7f37; --warn:#9a6700; --bad:#cf222e; --radius:12px;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif;background:var(--bg);color:var(--ink);line-height:1.65}
+  .wrap{max-width:960px;margin:0 auto;padding:0 20px}
+  header{padding:56px 0 28px;border-bottom:1px solid var(--line)}
+  h1{font-size:30px;margin:0 0 12px;letter-spacing:-.02em}
+  .sub{font-size:17px;color:var(--muted);max-width:680px}
+  .badges{display:flex;flex-wrap:wrap;gap:8px;margin-top:18px}
+  .badge{font-size:13px;padding:4px 12px;border-radius:999px;background:var(--accent-soft);color:var(--accent);border:1px solid #b6e3ff}
+  section{padding:32px 0;border-bottom:1px solid var(--line)}
+  h2{font-size:21px;margin:0 0 16px}
+  .grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+  @media(max-width:720px){.grid{grid-template-columns:1fr}}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:20px}
+  .card h3{margin:0 0 10px;font-size:15px}
+  ul{margin:0;padding-left:20px}
+  li{margin:6px 0}
+  table{width:100%;border-collapse:collapse;font-size:14.5px}
+  th,td{text-align:left;padding:10px 12px;border-bottom:1px solid var(--line);vertical-align:top}
+  th{color:var(--muted);font-weight:600;font-size:13px}
+  code{background:#f0f1f3;border-radius:5px;padding:1px 6px;font-size:13px;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
+  a{color:var(--accent);text-decoration:none}
+  a:hover{text-decoration:underline}
+  .tag{display:inline-block;font-size:12px;padding:1px 8px;border-radius:6px;margin-right:6px}
+  .t-fact{background:#e6f4ea;color:var(--ok)}
+  .t-infer{background:#fff8c5;color:var(--warn)}
+  .t-gap{background:#ffebe9;color:var(--bad)}
+  .muted{color:var(--muted);font-size:13.5px}
+  .actions{margin-top:22px;display:flex;gap:12px;flex-wrap:wrap}
+  .btn{display:inline-block;padding:9px 18px;border-radius:8px;font-size:14px;border:1px solid var(--line)}
+  .btn-primary{background:var(--accent);color:#fff;border-color:var(--accent)}
+  footer{padding:28px 0 48px;color:var(--muted);font-size:13px}
+</style>
+</head>
+<body>
+<header>
+  <div class="wrap">
+    <h1>Industrial-chain-doubao-skill</h1>
+    <p class="sub">安卓 APK / DEX / SO 样本<strong>只读</strong>静态建档与初步 triage 的 Doubao Skill 方法库：从 badging、Manifest、解包产物、native so、字符串线索中提取身份与技术栈，按固定台账模板落盘，产出分级可修改点骨架。</p>
+    <div class="badges">
+      <span class="badge">Python 3.10+</span>
+      <span class="badge">核心纯标准库</span>
+      <span class="badge">只读静态阶段</span>
+      <span class="badge">证据标签分级</span>
+    </div>
+    <div class="actions">
+      <a class="btn btn-primary" href="https://github.com/180lisilence/Industrial-chain-doubao-skill" target="_blank" rel="noopener">查看源码仓库</a>
+      <a class="btn" href="https://github.com/180lisilence/Industrial-chain-doubao-skill/blob/main/skills/android-recon-triage/SKILL.md" target="_blank" rel="noopener">技能入口 SKILL.md</a>
+    </div>
+  </div>
+</header>
+
+<main class="wrap">
+
+  <section>
+    <h2>能力边界</h2>
+    <div class="grid">
+      <div class="card">
+        <h3>覆盖</h3>
+        <ul>
+          <li>样本身份识别：包名 / 版本 / SDK / ABI / 入口 Activity / 权限 / 体积</li>
+          <li>解包与规模统计：dex / smali / Java / so / assets 计数</li>
+          <li>静态线索扫描：字符串分组、ELF 符号、壳与加固特征、签名证书线索</li>
+          <li>可修改点 A/B/C/D 分级台账建档</li>
+        </ul>
+      </div>
+      <div class="card">
+        <h3>不做</h3>
+        <ul>
+          <li>补丁写回、DEX 校验和重算、重打包 / 对齐 / 重签</li>
+          <li>frida 动态 hook、运行时脱壳 dump、真机观测</li>
+          <li>native 函数级反汇编与伪代码还原</li>
+          <li>探测样本后端域名 / IP / 卡密端点</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h2>挂载脚本</h2>
+    <p class="muted">均为只读；缺省结果打到 stdout，<code>--out</code> 指定时写文件。外部工具由 <code>_toolfind.py</code> 自动定位。</p>
+    <table>
+      <thead><tr><th>脚本</th><th>作用</th></tr></thead>
+      <tbody>
+        <tr><td><code>recon_identity.py</code></td><td>APK 身份识别：解析 aapt2 badging；aapt2 缺失时回退 androguard</td></tr>
+        <tr><td><code>strings_scan.py</code></td><td>可打印串提取，按授权 / 卡密 / URL / 签名 / 反调试 / SDK 标识分组</td></tr>
+        <tr><td><code>elf_triage.py</code></td><td>ELF(so/exe) 架构 / 类型 / NEEDED / 导出 / 导入 / JNI 线索初筛</td></tr>
+        <tr><td><code>packer_detect.py</code></td><td>DIE CLI + UPX 测试 + 特征关键词，判定壳 / 编译器</td></tr>
+        <tr><td><code>_toolfind.py</code></td><td>外部工具自动发现：环境变量 &gt; PATH &gt; 版本通配搜索，不写死绝对路径</td></tr>
+        <tr><td><code>_skillfind.py</code></td><td>本地技能库扫描与意图路由：解析 frontmatter，分词 + 同义词打分召回</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <section>
+    <h2>参考文档</h2>
+    <table>
+      <thead><tr><th>文档</th><th>内容</th></tr></thead>
+      <tbody>
+        <tr><td><a href="https://github.com/180lisilence/Industrial-chain-doubao-skill/blob/main/skills/android-recon-triage/references/sop.md" target="_blank" rel="noopener">sop.md</a></td><td>七阶段 SOP 细则与各阶段台账落点</td></tr>
+        <tr><td><a href="https://github.com/180lisilence/Industrial-chain-doubao-skill/blob/main/skills/android-recon-triage/references/ledger-conventions.md" target="_blank" rel="noopener">ledger-conventions.md</a></td><td>台账字段、A/B/C/D 分级口径、变体兼容、红线纪律</td></tr>
+        <tr><td><a href="https://github.com/180lisilence/Industrial-chain-doubao-skill/blob/main/skills/android-recon-triage/references/protection-map.md" target="_blank" rel="noopener">protection-map.md</a></td><td>已见防护 / 壳类型地图与静态识别要点</td></tr>
+        <tr><td><a href="https://github.com/180lisilence/Industrial-chain-doubao-skill/blob/main/skills/android-recon-triage/references/toolchain.md" target="_blank" rel="noopener">toolchain.md</a></td><td>工具参考版本、定位方式与已知坑</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <section>
+    <h2>台账模板（7 套空白）</h2>
+    <p class="muted">身份卡、方向卡、分析记录、待办进度、可修改点清单、项目记忆、交接文档；字段口径见 ledger-conventions.md。</p>
+    <div class="badges">
+      <span class="badge">identity.txt</span>
+      <span class="badge">方向.txt</span>
+      <span class="badge">analysis.md</span>
+      <span class="badge">待办进度.md</span>
+      <span class="badge">可修改点清单.md</span>
+      <span class="badge">项目记忆.md</span>
+      <span class="badge">交接.md</span>
+    </div>
+  </section>
+
+  <section>
+    <h2>证据口径</h2>
+    <div class="grid">
+      <div class="card">
+        <p><span class="tag t-fact">【事实】</span>文件 / 命令实读</p>
+        <p><span class="tag t-infer">【推断】</span>交叉推断，待动态或解密确认</p>
+        <p><span class="tag t-gap">【缺口】</span>未取得证据、读不到或未执行</p>
+      </div>
+      <div class="card">
+        <ul>
+          <li>版本 / 包名 / 计数 / 体积 / 路径 / 哈希 / 偏移必须来自实读，读不到写"未确认"，禁止编造</li>
+          <li>未装机 / 未运行 / 未脱壳 / 未 patch 的结论如实标注"未动态验证"</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h2>红线</h2>
+    <div class="card">
+      <ul>
+        <li>不探测 / 扫描 / 请求任何样本后端域名、IP、卡密端点；被标记为受限的后端域名及其子域禁止任何扫描探测动作</li>
+        <li>被标记为红线的样本仅做结构归档，不排还原 / 绕过 / 联调</li>
+        <li>凭证（token、私钥、签名库口令）只登记存在，不读取、不转写、不进对外摘要</li>
+        <li>原始 APK / 样本 / 历史产物只读；补丁与重打包只在副本或工作区进行</li>
+      </ul>
+    </div>
+  </section>
+
+  <section>
+    <h2>运行环境</h2>
+    <p>Python 3.10+（推荐 3.14）；核心脚本纯标准库，可选第三方依赖 androguard / pyelftools / LIEF / capstone / pefile。缺库时脚本回退外部进程工具或记【缺口】，不崩溃。外部工具（aapt2 / rabin2 / diec / upx）通过环境变量、PATH 或版本通配自动定位，脚本不写死机器专属绝对路径。</p>
+  </section>
+
+</main>
+
+<footer>
+  <div class="wrap">
+    <p>本仓库仅覆盖只读静态阶段；动态验证、补丁重打包签名、native 深度还原属后续技能范围。</p>
+  </div>
+</footer>
+</body>
+</html>

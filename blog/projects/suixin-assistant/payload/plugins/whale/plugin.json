@@ -1,0 +1,11 @@
+{
+  "id": "whale",
+  "name": "小鲸鱼挂件",
+  "version": "1.0.0",
+  "description": "DeepSeek 小鲸鱼记账挂件：余额显示 + 泡泡互动 + 消耗监控",
+  "defaultEnabled": true,
+  "entry": "main.js",
+  "defaults": {
+    "apiKey": ""
+  }
+}

@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>随心助手 · DeepSeekChat 桌面版插件安装器</title>
+<meta name="description" content="随心助手：给 nativefier 打包的 DeepSeekChat 桌面版套上可插拔插件壳，数字菜单一键安装/卸载/自检，关掉即原版。">
+<style>
+  :root{
+    --bg:#f6f7fb; --card:#fff; --ink:#1f2430; --muted:#6b7280;
+    --line:#e6e8ef; --brand:#3b6cf6; --brand-soft:#eef2ff; --gold:#c8952f;
+  }
+  *{box-sizing:border-box}
+  body{
+    margin:0; background:var(--bg); color:var(--ink);
+    font-family:-apple-system,"Segoe UI","Microsoft YaHei",system-ui,sans-serif;
+    line-height:1.75; -webkit-font-smoothing:antialiased;
+  }
+  .wrap{max-width:960px;margin:0 auto;padding:40px 22px 64px}
+  .top{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:26px}
+  .back{color:var(--muted);text-decoration:none;font-size:14px}
+  .back:hover{color:var(--brand)}
+  .repo{font-size:14px;color:#fff;background:var(--brand);padding:8px 16px;border-radius:10px;text-decoration:none}
+  .repo:hover{background:#2f5be0}
+  header.hero{background:linear-gradient(135deg,#ffffff,#eef2ff);border:1px solid var(--line);border-radius:18px;padding:34px 30px;box-shadow:0 10px 30px rgba(31,36,48,.06)}
+  .tag{display:inline-block;background:var(--brand-soft);color:var(--brand);font-size:12.5px;padding:4px 12px;border-radius:999px;margin-bottom:12px}
+  h1{margin:0 0 10px;font-size:30px;letter-spacing:.5px}
+  .sub{color:var(--muted);margin:0 0 18px}
+  .hero-actions{display:flex;gap:12px;flex-wrap:wrap}
+  .btn{display:inline-flex;align-items:center;gap:8px;padding:11px 20px;border-radius:12px;text-decoration:none;font-weight:600;font-size:15px}
+  .btn-main{background:linear-gradient(135deg,#4d7bf7,#3b6cf6);color:#fff;box-shadow:0 8px 20px rgba(59,108,246,.28)}
+  .btn-main:hover{transform:translateY(-1px)}
+  .btn-ghost{background:#fff;color:var(--ink);border:1px solid var(--line)}
+  .btn-ghost:hover{border-color:#c9d2ee;color:var(--brand)}
+  h2{font-size:20px;margin:40px 0 14px;padding-left:12px;border-left:4px solid var(--brand)}
+  .grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
+  .p{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px 16px 18px;box-shadow:0 4px 14px rgba(31,36,48,.04)}
+  .p .n{font-weight:700;font-size:15.5px;margin-bottom:6px;display:flex;align-items:center;gap:8px}
+  .p .d{color:var(--muted);font-size:13.5px}
+  .steps{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:20px 22px}
+  .steps ol{margin:0;padding-left:20px}
+  .steps li{margin:6px 0}
+  code{background:#f1f3f9;padding:2px 7px;border-radius:6px;font-size:13px;color:#334155}
+  .menu{background:#0f172a;color:#d7e0f7;border-radius:14px;padding:18px 22px;font-family:ui-monospace,Consolas,monospace;font-size:13.5px;line-height:1.9;overflow:auto}
+  .feat{display:grid;grid-template-columns:repeat(2,1fr);gap:12px}
+  .f{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px 16px;font-size:14px}
+  .f b{color:var(--brand)}
+  .note{margin-top:26px;background:#fff8e6;border:1px solid #f3dfae;color:#7a5a13;border-radius:12px;padding:14px 18px;font-size:13.5px}
+  footer{margin-top:46px;color:var(--muted);font-size:13px;text-align:center}
+  @media (max-width:760px){.grid{grid-template-columns:1fr 1fr}.feat{grid-template-columns:1fr}h1{font-size:24px}}
+  @media (max-width:520px){.grid{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="top">
+    <a class="back" href="/">← 返回博客</a>
+    <a class="repo" href="https://github.com/180lisilence/dsh-election-chajian" target="_blank" rel="noopener">GitHub 仓库 ↗</a>
+  </div>
+
+  <header class="hero">
+    <span class="tag">DSH 桌面端 · 自托管</span>
+    <h1>随心助手 · Suixin Assistant</h1>
+    <p class="sub">给 nativefier 打包的 DeepSeekChat 桌面版套上可插拔插件壳：数字菜单一键安装 / 卸载 / 自检，关掉即回原版。</p>
+    <div class="hero-actions">
+      <a class="btn btn-main" href="download/dsh-election-chajian-v1.0.0.zip" download>⬇ 下载 v1.0.0（304 KB）</a>
+      <a class="btn btn-ghost" href="https://github.com/180lisilence/dsh-election-chajian/releases" target="_blank" rel="noopener">Release 页面</a>
+    </div>
+  </header>
+
+  <h2>六个插件</h2>
+  <div class="grid">
+    <div class="p"><div class="n">🎬 启动动画</div><div class="d">打开软件时的 Logo 加载画面，内置 4 种风格。</div></div>
+    <div class="p"><div class="n">🎨 主题</div><div class="d">背景图、蒙版、面板不透明度、强调色、圆角、欢迎词。</div></div>
+    <div class="p"><div class="n">🐳 小鲸鱼挂件</div><div class="d">余额显示 + 泡泡互动 + 消耗监控，需填 API Key。</div></div>
+    <div class="p"><div class="n">🛡️ 安全审查</div><div class="d">骨架占位，留作后续扩展。</div></div>
+    <div class="p"><div class="n">🖼️ 动态壁纸</div><div class="d">联动 Steam Wallpaper Engine 当前壁纸。</div></div>
+    <div class="p"><div class="n">📁 文件面板</div><div class="d">右侧文件浏览面板，依赖小鲸鱼入口。</div></div>
+  </div>
+
+  <h2>安装</h2>
+  <div class="steps">
+    <ol>
+      <li>下载上面的 <code>dsh-election-chajian-v1.0.0.zip</code> 并解压</li>
+      <li>双击 <code>随心助手.bat</code></li>
+      <li>按数字菜单选择要装的插件</li>
+      <li>完全退出 DeepSeekChat，再重新打开</li>
+    </ol>
+    <p class="sub" style="margin:12px 0 0">目标路径默认 <code>D:\TOOL\DeepSeekChat_win32_x64</code>，安装器会先自动备份现有 inject 目录。</p>
+  </div>
+
+  <h2>菜单</h2>
+  <div class="menu">[1] 全部安装（核心 + 6 插件）
+[2] 自定义选择插件（输入编号如 1,3,5）
+[3] 仅核心（不装插件）
+[4] 自检（检查文件完整性）
+[5] 卸载 Harness
+[0] 退出</div>
+
+  <h2>特性</h2>
+  <div class="feat">
+    <div class="f"><b>零残留</b> · 卸载后恢复原版，不碰 main.js / preload.js</div>
+    <div class="f"><b>即时开关</b> · 齿轮面板里开关插件，不用重启</div>
+    <div class="f"><b>自动备份</b> · 安装前备份现有 inject 目录</div>
+    <div class="f"><b>自检</b> · 一键检查所有文件是否就位</div>
+  </div>
+
+  <div class="note">本页与安装包均自托管在本站；源码与版本记录见 GitHub 仓库，MIT 许可。<span style="color:#8a6a1e">Windows 桌面向工具，安装前请自行确认目标目录。</span></div>
+
+  <footer>— 180lisilence · 随心助手 · 自托管于 lizyi.asia —</footer>
+</div>
+</body>
+</html>

@@ -1,0 +1,15 @@
+# =============================================================================
+# identity.txt — 样本身份卡（对齐真实台账字段，逐字沿用 key=value 写法）
+# 口径要求：
+#   1. 所有取值必须来自 aapt2 badging / Manifest / apktool.yml / 磁盘文件实读；读不到写"未确认"，禁止编造。
+#   2. 字段固定顺序：N / package / versionName / app_name / source / note；不得自行追加 versionCode、ABI、大小等到本文件。
+#   3. versionCode、ABI、体积、入口 Activity 等写进 analysis.md 头部身份区，不写本卡。
+#   4. source 取值样例：aapt2；note 取值样例：无。样本别名/重打包代号写入 note。
+#   5. 包名以 Manifest 实读为准；app_name 以 strings.xml / badging 为准，桌面名与内部代号不一致时两者都记 note。
+# =============================================================================
+N=<样本编号，如 21>
+package=<包名，如 com.example.app>
+versionName=<versionName 原文，如 1.0.0>
+app_name=<桌面应用名，如 示例App>
+source=<身份取证来源，如 aapt2>
+note=<补充说明；无则写 无；内部代号/渠道重打包/重签名特征记于此>

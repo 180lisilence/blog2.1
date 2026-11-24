@@ -1,0 +1,10 @@
+{
+  "id": "security",
+  "name": "安全审查",
+  "version": "0.1.0",
+  "author": "",
+  "description": "安全审查面板（骨架，功能待接入）",
+  "defaultEnabled": true,
+  "entry": "main.js",
+  "defaults": {}
+}

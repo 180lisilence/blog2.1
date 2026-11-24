@@ -1,0 +1,19 @@
+{
+  "id": "splash",
+  "name": "启动动画",
+  "version": "1.0.0",
+  "author": "",
+  "description": "打开软件时的 Logo 加载画面",
+  "defaultEnabled": true,
+  "entry": "main.js",
+  "style": "style.css",
+  "defaults": {
+    "enabled": true,
+    "style": "breathe",
+    "minDuration": 1200,
+    "maxDuration": 4000,
+    "fadeOut": 400,
+    "accent": "#4D6BFE",
+    "text": "D"
+  }
+}
