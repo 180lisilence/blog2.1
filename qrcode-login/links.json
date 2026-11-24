@@ -238,5 +238,20 @@
     "size": "0.4 MB",
     "updated": "2026-11-07",
     "order": 16
+  },
+  {
+    "id": "link-woldvein-trainer",
+    "name": "平野孤鸿 · 修改器工具箱",
+    "desc": "为《东方：平野孤鸿》做的五版修改器套件：启动器、产品家族、审计修复、Steam 启动改道，最后接上 AI Agent 现写现改。",
+    "repo": "https://github.com/180lisilence/woldvein_trainer",
+    "demo": null,
+    "mirror": null,
+    "icon": "🎮",
+    "color": "c5",
+    "tags": ["修改器", "游戏", "Python"],
+    "stack": "Python",
+    "size": "73.6 MB",
+    "updated": "2026-11-05",
+    "order": 17
   }
 ]
