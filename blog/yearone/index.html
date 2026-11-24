@@ -815,8 +815,12 @@
       b.setAttribute('aria-label', '跳转到：' + labels[i]);
       b.innerHTML = '<span>' + icons[i] + '</span><span class="tip">' + labels[i] + '</span>';
       b.addEventListener('click', function () {
-        h.scrollIntoView({ behavior: 'smooth' });
+        // 点击后视为程序化滚动：滚动过程中不再反抢高亮，滚动结束再按真实位置校准
+        programmatic = true;
+        clearTimeout(settleTimer);
+        settleTimer = setTimeout(function () { programmatic = false; setActive(activeIndexByScroll()); }, 160);
         setActive(i);
+        h.scrollIntoView({ behavior: 'smooth', block: 'start' });
       });
       b.addEventListener('mouseenter', function () { markNeighbors(i); });
       b.addEventListener('mouseleave', markNeighborsReset);
@@ -826,6 +830,7 @@
     document.body.appendChild(dock);
 
     var current = 0;
+    var programmatic = false, settleTimer = null;
     function movePill(i) {
       var b = items[i];
       pill.style.height = b.offsetHeight + 'px';
@@ -845,19 +850,42 @@
     window.addEventListener('resize', function () { movePill(current); });
     requestAnimationFrame(function () { movePill(0); });
 
-    // 滚动时高亮当前章节，胶囊平滑跟随
+    // 滚动时高亮当前章节：按真实滚动位置计算（首节在顶部、末尾在底部都能命中，不再依赖窄带的交集判定）
     var secs = headings.map(function (h) { return document.getElementById(h.id); });
-    if ('IntersectionObserver' in window) {
-      var io = new IntersectionObserver(function (entries) {
-        entries.forEach(function (e) {
-          if (e.isIntersecting) {
-            var i = secs.indexOf(e.target);
-            if (i >= 0) setActive(i);
-          }
-        });
-      }, { rootMargin: '-30% 0px -60% 0px' });
-      secs.forEach(function (s) { io.observe(s); });
+    var ticking = false;
+
+    function activeIndexByScroll() {
+      var probe = window.scrollY + Math.max(90, Math.round(window.innerHeight * 0.22));
+      var idx = 0;
+      var k, top;
+      for (k = 0; k < secs.length; k++) {
+        top = secs[k].getBoundingClientRect().top + window.scrollY;
+        if (top <= probe) idx = k;
+      }
+      var doc = document.documentElement;
+      if (window.innerHeight + window.scrollY >= doc.scrollHeight - 8) idx = secs.length - 1;
+      return idx;
     }
+
+    function syncFromScroll() {
+      if (ticking) return;
+      ticking = true;
+      requestAnimationFrame(function () {
+        ticking = false;
+        if (programmatic) return;
+        setActive(activeIndexByScroll());
+      });
+    }
+
+    window.addEventListener('scroll', function () {
+      if (programmatic) {
+        clearTimeout(settleTimer);
+        settleTimer = setTimeout(function () { programmatic = false; setActive(activeIndexByScroll()); }, 160);
+        return;
+      }
+      syncFromScroll();
+    }, { passive: true });
+    syncFromScroll();
     // 小节折叠/展开后稳住当前章节高亮，避免停靠栏胶囊跳变
     window.addEventListener('report:toggle-collapse', function () { setActive(current); });
 
