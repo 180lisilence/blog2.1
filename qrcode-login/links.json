@@ -208,5 +208,35 @@
     "size": "1.3 MB",
     "updated": "2026-11-18",
     "order": 14
+  },
+  {
+    "id": "link-yunke-ainote",
+    "name": "云笺 · 离线 AI 笔记",
+    "desc": "Jetpack Compose + Room 搭的 Android 离线 AI 笔记本，端侧 llama.cpp 推理，也能接 OpenAI 兼容的云端对话。",
+    "repo": "https://github.com/180lisilence/yunke-ainote",
+    "demo": "https://180lisilence.github.io/yunke-ainote/",
+    "mirror": null,
+    "icon": "📓",
+    "color": "c3",
+    "tags": ["Android", "Kotlin", "端侧 AI"],
+    "stack": "Kotlin",
+    "size": "2.7 MB",
+    "updated": "2026-11-21",
+    "order": 15
+  },
+  {
+    "id": "link-xiaoxiaoxiao",
+    "name": "小小小 · 双端日记工作台",
+    "desc": "手机与桌面共用同一份数据的双端日记工作台，随写随存，离线可开。",
+    "repo": "https://github.com/180lisilence/xiaoxiaoxiao",
+    "demo": "https://180lisilence.github.io/xiaoxiaoxiao/",
+    "mirror": null,
+    "icon": "📔",
+    "color": "c4",
+    "tags": ["日记", "双端", "HTML"],
+    "stack": "HTML",
+    "size": "0.4 MB",
+    "updated": "2026-11-07",
+    "order": 16
   }
 ]
