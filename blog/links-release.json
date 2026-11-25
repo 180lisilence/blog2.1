@@ -1,0 +1,158 @@
+{
+ "skilll-collection": {
+  "kind": "source",
+  "tag": "main",
+  "date": "",
+  "name": "skilll-collection-main.zip",
+  "size": 0,
+  "url": "https://github.com/180lisilence/skilll-collection/archive/refs/heads/main.zip",
+  "page": "https://github.com/180lisilence/skilll-collection"
+ },
+ "critical-game": {
+  "kind": "apk",
+  "tag": "",
+  "date": "2026-11-07",
+  "name": "android-debug.apk",
+  "size": 27519443,
+  "url": "https://github.com/180lisilence/critical-game/raw/main/android/build/outputs/apk/debug/android-debug.apk",
+  "page": "https://github.com/180lisilence/critical-game/blob/main/android/build/outputs/apk/debug/android-debug.apk",
+  "note": "仓库 main 分支 android/build 内的 debug APK"
+ },
+ "my-world-monitor-tool": {
+  "kind": "source",
+  "tag": "main",
+  "date": "",
+  "name": "my-world-monitor-tool-main.zip",
+  "size": 0,
+  "url": "https://github.com/180lisilence/my-world-monitor-tool/archive/refs/heads/main.zip",
+  "page": "https://github.com/180lisilence/my-world-monitor-tool"
+ },
+ "3D-model-construction": {
+  "kind": "source",
+  "tag": "main",
+  "date": "",
+  "name": "3D-model-construction-main.zip",
+  "size": 0,
+  "url": "https://github.com/180lisilence/3D-model-construction/archive/refs/heads/main.zip",
+  "page": "https://github.com/180lisilence/3D-model-construction"
+ },
+ "rea-tool-myself": {
+  "kind": "release",
+  "tag": "v1.0.0",
+  "date": "2026-11-07",
+  "name": "REA-Panel.exe",
+  "size": 38462822,
+  "url": "https://github.com/180lisilence/rea-tool-myself/releases/download/v1.0.0/REA-Panel.exe",
+  "page": "https://github.com/180lisilence/rea-tool-myself/releases/tag/v1.0.0"
+ },
+ "personal-information-anliaysis": {
+  "kind": "source",
+  "tag": "main",
+  "date": "",
+  "name": "personal-information-anliaysis-main.zip",
+  "size": 0,
+  "url": "https://github.com/180lisilence/personal-information-anliaysis/archive/refs/heads/main.zip",
+  "page": "https://github.com/180lisilence/personal-information-anliaysis"
+ },
+ "qi-mao-book-export-verison": {
+  "kind": "source",
+  "tag": "main",
+  "date": "",
+  "name": "qi-mao-book-export-verison-main.zip",
+  "size": 0,
+  "url": "https://github.com/180lisilence/qi-mao-book-export-verison/archive/refs/heads/main.zip",
+  "page": "https://github.com/180lisilence/qi-mao-book-export-verison"
+ },
+ "card-unlock-master": {
+  "kind": "apk",
+  "tag": "v2.0",
+  "date": "2026-11-07",
+  "name": "卡密工具箱-v2.0-com.licenseinjector.app.apk",
+  "size": 327262,
+  "url": "https://github.com/180lisilence/card-unlock-master/raw/main/%E5%8D%A1%E5%AF%86%E5%B7%A5%E5%85%B7%E7%AE%B1-v2.0-com.licenseinjector.app.apk",
+  "page": "https://github.com/180lisilence/card-unlock-master",
+  "note": "仓库根目录 APK；另有 解卡大师-v1.1.apk 412.5 KB"
+ },
+ "gamehub": {
+  "kind": "source",
+  "tag": "main",
+  "date": "",
+  "name": "gamehub-main.zip",
+  "size": 0,
+  "url": "https://github.com/180lisilence/gamehub/archive/refs/heads/main.zip",
+  "page": "https://github.com/180lisilence/gamehub"
+ },
+ "yunlu-room": {
+  "kind": "apk",
+  "tag": "v1.0.0.001",
+  "date": "2026-11-07",
+  "name": "云麓空间-v1.0.0.001-release-aligned-signed.apk",
+  "size": 7084873,
+  "url": "https://github.com/180lisilence/yunlu-room/raw/android/%E4%BA%91%E9%BA%93%E7%A9%BA%E9%97%B4-v1.0.0.001-release-aligned-signed.apk",
+  "page": "https://github.com/180lisilence/yunlu-room/tree/android",
+  "note": "android 分支上的已签名 release APK"
+ },
+ "hap-runner-HarmonyOS": {
+  "kind": "release",
+  "tag": "1.0",
+  "date": "2026-11-18",
+  "name": "HapRunner-1.1.0-arkui-x.apk",
+  "size": 92351139,
+  "url": "https://github.com/180lisilence/hap-runner-HarmonyOS/releases/download/1.0/HapRunner-1.1.0-arkui-x.apk",
+  "page": "https://github.com/180lisilence/hap-runner-HarmonyOS/releases/tag/1.0"
+ },
+ "blog2.1": {
+  "kind": "release",
+  "tag": "1.0",
+  "date": "2026-11-12",
+  "name": "default.exe",
+  "size": 250091008,
+  "url": "https://github.com/180lisilence/blog2.1/releases/download/1.0/default.exe",
+  "page": "https://github.com/180lisilence/blog2.1/releases/tag/1.0"
+ },
+ "dsh-floating-ball": {
+  "kind": "source",
+  "tag": "main",
+  "date": "",
+  "name": "dsh-floating-ball-main.zip",
+  "size": 0,
+  "url": "https://github.com/180lisilence/dsh-floating-ball/archive/refs/heads/main.zip",
+  "page": "https://github.com/180lisilence/dsh-floating-ball"
+ },
+ "heimayun-music-self": {
+  "kind": "release",
+  "tag": "1.1",
+  "date": "2026-11-18",
+  "name": "local.hap",
+  "size": 1215396,
+  "url": "https://github.com/180lisilence/heimayun-music-self/releases/download/1.1/local.hap",
+  "page": "https://github.com/180lisilence/heimayun-music-self/releases/tag/1.1"
+ },
+ "yunke-ainote": {
+  "kind": "source",
+  "tag": "main",
+  "date": "",
+  "name": "yunke-ainote-main.zip",
+  "size": 0,
+  "url": "https://github.com/180lisilence/yunke-ainote/archive/refs/heads/main.zip",
+  "page": "https://github.com/180lisilence/yunke-ainote"
+ },
+ "xiaoxiaoxiao": {
+  "kind": "release",
+  "tag": "v0.2.1",
+  "date": "2026-11-07",
+  "name": "xiaoxiaoxiao-4.0.2.apk",
+  "size": 90815,
+  "url": "https://github.com/180lisilence/xiaoxiaoxiao/releases/download/v0.2.1/xiaoxiaoxiao-4.0.2.apk",
+  "page": "https://github.com/180lisilence/xiaoxiaoxiao/releases/tag/v0.2.1"
+ },
+ "woldvein_trainer": {
+  "kind": "release",
+  "tag": "0.4.3",
+  "date": "2026-09-23",
+  "name": "woldvein_trainer0.4.3.zip",
+  "size": 29713427,
+  "url": "https://github.com/180lisilence/woldvein_trainer/releases/download/0.4.3/woldvein_trainer0.4.3.zip",
+  "page": "https://github.com/180lisilence/woldvein_trainer/releases/tag/0.4.3"
+ }
+}

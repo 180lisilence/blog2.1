@@ -17,6 +17,16 @@
 .links-hint{font-size:14px;color:#6b7280;margin:10px 0 18px}
 .project-card.ext-card{border-style:dashed}
 .project-card.ext-card .proj-links a{color:#0f766e}
+/* 友链下载入口：放在图标右侧，文案「下载」；有 Release 资产为实心，无资产为描边（源码 zip） */
+.project-card.ext-card .proj-head{display:flex;align-items:flex-start;justify-content:space-between;gap:10px}
+.project-card.ext-card .proj-head .proj-icon{margin-bottom:0}
+.project-card.ext-card .dl-pill{display:inline-flex;align-items:center;gap:4px;font-size:12px;font-weight:700;
+  padding:5px 11px;border-radius:999px;background:#0f766e;color:#fff;text-decoration:none;white-space:nowrap;
+  box-shadow:0 3px 10px rgba(15,118,110,.22)}
+.project-card.ext-card .dl-pill:hover{background:#0b5b55;color:#fff}
+.project-card.ext-card .dl-pill.src{background:#fff;color:#0f766e;border:1px solid #0f766e;box-shadow:none}
+.project-card.ext-card .dl-pill.src:hover{background:#ecfdf5;color:#0b5b55}
+.project-card.ext-card .dl-pill::after{content:none}
 /* 年度报告专项入口 */
 .yearone-feature{margin:6px 0 34px}
 .yearone-inner{display:block;position:relative;padding:28px 26px;border-radius:16px;text-decoration:none;overflow:hidden;
@@ -396,6 +406,30 @@
     if (/^https?:\/\//i.test(s)) return esc(s);
     return "#";
   }
+  var relMap = {};
+  function fmtSize(n) {
+    if (!n) return "";
+    if (n >= 1048576) return (n / 1048576).toFixed(1) + " MB";
+    return Math.round(n / 1024) + " KB";
+  }
+  function repoKey(u) {
+    return String(u || "").replace(/\/+$/, "").split("/").pop();
+  }
+  function dlChip(p) {
+    var m = relMap[repoKey(p.repo)];
+    if (!m) return "";
+    if (m.kind === "release" || m.kind === "apk") {
+      return '<a class="dl-pill" href="' + safeHref(m.url) + '" target="_blank" rel="noopener noreferrer" title="' + esc(m.name) + " · " + fmtSize(m.size) + '">⬇ 下载</a>';
+    }
+    if (m.kind === "release-page") {
+      return '<a class="dl-pill src" href="' + safeHref(m.url) + '" target="_blank" rel="noopener noreferrer" title="前往 Release 页面">⬇ 下载</a>';
+    }
+    return '<a class="dl-pill src" href="' + safeHref(m.url) + '" target="_blank" rel="noopener noreferrer" title="仓库 main 分支源码包">⬇ 下载</a>';
+  }
+  try {
+    var rr = await fetch("/links-release.json", { credentials: "same-origin" });
+    if (rr.ok) relMap = (await rr.json()) || {};
+  } catch (e) { relMap = {}; }
   try {
     var r = await fetch("/api/links", { credentials: "same-origin" });
     var d = await r.json();
@@ -405,7 +439,10 @@
         return '<span class="proj-tag">' + esc(t) + "</span>";
       }).join("");
       return '<article class="project-card ext-card">' +
-        '<div class="proj-icon">' + esc(p.icon || "🔗") + "</div>" +
+        '<div class="proj-head">' +
+          '<div class="proj-icon">' + esc(p.icon || "🔗") + "</div>" +
+          dlChip(p) +
+        "</div>" +
         '<h3><a href="' + safeHref(p.demo || p.repo) + '" target="_blank" rel="noopener noreferrer">' + esc(p.name) + " ↗</a></h3>" +
         "<p>" + esc(p.desc) + "</p>" +
         '<div class="proj-tags">' + tags + "</div>" +

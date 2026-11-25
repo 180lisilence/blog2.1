@@ -150,6 +150,20 @@
     }
     .card.ext-card .go { color: #0f766e; }
     .card .meta { margin-top: 8px; font-size: 11px; color: #9ca3af; }
+    /* 友链下载入口：放在图标右侧，文案「下载」 */
+    .card.ext-card .proj-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; }
+    .card.ext-card .proj-head .c-icon { margin-bottom: 0; }
+    .card.ext-card .dl-pill {
+      font-size: 12px; font-weight: 700; text-decoration: none;
+      padding: 5px 11px; border-radius: 999px;
+      background: #0f766e; color: #fff; white-space: nowrap;
+      box-shadow: 0 3px 10px rgba(15,118,110,.22);
+    }
+    .card.ext-card .dl-pill:hover { background: #0b5b55; color: #fff; }
+    .card.ext-card .dl-pill.src { background: #fff; color: #0f766e; border: 1px solid #0f766e; box-shadow: none; }
+    .card.ext-card .dl-pill.src:hover { background: #ecfdf5; color: #0b5b55; }
+    .card h3 a { color: inherit; text-decoration: none; }
+    .card h3 a:hover { color: #667eea; }
     .nav-ext { color: #667eea; font-size: 11px; }
 
     /* 加号导入卡片 */
@@ -263,6 +277,7 @@
 <script>
   let allProjects = [];
   let allLinks = [];
+  let relMap = {};
 
   function escapeHtml(s) {
     return String(s == null ? "" : s).replace(/[&<>"']/g, c => ({
@@ -279,20 +294,42 @@
   }
 
   // 外链作品卡：有在线演示优先跳演示站，没有则跳仓库
+  function fmtSize(n) {
+    if (!n) return "";
+    return n >= 1048576 ? (n / 1048576).toFixed(1) + " MB" : Math.round(n / 1024) + " KB";
+  }
+  function repoKey(u) {
+    return String(u || "").replace(/\/+$/, "").split("/").pop();
+  }
+  // 下载入口：有 Release 资产直链最新安装包；没有资产则给仓库 main 源码 zip
+  function dlChipHtml(p) {
+    const m = relMap[repoKey(p.repo)];
+    if (!m) return "";
+    if (m.kind === "release" || m.kind === "apk") {
+      return `<a class="dl-pill" href="${safeHref(m.url)}" target="_blank" rel="noopener noreferrer" title="${escapeHtml(m.name)} · ${fmtSize(m.size)}">⬇ 下载</a>`;
+    }
+    if (m.kind === "release-page") {
+      return `<a class="dl-pill src" href="${safeHref(m.url)}" target="_blank" rel="noopener noreferrer" title="前往 Release 页面">⬇ 下载</a>`;
+    }
+    return `<a class="dl-pill src" href="${safeHref(m.url)}" target="_blank" rel="noopener noreferrer" title="仓库 main 分支源码包">⬇ 下载</a>`;
+  }
+
   function extCardHtml(p) {
     const href = p.demo || p.repo;
     const label = p.demo ? "在线体验 →" : "前往 GitHub →";
     const meta = [p.stack, p.size].filter(Boolean).join(" · ");
     return `
-      <a class="card ext-card" href="${safeHref(href)}" target="_blank" rel="noopener noreferrer" title="${escapeHtml(p.repo)}">
-        <span class="ext-badge">↗</span>
-        <div class="c-icon ${escapeHtml(p.color || "c1")}">${escapeHtml(p.icon || "🔗")}</div>
-        <h3>${escapeHtml(p.name)}</h3>
+      <div class="card ext-card" title="${escapeHtml(p.repo)}">
+        <div class="proj-head">
+          <div class="c-icon ${escapeHtml(p.color || "c1")}">${escapeHtml(p.icon || "🔗")}</div>
+          ${dlChipHtml(p)}
+        </div>
+        <h3><a href="${safeHref(href)}" target="_blank" rel="noopener noreferrer">${escapeHtml(p.name)} ↗</a></h3>
         <p>${escapeHtml(p.desc)}</p>
         ${p.tags && p.tags.length ? `<div class="tags">${p.tags.slice(0, 3).map(t => `<span class="tag">${escapeHtml(t)}</span>`).join("")}</div>` : ""}
         ${meta ? `<div class="meta">${escapeHtml(meta)}</div>` : ""}
-        <div class="go">${label}</div>
-      </a>
+        <div class="go"><a href="${safeHref(href)}" target="_blank" rel="noopener noreferrer" style="color:inherit;text-decoration:none">${label}</a></div>
+      </div>
     `;
   }
 
@@ -592,6 +629,13 @@
       }
     } catch (e) {
       console.warn("加载站内项目失败", e);
+    }
+
+    try {
+      const rr = await fetch("/links-release.json", { credentials: "same-origin" });
+      if (rr.ok) relMap = (await rr.json()) || {};
+    } catch (e) {
+      relMap = {};
     }
 
     try {
