@@ -89,6 +89,12 @@
   .legend-item { display: flex; align-items: center; gap: 8px; margin: 4px 0; }
   .legend-dot { width: 12px; height: 12px; border-radius: 3px; }
   .hint { position: fixed; top: 70px; left: 50%; transform: translateX(-50%); font-size: 11px; color: var(--text-muted); z-index: 99; }
+
+  /* 键盘可达：节点获得焦点时给出可见描边 */
+  .node:focus { outline: none; }
+  .node:focus-visible rect, .node:focus-visible circle, .node:focus-visible polygon {
+    stroke: #f59e0b !important; stroke-width: 2.5 !important;
+  }
 </style>
 </head>
 <body>
@@ -295,7 +301,16 @@
 
   function zoomIn() { scale *= 1.2; updateTransform(); }
   function zoomOut() { scale *= 0.8; updateTransform(); }
-  function resetView() { scale = 1; tx = 0; ty = 0; updateTransform(); }
+  // 适配居中：初始加载与「重置」共用同一套算法，避免重置后跑到左上角
+  function fitView() {
+    const w = window.innerWidth, h = window.innerHeight;
+    scale = Math.min(w / 1050, h / 650, 1);
+    tx = (w - 1000 * scale) / 2;
+    ty = (h - 600 * scale) / 2;
+    updateTransform();
+  }
+
+  function resetView() { fitView(); }
 
   function toggleTheme() {
     const html = document.documentElement;
@@ -339,7 +354,26 @@
   });
 
   function exportSVG() {
-    const svgData = new XMLSerializer().serializeToString(svg);
+    // 直接序列化只会带走 fill="var(--card-bg)" 这类变量引用，脱离页面后
+    // var() 无法解析、颜色全变黑。这里先把每个元素的 computed 样式写成
+    // 固定值，再序列化导出。
+    const clone = svg.cloneNode(true);
+    clone.setAttribute('xmlns', 'http://www.w3.org/2000/svg');
+    const srcEls = svg.querySelectorAll('*');
+    const dstEls = clone.querySelectorAll('*');
+    const PROPS = ['fill', 'stroke', 'stroke-width', 'stroke-dasharray', 'opacity',
+                   'fill-opacity', 'stroke-opacity', 'font-size', 'font-weight', 'font-family'];
+    for (let i = 0; i < srcEls.length; i++) {
+      const d = dstEls[i];
+      if (!d) continue;
+      const cs = getComputedStyle(srcEls[i]);
+      for (const prop of PROPS) {
+        const v = cs.getPropertyValue(prop);
+        if (!v || v === 'none' || v === 'auto') continue;
+        d.setAttribute(prop, v.trim());
+      }
+    }
+    const svgData = new XMLSerializer().serializeToString(clone);
     const blob = new Blob([svgData], { type: 'image/svg+xml' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
@@ -348,14 +382,23 @@
     URL.revokeObjectURL(url);
   }
 
-  // 初始适配
-  window.addEventListener('load', () => {
-    const w = window.innerWidth, h = window.innerHeight;
-    scale = Math.min(w / 1050, h / 650, 1);
-    tx = (w - 1000 * scale) / 2;
-    ty = (h - 600 * scale) / 2;
-    updateTransform();
+  // 节点键盘可达：tab 可聚焦，Enter / 空格选中
+  document.querySelectorAll('.node').forEach(node => {
+    const id = node.getAttribute('data-id');
+    node.setAttribute('tabindex', '0');
+    node.setAttribute('role', 'button');
+    const info = nodeInfo[id];
+    if (info) node.setAttribute('aria-label', info.title);
+    node.addEventListener('keydown', e => {
+      if (e.key === 'Enter' || e.key === ' ' || e.key === 'Spacebar') {
+        e.preventDefault();
+        selectNode(id);
+      }
+    });
   });
+
+  // 初始适配
+  window.addEventListener('load', fitView);
 </script>
 </body>
 </html>

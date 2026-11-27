@@ -418,7 +418,7 @@
     try { await apiFetch("/api/logout", { method: "POST", headers: { "Content-Type": "application/json" }, body: "{}" }); } catch (e) {}
     document.cookie = "web_auth=; path=/; max-age=0";
     document.cookie = "web_guest=; path=/; max-age=0";
-    location.href = "/login.html";
+    location.href = "/login";
   }
 
   function renderGrid() {
@@ -665,7 +665,7 @@
         await loadData();
       } else {
         main.innerHTML = '<div class="error">登录已过期，正在跳转到登录页...</div>';
-        setTimeout(() => location.href = "/login.html", 1200);
+        setTimeout(() => location.href = "/login", 1200);
       }
     } catch (e) {
       main.innerHTML = '<div class="error">无法连接服务，请确认后台服务已启动</div>';

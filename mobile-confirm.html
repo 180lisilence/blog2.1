@@ -47,6 +47,14 @@
       cursor: pointer; transition: all .2s;
     }
     .tab.active { background: #fff; color: #4f46e5; font-weight: 600; box-shadow: 0 2px 6px rgba(0,0,0,.08); }
+    button.tab { border: 0; background: transparent; font-family: inherit; padding: 9px 0; }
+    button.tab:focus-visible { outline: 2px solid #4f46e5; outline-offset: 2px; }
+    .captcha-row { display: flex; gap: 10px; align-items: center; }
+    .captcha-row img {
+      height: 42px; width: 126px; border-radius: 10px; background: #f4f7fc;
+      border: 1px solid #e5e7eb; cursor: pointer; flex: 0 0 auto;
+    }
+    .captcha-row input { flex: 1; min-width: 0; }
 
     .field { margin-bottom: 16px; }
     .field label { display: block; font-size: 13px; color: #6b7280; margin-bottom: 6px; }
@@ -106,9 +114,9 @@
     <p>确认后，PC 端将登录你的账号</p>
   </div>
 
-  <div class="tabs">
-    <div class="tab active" id="tabLogin" onclick="switchTab('login')">登录</div>
-    <div class="tab" id="tabReg" onclick="switchTab('reg')">注册</div>
+  <div class="tabs" role="tablist" aria-label="登录或注册">
+    <button type="button" class="tab active" role="tab" aria-selected="true" id="tabLogin" onclick="switchTab('login')">登录</button>
+    <button type="button" class="tab" role="tab" aria-selected="false" id="tabReg" onclick="switchTab('reg')">注册</button>
   </div>
 
   <!-- 登录表单 -->
@@ -132,11 +140,18 @@
     </div>
     <div class="field">
       <label>密码</label>
-      <input type="password" id="regPwd" placeholder="6-32 位" autocomplete="new-password">
+      <input type="password" id="regPwd" placeholder="8-64 位，含大小写字母和数字" autocomplete="new-password">
     </div>
     <div class="field">
       <label>确认密码</label>
       <input type="password" id="regPwd2" placeholder="再次输入密码" autocomplete="new-password">
+    </div>
+    <div class="field">
+      <label>验证码</label>
+      <div class="captcha-row">
+        <img id="capImg" alt="验证码，点击刷新" title="点击刷新" onclick="loadCaptcha()">
+        <input type="text" id="regCap" placeholder="算式结果" inputmode="numeric" autocomplete="off">
+      </div>
     </div>
     <button type="submit" class="btn" id="regBtn">注册并登录</button>
   </form>
@@ -156,13 +171,23 @@
     el.innerText = text;
   }
 
+  // 恢复成"什么都不显示"（原实现传空串给 showMsg 会留下一个空白绿条）
+  function hideMsg() {
+    const el = document.querySelector("#msg");
+    el.className = "msg";
+    el.innerText = "";
+  }
+
   function switchTab(name) {
     const isLogin = name === "login";
     document.querySelector("#tabLogin").className = "tab " + (isLogin ? "active" : "");
     document.querySelector("#tabReg").className = "tab " + (isLogin ? "" : "active");
+    document.querySelector("#tabLogin").setAttribute("aria-selected", isLogin ? "true" : "false");
+    document.querySelector("#tabReg").setAttribute("aria-selected", isLogin ? "false" : "true");
     document.querySelector("#loginForm").style.display = isLogin ? "" : "none";
     document.querySelector("#regForm").style.display = isLogin ? "none" : "";
-    showMsg("", "ok");
+    hideMsg();
+    if (!isLogin) loadCaptcha();
   }
 
   // CSRF：服务端对 POST 有 double-submit 校验，必须带 X-CSRF-Token
@@ -206,6 +231,27 @@
     return r;
   }
 
+  // 注册验证码：服务端签发一次性算术题，答案不下发，提交时带回三元组
+  let capId = "";
+  let capToken = "";
+  async function loadCaptcha() {
+    const img = document.querySelector("#capImg");
+    try {
+      const r = await fetch("/api/captcha", { cache: "no-store", credentials: "same-origin" });
+      const d = await r.json();
+      if (d && d.ok && d.id && d.token) {
+        capId = d.id; capToken = d.token;
+        img.src = d.image;
+      } else {
+        capId = capToken = "";
+        img.alt = "验证码加载失败，点击重试";
+      }
+    } catch (e) {
+      capId = capToken = "";
+      img.alt = "验证码加载失败，点击重试";
+    }
+  }
+
   // 打开页面即通知后端：已扫码
   async function notifyScanned() {
     try {
@@ -226,7 +272,7 @@
     if (!username || !password) { showMsg("请输入账号和密码", "err"); return false; }
     document.querySelector("#loginBtn").disabled = true;
     document.querySelector("#loginBtn").innerText = "确认中...";
-    showMsg("", "ok");
+    hideMsg();
     try {
       const resp = await postJson("/api/qrcode/confirm", { qid, username, password });
       const ret = await resp.json();
@@ -253,14 +299,32 @@
     const username = document.querySelector("#regUsername").value.trim();
     const pwd = document.querySelector("#regPwd").value;
     const pwd2 = document.querySelector("#regPwd2").value;
+    const cap = document.querySelector("#regCap").value.trim();
     if (!username || !pwd) { showMsg("请输入账号和密码", "err"); return false; }
     if (pwd !== pwd2) { showMsg("两次输入的密码不一致", "err"); return false; }
+    // 与服务端 core/security.js 的强密码规则保持一致，避免白跑一次请求
+    if (pwd.length < 8 || pwd.length > 64) { showMsg("密码长度需为 8-64 位", "err"); return false; }
+    if (!/[a-z]/.test(pwd)) { showMsg("密码需包含小写字母", "err"); return false; }
+    if (!/[A-Z]/.test(pwd)) { showMsg("密码需包含大写字母", "err"); return false; }
+    if (!/[0-9]/.test(pwd)) { showMsg("密码需包含数字", "err"); return false; }
+    if (!capId || !capToken) { showMsg("验证码未加载，请点击图片重试", "err"); return false; }
+    if (!cap) { showMsg("请先完成验证码", "err"); return false; }
+
     document.querySelector("#regBtn").disabled = true;
     document.querySelector("#regBtn").innerText = "注册中...";
-    showMsg("", "ok");
+    hideMsg();
     try {
-      const resp = await postJson("/api/register", { username, password: pwd });
+      const resp = await postJson("/api/register", {
+        username: username,
+        password: pwd,
+        captchaId: capId,
+        captchaToken: capToken,
+        captchaAnswer: cap
+      });
       const ret = await resp.json();
+      // 验证码一次性消费：无论成败都换一张
+      document.querySelector("#regCap").value = "";
+      loadCaptcha();
       if (ret.ok) {
         showMsg("✅ 注册成功，正在登录...", "ok");
         // 注册成功后直接用该账号确认扫码

@@ -113,6 +113,11 @@
     }
 
     function renderAll(msgs) {
+      // 图表库缺失时不要把页面晾在白屏上
+      if (typeof Charts === 'undefined') {
+        showError('图表库加载失败，请刷新页面重试');
+        return;
+      }
       renderStats(computeStats(msgs));
       Charts.wave('chartWave', msgs);
       Charts.hour('chartHour', msgs);
