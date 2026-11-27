@@ -352,7 +352,17 @@
     return false;
   }
 
-  notifyScanned();
+  if (!qid) {
+    // 没带 qid：多半是直接打开了这个地址，没必要再请求后端
+    var ex = document.querySelector("#expired");
+    ex.textContent = "请用手机扫描 PC 端登录页的二维码后再打开本页";
+    ex.style.display = "block";
+    document.querySelector("#loginForm").style.display = "none";
+    document.querySelector("#regForm").style.display = "none";
+    document.querySelector(".tabs").style.display = "none";
+  } else {
+    notifyScanned();
+  }
 </script>
 </body>
 </html>

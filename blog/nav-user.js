@@ -4,7 +4,8 @@
     return n.length > 6 ? n.slice(0, 6) + '…' : n;
   }
   function apply(){
-    var link = document.querySelector('.nav-links a[href="/login"]');
+    var link = document.querySelector('.nav-links a[href="/login"]') ||
+               document.querySelector('.nav-links a[href="/login.html"]');
     if (!link) return;
     fetch('/api/me', { credentials: 'same-origin' })
       .then(function(r){ return r.ok ? r.json() : null; })
